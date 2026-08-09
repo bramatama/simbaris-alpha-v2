@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
+        Schema::create(table: 'users', callback: function (Blueprint $table) {
+            $table->id('user_id');
+            $table->uuid('public_id')->unique();
             $table->string('name');
             $table->string('email')->unique();
+            $table->enum('role', ['admin', 'official_team', 'judge', 'committee'])->default('official_team');
+            $table->string('contact_info')->nullable();
+            $table->string('profile_picture_path')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
@@ -35,6 +39,30 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+        Schema::create('admins', function (Blueprint $table) {
+            $table->id('admin_id');
+            $table->foreignId('user_id')->index()->constrained('users','user_id')->onDelete('cascade');
+        });
+
+        Schema::create('official_teams', function (Blueprint $table) {
+            $table->id('official_team_id');
+            $table->foreignId('user_id')->index()->constrained('users','user_id')->onDelete('cascade');
+            $table->string('province');
+            $table->string('city');
+            $table->string('institution');
+        });
+        
+        Schema::create('committees', function (Blueprint $table) {
+            $table->id('committee_id');
+            $table->foreignId('user_id')->index()->constrained('users','user_id')->onDelete('cascade');
+            $table->string('department');
+        });
+
+        Schema::create('judges', function (Blueprint $table) {
+            $table->id('judge_id');
+            $table->foreignId('user_id')->index()->constrained('users','user_id')->onDelete('cascade');
+        });
     }
 
     /**
@@ -42,8 +70,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('committees');
+        Schema::dropIfExists('judges');
+        Schema::dropIfExists('official_teams'); 
+        Schema::dropIfExists('admins');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

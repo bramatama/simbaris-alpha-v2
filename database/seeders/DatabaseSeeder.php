@@ -2,24 +2,22 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // URUTAN PEMANGGILAN SANGAT PENTING! (Mencegah Error Foreign Key)
+        $this->call([
+            LevelSeeder::class,           // 1. Master Level (Dibutuhkan oleh Tim & Event)
+            // ChampionSeeder::class,        // 2. Master Juara
+            UserSeeder::class,            // 3. Users & Profil (Dibutuhkan oleh Event)
+            EventSeeder::class,           // 4. Konfigurasi Event (Dibutuhkan oleh Transaksi)
+            ParticipationSeeder::class,   // 5. Transaksi Pendaftaran & Anggota Tim
         ]);
     }
 }
