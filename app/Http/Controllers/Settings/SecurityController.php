@@ -13,18 +13,6 @@ use Inertia\Response;
 class SecurityController extends Controller
 {
     /**
-     * Show the user's security settings page.
-     */
-    public function edit(TwoFactorAuthenticationRequest $request): Response
-    {
-        $props = [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-        ];
-
-        return Inertia::render('settings/security', $props);
-    }
-
-    /**
      * Update the user's password.
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
@@ -33,8 +21,6 @@ class SecurityController extends Controller
             'password' => $request->password,
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
-
-        return back();
+        return to_route('profile.edit')->with('status', 'Password updated successfully.');
     }
 }
