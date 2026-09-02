@@ -1,16 +1,24 @@
 import AuthLayoutTemplate from '@/layouts/auth/auth-card-layout';
 
 export default function AuthLayout({
-    title = '',
-    description = '',
     children,
+    title,
+    description,
+    className,
+    ...props
 }: {
-    title?: string;
-    description?: string;
     children: React.ReactNode;
+    title: string;
+    description: string;
+    className?: string;
 }) {
     return (
-        <AuthLayoutTemplate title={title} description={description}>
+        <AuthLayoutTemplate
+            title={title}
+            description={description}
+            className={className}
+            {...props}
+        >
             {children}
         </AuthLayoutTemplate>
     );

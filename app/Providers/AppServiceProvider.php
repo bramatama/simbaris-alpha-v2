@@ -1,6 +1,6 @@
 <?php
-
 namespace App\Providers;
+use Illuminate\Support\Facades\URL;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -27,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (env('APP_ENV') !== 'local' || request()->header('x-forwarded-proto') === 'https') {
+            URL::forceScheme('https');
+        }
+        
         $this->configureDefaults();
 
         VerifyEmail::toMailUsing(function (object $notifiable, string $url) {

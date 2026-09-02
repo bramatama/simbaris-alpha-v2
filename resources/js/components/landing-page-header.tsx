@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { AppearanceToggle } from '@/components/appearance-toggle';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -54,10 +54,10 @@ export function LandingPageHeader({
 }: {
     canRegister?: boolean;
 }) {
-    const { auth } = usePage<PageProps>().props;
+    const { props } = usePage();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
-    const { isMobileDevice } = usePage().props;
+    const isMobileDevice = props.isMobileDevice;
     const [isSmallScreen, setIsSmallScreen] = useState(false);
 
     // Scroll state tracking
@@ -136,6 +136,7 @@ export function LandingPageHeader({
                                                     <span>{item.title}</span>
                                                 </Link>
                                             ))}
+                                            <AppearanceToggle />
                                         </div>
                                     </div>
                                 </DrawerContent>
@@ -192,7 +193,9 @@ export function LandingPageHeader({
                     {/* BAGIAN KANAN: Login & Register */}
                     <div className="flex flex-1 items-center justify-end space-x-2">
                         <nav className="flex items-center justify-end gap-4">
-                            {auth.user ? (
+                            <AppearanceToggle />
+
+                            {props.auth.user ? (
                                 <Link
                                     href={dashboard()}
                                     className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"

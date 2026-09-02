@@ -6,13 +6,18 @@ type AppLogoProps = {
 };
 
 export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
-    const { name } = usePage<{ name: string }>().props;
+    const { props } = usePage();
+    const appName = props.name;
 
 
     if (variants === 'icon') {
         return (
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                <img src="assets/img/logo_simbaris_icon.png" alt="Logo" className="size-5 fill-current text-white dark:text-black" />
+            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-primary transition-all ease-in-out">
+                <img
+                    src="assets/img/logo_simbaris_icon.png"
+                    alt="Logo"
+                    className="size-8 fill-current text-black dark:size-5 dark:text-white"
+                />
             </div>
         );
     }
@@ -20,17 +25,17 @@ export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
     if (variants === 'horizontal') {
         return (
             <div className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-primary">
                     <img
                         src="assets/img/logo_simbaris_icon.png"
                         alt="Logo"
-                        className="size-5 fill-current text-white dark:text-black"
+                        className="size-8 fill-current text-black dark:size-5 dark:text-white"
                     />
                 </div>
 
                 <div className="grid text-left text-sm">
                     <span className="truncate leading-tight font-semibold">
-                        {name}
+                        {appName}
                     </span>
                 </div>
             </div>
@@ -39,16 +44,16 @@ export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
 
     return (
         <div className="flex flex-col items-center gap-2">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground">
                 <img
                     src="assets/img/logo_simbaris_icon.png"
                     alt="Logo"
-                    className="size-5 fill-current text-white dark:text-black"
+                    className="size-5 fill-current text-black dark:text-white"
                 />
             </div>
 
             <span className="max-w-32 truncate text-center text-sm font-semibold">
-                {name}
+                {appName}
             </span>
         </div>
     );

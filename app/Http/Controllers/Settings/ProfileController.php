@@ -8,6 +8,7 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,8 +20,10 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'user' => $user->only(['user_id', 'public_id', 'name', 'email', 'role', 'contact_info', 'profile_picture_path']),
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -30,17 +33,30 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();       
+        $user->fill($request->validated());
+        if ($request->hasFile('photo')) {
+            if ($user->profile_picture_path) {
+                Storage::disk('public')->delete($user->profile_picture_path);
+            }
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+            // 2. Simpan foto baru ke dalam folder 'profile-photos' (otomatis terbuat)
+            $path = $request->file('photo')->store('profile-photos', 'public');
+            
+            // 3. Simpan nama path file-nya ke database
+            $user->profile_picture_path = $path;
         }
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+            $user->save();
 
-        $request->user()->save();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
-
-        return to_route('profile.edit');
+            $user->sendEmailVerificationNotification();
+            return to_route('dashboard');
+        }
+        else{
+            $user->save();
+            return to_route('profile.edit')->with('status', 'Profile updated successfully.');
+        }
     }
 
     /**
@@ -49,6 +65,10 @@ class ProfileController extends Controller
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
         $user = $request->user();
+        
+        if ($user->profile_picture_path) {
+            Storage::disk('public')->delete($user->profile_picture_path);
+        }
 
         Auth::logout();
 

@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, CalendarCheckIcon, CalendarClockIcon, FolderGit2, LayoutGrid, Moon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,29 +15,71 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
+import { useAppearance } from '@/hooks/use-appearance';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const getMainNavItems = (userRole?: string): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
+    // Add User Management only for admin users
+    if (userRole === 'admin') {
+        items.push({
+            title: 'User Management',
+            href: '/admin/users',
+            icon: FolderGit2,
+        });
+        items.push({
+            title: 'Event Management',
+            href: '/events',
+            icon: CalendarCheckIcon,
+        });
+    }
+
+    if (userRole == 'committee') {
+        items.push({
+            title: 'Hosted Events',
+            href: '/my-events',
+            icon: CalendarClockIcon,
+        });
+    }
+
+    if (userRole == 'official_team') {
+        items.push({
+            title: 'Events',
+            href: '/events',
+            icon: CalendarCheckIcon,
+        });
+        items.push({
+            title: 'My Events',
+            href: '/my-events',
+            icon: CalendarClockIcon,
+        });
+    }
+    return items;
+};
 
 export function AppSidebar() {
+    const { props } = usePage();
+    const userRole = props.auth?.user?.role;
+    const mainNavItems = getMainNavItems(userRole);
+    const { appearance, updateAppearance } = useAppearance();
+
+    const footerNavItems = [
+        {
+            title: 'Dark Theme',
+            icon: Moon,
+            isSwitch: true,
+            switchChecked: appearance === 'dark',
+            onClick: () =>
+                updateAppearance(appearance === 'dark' ? 'light' : 'dark'),
+        },
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -45,7 +87,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
-                                <AppLogo />
+                                <AppLogo variants='horizontal' />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
