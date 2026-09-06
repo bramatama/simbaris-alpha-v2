@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login, register } from '@/routes'; // Menggabungkan import route
 import { Auth } from '@/types';
+import LandingPageLayout from '@/layouts/landing-page-layout';
 
 type PageProps = {
     auth: Auth;
@@ -15,18 +16,15 @@ export default function Welcome() {
     const appName = props.name;
 
     return (
-        <>
+        <LandingPageLayout>
             <Head title="Welcome" />
-            <div className="flex min-h-screen flex-col bg-primary-50">
+            <div className="flex min-h-screen flex-col rounded-2xl bg-primary/10">
                 {/* Main Content Area */}
                 <main className="flex grow flex-col items-center px-6 pt-24 lg:p-8">
                     {/* HERO SECTION */}
                     <section className="flex w-full max-w-4xl flex-col items-center justify-center py-20 text-center lg:py-32">
                         <h1 className="mb-6 text-5xl font-extrabold tracking-tight lg:text-7xl">
-                            Welcome to{' '}
-                            <span className="text-red-600 dark:text-red-500">
-                                {appName}
-                            </span>
+                            Welcome to <span className="text-">{appName}</span>
                         </h1>
                         <p className="mb-10 max-w-2xl text-lg text-gray-600 md:text-xl dark:text-gray-400">
                             A modern, fast, and secure platform to help you
@@ -158,6 +156,6 @@ export default function Welcome() {
                     </section>
                 </main>
             </div>
-        </>
+        </LandingPageLayout>
     );
 }

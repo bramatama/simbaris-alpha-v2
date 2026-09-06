@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\EventController;
-use App\Http\Controllers\EventCommitteeController;
-use App\Http\Controllers\EventJudgeController;
-use App\Http\Controllers\ParticipationController;
+use App\Http\Controllers\Events\EventController;
+use App\Http\Controllers\Events\EventCommitteeController;
+use App\Http\Controllers\Events\EventJudgeController;
+use App\Http\Controllers\Events\ParticipationController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');

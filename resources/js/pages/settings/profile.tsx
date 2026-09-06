@@ -14,8 +14,6 @@ import Alerts from '@/components/alerts';
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import { dashboard } from '@/routes';
 import { Trash2, Camera, Key, ArrowLeftRightIcon } from 'lucide-react'; // Tambahkan icon Camera
 import { FormDialog } from '@/components/form-dialog';
 
@@ -34,13 +32,7 @@ type ProfilePageProps = {
     status?: string;
 };
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard() },
-    { title: 'Profile Settings', href: '#' },
-];
-
 export default function ProfileEdit({ user, status }: ProfilePageProps) {
-
     const [isTransferOpen, setIsTransferOpen] = useState(false);
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -149,7 +141,7 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Profile Settings" />
 
             <div className="flex flex-1 flex-col gap-4 overflow-auto p-4">

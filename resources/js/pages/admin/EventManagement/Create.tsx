@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
-import { Trash2, PlusCircle, UserPlus } from 'lucide-react';
+import { Trash2, PlusCircle, UserPlus, X} from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 import {
     Select,
@@ -53,6 +53,27 @@ export default function EventCreate({
         });
 
     const [showConfirm, setShowConfirm] = useState(false);
+    const [selectedCommittees, setSelectedCommittees] = useState<(string | null)[]>([]);
+
+    const clearSelectedCommittee = (index: number) => {
+        const newCommittees = [...data.committees];
+
+        newCommittees[index] = {
+            name: '',
+            email: '',
+            department: '',
+            position: '',
+        };
+
+        setData('committees', newCommittees);
+
+        setSelectedCommittees((prev) => {
+            const updated = [...prev];
+            updated[index] = null;
+            return updated;
+        });
+    };
+
 
     useEffect(() => {
         if (errors['confirmation' as keyof typeof errors]) {
@@ -67,12 +88,19 @@ export default function EventCreate({
             ...data.committees,
             { name: '', email: '', department: '', position: '' },
         ]);
+
+        setSelectedCommittees((prev) => [...prev, null]);
     };
 
     const removeCommittee = (index: number) => {
         const newCommittees = [...data.committees];
         newCommittees.splice(index, 1);
+
         setData('committees', newCommittees);
+
+        setSelectedCommittees((prev) =>
+            prev.filter((_, committeeIndex) => committeeIndex !== index),
+        );
     };
 
     const updateCommittee = (
@@ -361,91 +389,114 @@ export default function EventCreate({
                                             Autofill dari akun yang sudah ada
                                             (Opsional)
                                         </Label>
-                                        <Select
-                                            onValueChange={(val) => {
-                                                if (val === '__clear__') {
-                                                    const newCommittees = [
-                                                        ...data.committees,
-                                                    ];
-
-                                                    newCommittees[index] = {
-                                                        name: '',
-                                                        email: '',
-                                                        department: '',
-                                                        position: '',
-                                                    };
-
-                                                    setData(
-                                                        'committees',
-                                                        newCommittees,
-                                                    );
-                                                    return;
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={
+                                                    selectedCommittees[index] ??
+                                                    ''
                                                 }
-
-                                                const c =
-                                                    existingCommittees.find(
-                                                        (x) =>
-                                                            x.committee_id.toString() ===
-                                                            val,
-                                                    );
-                                                if (c) {
-                                                    const newCommittees = [
-                                                        ...data.committees,
-                                                    ];
-
-                                                    newCommittees[index] = {
-                                                        ...newCommittees[index],
-                                                        name:
-                                                            c.user?.name || '',
-                                                        email:
-                                                            c.user?.email || '',
-                                                        department:
-                                                            c.department || '',
-                                                    };
-
-                                                    setData(
-                                                        'committees',
-                                                        newCommittees,
-                                                    );
-                                                }
-                                            }}
-                                        >
-                                            <SelectTrigger className="w-full bg-muted/30">
-                                                <SelectValue placeholder="-- Pilih Panitia yang sudah terdaftar --" />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper">
-                                                <SelectItem value="__clear__">
-                                                    ...
-                                                </SelectItem>
-                                                {existingCommittees
-                                                    .filter((committee) => {
-                                                        const selectedDepartments =
-                                                            data.committees
-                                                                .filter(
-                                                                    (_, i) =>
-                                                                        i !==
-                                                                        index,
-                                                                )
-                                                                .map(
-                                                                    (c) =>
-                                                                        c.department,
-                                                                );
-
-                                                        return !selectedDepartments.includes(
-                                                            committee.department,
+                                                onValueChange={(val) => {
+                                                    const c =
+                                                        existingCommittees.find(
+                                                            (x) =>
+                                                                x.committee_id.toString() ===
+                                                                val,
                                                         );
-                                                    })
-                                                    .map((c) => (
-                                                        <SelectItem
-                                                            key={c.committee_id}
-                                                            value={c.committee_id.toString()}
-                                                        >
-                                                            {c.user?.name} -{' '}
-                                                            {c.department}
-                                                        </SelectItem>
-                                                    ))}
-                                            </SelectContent>
-                                        </Select>
+
+                                                    if (c) {
+                                                        const newCommittees = [
+                                                            ...data.committees,
+                                                        ];
+
+                                                        newCommittees[index] = {
+                                                            ...newCommittees[
+                                                                index
+                                                            ],
+                                                            name:
+                                                                c.user?.name ||
+                                                                '',
+                                                            email:
+                                                                c.user?.email ||
+                                                                '',
+                                                            department:
+                                                                c.department ||
+                                                                '',
+                                                        };
+
+                                                        setData(
+                                                            'committees',
+                                                            newCommittees,
+                                                        );
+
+                                                        setSelectedCommittees(
+                                                            (prev) => {
+                                                                const updated =
+                                                                    [...prev];
+                                                                updated[index] =
+                                                                    val;
+                                                                return updated;
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-full bg-muted/30">
+                                                    <SelectValue placeholder="-- Pilih Panitia yang sudah terdaftar --" />
+                                                </SelectTrigger>
+
+                                                <SelectContent position="popper">
+                                                    {existingCommittees
+                                                        .filter((committee) => {
+                                                            const selectedDepartments =
+                                                                data.committees
+                                                                    .filter(
+                                                                        (
+                                                                            _,
+                                                                            i,
+                                                                        ) =>
+                                                                            i !==
+                                                                            index,
+                                                                    )
+                                                                    .map(
+                                                                        (c) =>
+                                                                            c.department,
+                                                                    );
+
+                                                            return !selectedDepartments.includes(
+                                                                committee.department,
+                                                            );
+                                                        })
+                                                        .map((c) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    c.committee_id
+                                                                }
+                                                                value={c.committee_id.toString()}
+                                                            >
+                                                                {c.user?.name} -{' '}
+                                                                {c.department}
+                                                            </SelectItem>
+                                                        ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {selectedCommittees[index] && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={() =>
+                                                        clearSelectedCommittee(
+                                                            index,
+                                                        )
+                                                    }
+                                                    title="Batalkan pilihan committee"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

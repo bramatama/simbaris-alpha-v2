@@ -1,5 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, CalendarCheckIcon, CalendarClockIcon, FolderGit2, LayoutGrid, Moon } from 'lucide-react';
+import {
+    CalendarCheckIcon,
+    CalendarClockIcon,
+    FolderGit2,
+    LayoutGrid,
+    Moon,
+    Sun,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -68,15 +75,15 @@ export function AppSidebar() {
     const userRole = props.auth?.user?.role;
     const mainNavItems = getMainNavItems(userRole);
     const { appearance, updateAppearance } = useAppearance();
-
     const footerNavItems = [
         {
             title: 'Dark Theme',
-            icon: Moon,
+            icon: appearance === 'dark' ? Moon : Sun,
             isSwitch: true,
             switchChecked: appearance === 'dark',
-            onClick: () =>
-                updateAppearance(appearance === 'dark' ? 'light' : 'dark'),
+            onClick: () => {
+                updateAppearance(appearance === 'dark' ? 'light' : 'dark');
+            },
         },
     ];
 
@@ -87,7 +94,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
-                                <AppLogo variants='horizontal' />
+                                <AppLogo variants="horizontal" />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

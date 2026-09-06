@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Form, Head, Link } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -13,7 +12,6 @@ import { store } from '@/routes/register';
 import { ArrowLeft } from 'lucide-react';
 
 export default function Register() {
-    const [level, setLevel] = useState('');
     return (
         <AuthLayout
             title="Buat Akun"

@@ -54,4 +54,20 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('message', 'User deleted successfully.');
     }
+
+    public function destroyMany(Request $request)
+    {
+        $currentUserId = auth()->user()?->user_id;
+        $request->validate([
+            'user_ids' => 'required|array|min:1', 'user_ids.*' => 'exists:users,user_id', 
+        ]);
+
+        if (in_array($currentUserId, $request->user_ids)) {
+            return redirect()->back() ->with('error', 'You cannot delete your own account.');
+        }
+        User::whereIn('user_id', $request->user_ids)->delete(); 
+        
+        return redirect() ->route('admin.users.index')
+        ->with('message', 'Selected users deleted successfully.');
+    }
 }

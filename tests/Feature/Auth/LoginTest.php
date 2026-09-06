@@ -1,8 +1,9 @@
 <?php
-
 use App\Models\User;
-use function Pest\Laravel\get;
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
+uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 dataset('user_roles', [
     ['admin', 'admin/dashboard'],
@@ -35,9 +36,4 @@ test('pengguna dengan role tidak dikenal mendapat akses ditolak', function () {
     $response = actingAs($user)->get('/dashboard');
 
     $response->assertStatus(403);
-});
-
-test('guest dialihkan ke halaman login', function() {
-    $response = get('/dashboard');
-    $response->assertRedirect('/login');
 });

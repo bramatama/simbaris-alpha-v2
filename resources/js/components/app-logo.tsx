@@ -9,15 +9,10 @@ export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
     const { props } = usePage();
     const appName = props.name;
 
-
     if (variants === 'icon') {
         return (
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-primary transition-all ease-in-out">
-                <img
-                    src="assets/img/logo_simbaris_icon.png"
-                    alt="Logo"
-                    className="size-8 fill-current text-black dark:size-5 dark:text-white"
-                />
+            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground transition-all ease-in-out dark:bg-sidebar-primary">
+                <AppLogoIcon className="size-8 fill-current text-black dark:size-5 dark:text-white" />
             </div>
         );
     }
