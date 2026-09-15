@@ -1,18 +1,28 @@
 import { usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { cn } from '@/lib/utils';
 
 type AppLogoProps = {
     variants?: 'horizontal' | 'vertical' | 'icon';
+    className?: string;
 };
 
-export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
+export default function AppLogo({
+    variants = 'icon',
+    className,
+}: AppLogoProps) {
     const { props } = usePage();
     const appName = props.name;
 
     if (variants === 'icon') {
         return (
             <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground transition-all ease-in-out dark:bg-sidebar-primary">
-                <AppLogoIcon className="size-8 fill-current text-black dark:size-5 dark:text-white" />
+                <AppLogoIcon
+                    className={cn(
+                        'size-8 fill-current text-black dark:size-5 dark:text-white',
+                        className
+                    )}
+                />
             </div>
         );
     }
@@ -21,10 +31,11 @@ export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
         return (
             <div className="flex items-center gap-2">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-primary">
-                    <img
-                        src="assets/img/logo_simbaris_icon.png"
-                        alt="Logo"
-                        className="size-8 fill-current text-black dark:size-5 dark:text-white"
+                    <AppLogoIcon
+                        className={cn(
+                            'size-8 fill-current text-black dark:size-5 dark:text-white',
+                            className,
+                        )}
                     />
                 </div>
 
@@ -40,10 +51,11 @@ export default function AppLogo({ variants = 'icon' }: AppLogoProps) {
     return (
         <div className="flex flex-col items-center gap-2">
             <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground">
-                <img
-                    src="assets/img/logo_simbaris_icon.png"
-                    alt="Logo"
-                    className="size-5 fill-current text-black dark:text-white"
+                <AppLogoIcon
+                    className={cn(
+                        'size-8 fill-current text-black dark:size-5 dark:text-white',
+                        className,
+                    )}
                 />
             </div>
 

@@ -10,11 +10,10 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import Alerts from '@/components/alerts';
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { Trash2, Camera, Key, ArrowLeftRightIcon } from 'lucide-react'; // Tambahkan icon Camera
+import { Trash2, Camera, Key, ArrowLeftRightIcon } from 'lucide-react';
 import { FormDialog } from '@/components/form-dialog';
 
 interface User {
@@ -36,8 +35,6 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
     const [isTransferOpen, setIsTransferOpen] = useState(false);
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
-    const [showAlert, setShowAlert] = useState(false);
 
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +78,6 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
-                setShowAlert(true);
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 setPhotoPreview(null);
             },
@@ -111,7 +107,6 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
             onSuccess: () => {
                 setIsPasswordOpen(false);
                 passwordForm.reset();
-                setShowAlert(true);
             },
             onError: (errors) => {
                 if (errors.password) {
@@ -155,15 +150,6 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                 </div>
 
                 <div className="w-full space-y-8 pb-10">
-                    {showAlert && status && (
-                        <Alerts
-                            variant="success"
-                            title={status}
-                            onClose={() => setShowAlert(false)}
-                            className="fixed top-4 right-4 z-50 max-w-sm pr-12 shadow-lg md:max-w-md"
-                        ></Alerts>
-                    )}
-
                     {/* KARTU 1: PROFIL DASAR */}
                     <Card>
                         <CardHeader>
@@ -174,28 +160,23 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                             </CardDescription>
                         </CardHeader>
 
-                        {/* PERUBAHAN ADA DI SINI: Flexbox untuk memisahkan kiri dan kanan */}
                         <CardContent className="flex flex-col gap-8 lg:flex-row">
                             {/* BAGIAN KIRI: Foto Profil */}
                             <div className="flex flex-col items-center gap-4 sm:pt-2">
-                                {/* Lingkaran Foto */}
                                 <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-primary/10 shadow-sm lg:h-80 lg:w-80">
                                     {photoPreview ? (
-                                        // 1. Tampilkan preview jika user baru memilih foto
                                         <img
                                             src={photoPreview}
                                             className="h-full w-full object-cover"
                                             alt="Preview"
                                         />
                                     ) : user.profile_picture_path ? (
-                                        // 2. Tampilkan foto dari database (Storage) jika ada
                                         <img
                                             src={`/storage/${user.profile_picture_path}`}
                                             className="h-full w-full object-cover"
                                             alt={user.name}
                                         />
                                     ) : (
-                                        // 3. Fallback: Huruf inisial nama
                                         <span className="text-5xl font-semibold text-primary">
                                             {user.name.charAt(0).toUpperCase()}
                                         </span>

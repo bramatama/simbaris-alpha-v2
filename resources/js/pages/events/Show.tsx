@@ -20,21 +20,11 @@ import {
     Trophy,
     FileText,
 } from 'lucide-react';
-import type { BreadcrumbItem } from '@/types';
 
 export default function EventShow({ event }: { event: any }) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Hosted Events', href: '/my-events' },
-        {
-            title: event.event_name,
-            href: `/committee/events/${event.public_id}/information`,
-        },
-        { title: 'Event Details', href: '#' },
-    ];
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title={`Dashboard - ${event.event_name}`} />
 
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
@@ -60,7 +50,9 @@ export default function EventShow({ event }: { event: any }) {
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <Link href={`/committee/events/${event.public_id}/edit`}>
+                        <Link
+                            href={`/committee/events/${event.public_id}/edit`}
+                        >
                             <Button variant="outline" className="gap-2">
                                 <Settings className="h-4 w-4" /> Edit Event
                             </Button>

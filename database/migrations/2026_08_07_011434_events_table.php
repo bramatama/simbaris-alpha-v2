@@ -46,8 +46,6 @@ return new class extends Migration
             $table->id('event_judge_id');
             $table->foreignId('event_id')->index()->constrained('events','event_id')->onDelete('cascade');
             $table->foreignId('judge_id')->index()->constrained('judges','judge_id')->onDelete('cascade');
-            $table->string('expertise');
-            $table->string('secondary_expertise')->nullable();
             $table->timestamps();
         });
 

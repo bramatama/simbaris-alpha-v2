@@ -15,7 +15,6 @@ import {
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Trash2, PlusCircle, UserPlus, X} from 'lucide-react';
-import type { BreadcrumbItem } from '@/types';
 import {
     Select,
     SelectLabel,
@@ -27,12 +26,6 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Event Management', href: '/events' },
-    { title: 'Create Event', href: '#' },
-];
 
 export default function EventCreate({
     existingCommittees = [],
@@ -135,7 +128,7 @@ export default function EventCreate({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Create New Event" />
 
             <div className="w-full p-4 md:p-6 lg:p-8">

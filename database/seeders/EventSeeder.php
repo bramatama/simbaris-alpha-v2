@@ -24,6 +24,7 @@ class EventSeeder extends Seeder
             'description' => 'Kompetisi baris berbaris bergengsi tingkat nasional.',
             'location' => 'GOR Bulungan, Jakarta',
             'status' => 'registration_open',
+            'poster_path' => 'event_posters/dummy_poster.png',
             'registration_start_time' => $now->copy()->subDays(5),
             'registration_end_time' => $now->copy()->addDays(10),
             'start_time' => $now->copy()->addDays(20),
@@ -44,7 +45,7 @@ class EventSeeder extends Seeder
         $judges = DB::table('judges')->get();
         foreach ($judges as $judge) {
             DB::table('event_judges')->insert([
-                'event_id' => $eventId1, 'judge_id' => $judge->judge_id, 'expertise' => 'PBB & Variasi', 'created_at' => $now, 'updated_at' => $now
+                'event_id' => $eventId1, 'judge_id' => $judge->judge_id, 'created_at' => $now, 'updated_at' => $now
             ]);
         }
         $committee = DB::table('committees')->first();

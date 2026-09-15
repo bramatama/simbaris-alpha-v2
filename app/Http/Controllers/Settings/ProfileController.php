@@ -40,8 +40,8 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->profile_picture_path);
             }
 
-            // 2. Simpan foto baru ke dalam folder 'profile-photos' (otomatis terbuat)
-            $path = $request->file('photo')->store('profile-photos', 'public');
+            // 2. Simpan foto baru ke dalam folder 'profile_photos' (otomatis terbuat)
+            $path = $request->file('photo')->store('profile_photos', 'public');
             
             // 3. Simpan nama path file-nya ke database
             $user->profile_picture_path = $path;
@@ -55,7 +55,7 @@ class ProfileController extends Controller
         }
         else{
             $user->save();
-            return to_route('profile.edit')->with('status', 'Profile updated successfully.');
+            return to_route('profile.edit')->with('success', 'Profile updated successfully.');
         }
     }
 

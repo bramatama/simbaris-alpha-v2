@@ -27,7 +27,7 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
-import type { Auth, BreadcrumbItem, NavItem } from '@/types';
+import type { Auth, NavItem } from '@/types';
 
 type PageProps = {
     auth: Auth;

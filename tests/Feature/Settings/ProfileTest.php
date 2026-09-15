@@ -47,11 +47,11 @@ test('pengguna dapat mengunggah foto profil baru dan file lama terhapus', functi
     
     // Simulasikan user yang sudah punya foto profil
     $user = User::factory()->create([
-        'profile_picture_path' => 'profile-photos/foto-lama.jpg'
+        'profile_picture_path' => 'profile_photos/foto-lama.jpg'
     ]);
     
     // Buat file lama di storage tiruan agar bisa diuji penghapusannya
-    Storage::disk('public')->put('profile-photos/foto-lama.jpg', 'isi file lama');
+    Storage::disk('public')->put('profile_photos/foto-lama.jpg', 'isi file lama');
 
     // Buat file foto baru palsu
     $newPhoto = UploadedFile::fake()->create(
@@ -70,7 +70,7 @@ test('pengguna dapat mengunggah foto profil baru dan file lama terhapus', functi
     $response->assertRedirect(route('profile.edit'));
 
     // 3. Assert: Pastikan foto lama terhapus dari storage
-    Storage::disk('public')->assertMissing('profile-photos/foto-lama.jpg');
+    Storage::disk('public')->assertMissing('profile_photos/foto-lama.jpg');
     
     // 4. Assert: Pastikan foto baru ada di storage
     // Ambil path baru dari database karena namanya di-generate otomatis oleh Laravel
@@ -104,7 +104,7 @@ test('pengguna dapat menghapus akunnya sendiri dan foto profilnya ikut terhapus'
     Storage::fake('public');
     
     $user = User::factory()->create([
-        'profile_picture_path' => 'profile-photos/foto-untuk-dihapus.jpg'
+        'profile_picture_path' => 'profile_photos/foto-untuk-dihapus.jpg'
     ]);
     Storage::disk('public')->put($user->profile_picture_path, 'isi file');
 
@@ -124,5 +124,5 @@ test('pengguna dapat menghapus akunnya sendiri dan foto profilnya ikut terhapus'
     ]);
 
     // Pastikan foto juga terhapus dari disk
-    Storage::disk('public')->assertMissing('profile-photos/foto-untuk-dihapus.jpg');
+    Storage::disk('public')->assertMissing('profile_photos/foto-untuk-dihapus.jpg');
 });

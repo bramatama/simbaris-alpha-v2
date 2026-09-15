@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
@@ -86,6 +87,7 @@ class EventController extends Controller
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'location' => 'required|string|max:255',
+            'poster_path' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'status' => 'required|in:draft,registration_open,active,finished',
             'registration_start_time' => 'required|date',
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
@@ -135,46 +137,58 @@ class EventController extends Controller
                     '. Continue?',
             ]);
         }
+        
+        $posterPath = null;
+        if ($request->hasFile('poster_path')) {
+            $posterPath = $request->file('poster_path')->store('posters', 'public');
+        }
+        try{
+            DB::transaction(function () use ($validated, $request, $posterPath) {
 
-        DB::transaction(function () use ($validated, $request) {
-
-            $event = Event::create([
-                'public_id' => Str::uuid(),
-                'event_name' => $validated['event_name'],
-                'description' => $validated['description'],
-                'location' => $validated['location'],
-                'status' => $validated['status'],
-                'registration_start_time' => $validated['registration_start_time'],
-                'registration_end_time' => $validated['registration_end_time'],
-                'start_time' => $validated['start_time'],
-                'end_time' => $validated['end_time'],
-                'created_by' => $request->user()->user_id,
-            ]);
-
-            foreach ($validated['committees'] as $committeeData) {
-
-                $user = User::firstOrCreate(
-                    ['email' => $committeeData['email']],
-                    [
-                        'public_id' => Str::uuid(),
-                        'name' => $committeeData['name'],
-                        'role' => 'committee',
-                        'password' => Hash::make('password123'),
-                    ]
-                );
-
-                $committee = Committee::firstOrCreate(
-                    ['user_id' => $user->user_id],
-                    ['department' => $committeeData['department']]
-                );
-
-                EventCommittee::create([
-                    'event_id' => $event->event_id,
-                    'committee_id' => $committee->committee_id,
-                    'position' => $committeeData['position'],
+                $event = Event::create([
+                    'public_id' => Str::uuid(),
+                    'event_name' => $validated['event_name'],
+                    'description' => $validated['description'],
+                    'location' => $validated['location'],
+                    'poster_path'=> $posterPath,
+                    'status' => $validated['status'],
+                    'registration_start_time' => $validated['registration_start_time'],
+                    'registration_end_time' => $validated['registration_end_time'],
+                    'start_time' => $validated['start_time'],
+                    'end_time' => $validated['end_time'],
+                    'created_by' => $request->user()->user_id,
                 ]);
+
+                foreach ($validated['committees'] as $committeeData) {
+
+                    $user = User::firstOrCreate(
+                        ['email' => $committeeData['email']],
+                        [
+                            'public_id' => Str::uuid(),
+                            'name' => $committeeData['name'],
+                            'role' => 'committee',
+                            'password' => Hash::make('password123'),
+                        ]
+                    );
+
+                    $committee = Committee::firstOrCreate(
+                        ['user_id' => $user->user_id],
+                        ['department' => $committeeData['department']]
+                    );
+
+                    EventCommittee::create([
+                        'event_id' => $event->event_id,
+                        'committee_id' => $committee->committee_id,
+                        'position' => $committeeData['position'],
+                    ]);
+                }
+            });
+        } catch (\Exception $e){
+            if ($posterPath && Storage::disk('public')->exists($posterPath)) {
+            Storage::disk('public')->delete($posterPath);
             }
-        });
+            throw $e;
+        }
 
         return redirect()
             ->route('events.index')
@@ -256,11 +270,23 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'required|string|max:255',
             'status' => 'required|in:draft,registration_open,active,finished',
+            'poster_path' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'registration_start_time' => 'required|date',
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after_or_equal:start_time',
         ]);
+
+        if ($request-> hasFile('poster_path')){
+            if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
+                Storage::disk('public')->delete($event->poster_path);
+            }
+
+            $path = $request->file('poster_path')->store('event_posters', 'public');
+            $validated['poster_path'] = $path;
+        }else{
+            unset($validated['poster_path']);
+        }
 
         $event->update($validated);
 
@@ -274,10 +300,15 @@ class EventController extends Controller
     public function destroy($id)
     {
         $event = Event::where('public_id', $id)->firstOrFail();
+        $poster_path = $event->poster_path;
         DB::transaction(function () use ($event) {
             EventCommittee::where('event_id', $event->event_id)->delete();
             $event->delete();
         });
+
+        if ($poster_path && Storage::disk('public')->exists($poster_path)){
+            Storage::disk('public')->delete($poster_path);
+        }
 
         return redirect()->route('events.index')
             ->with('message', 'Event deleted successfully.');

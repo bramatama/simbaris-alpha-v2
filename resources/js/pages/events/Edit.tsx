@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Head, useForm, router, Link } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,6 @@ import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, UserCheck, Trash } from 'lucide-react';
-import type { BreadcrumbItem } from '@/types';
 import {
     Select,
     SelectContent,
@@ -39,29 +38,8 @@ const formatDateTime = (dateString: string | null) => {
 };
 
 export default function EventEdit({ event }: { event: any }) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Event Management', href: '/events' },
-        {
-            title: event.event_name,
-            href: `/admin/events/${event.public_id}/information`,
-        },
-
-        { title: 'Edit Event', href: '#' },
-    ];
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const deleteEvent = () => {
-        setIsDeleting(true);
-        router.delete(`/admin/events/${event.public_id}`, {
-            preserveScroll: true,
-            onSuccess: () => setIsDeleteOpen(false),
-            onFinish: () => setIsDeleting(false),
-        });
-    };
 
     const { data, setData, put, processing, errors } = useForm({
         event_name: event.event_name || '',
@@ -81,12 +59,11 @@ export default function EventEdit({ event }: { event: any }) {
 
     const confirmSubmit = () => {
         setIsDialogOpen(false);
-        // Karena ini resource route, kita tembak PUT ke /admin/events/{public_id}
-        put(`/admin/events/${event.public_id}`);
+        put(`/committee/events/${event.public_id}`);
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title={`Edit: ${event.event_name}`} />
 
             <div className="w-full p-4 md:p-6 lg:p-8">
@@ -390,63 +367,16 @@ export default function EventEdit({ event }: { event: any }) {
                                 </div>
                             </CardContent>
                             <div className="border-t bg-muted/20 p-4">
-                                <Link
-                                    href={`/admin/events/${event.public_id}/committees`}
+                                <Button
+                                    variant="outline"
+                                    className="w-full text-xs"
+                                    disabled
                                 >
-                                    <Button
-                                        variant="outline"
-                                        className="w-full text-xs font-semibold text-primary"
-                                    >
-                                        Manage Committees
-                                    </Button>
-                                </Link>
+                                    Manage Committees (Coming Soon)
+                                </Button>
                             </div>
                         </Card>
-                        <div className="w-full space-y-4">
-                            <h3 className="text-lg font-semibold text-red-600 dark:text-red-500">
-                                Danger Zone
-                            </h3>
-                            <div className="overflow-hidden rounded-lg border border-red-200 bg-white dark:border-red-900/50 dark:bg-transparent">
-                                <div className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center">
-                                    <div>
-                                        <h4 className="text-sm font-semibold">
-                                            Delete this event
-                                        </h4>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Once you delete an event, all
-                                            associated data including committees
-                                            assignments will be permanently
-                                            removed. This action cannot be
-                                            undone.
-                                        </p>
-                                    </div>
-
-                                    {/* Tombol Pemicu Dialog */}
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setIsDeleteOpen(true)}
-                                        className="gap-2 border-red-200 whitespace-nowrap text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/80 dark:text-red-500 dark:hover:bg-red-950/50"
-                                    >
-                                        <Trash className="h-4 w-4" />
-                                        Delete Event
-                                    </Button>
-
-                                    {/* Komponen Reusable Barumu */}
-                                    <ConfirmationDialog
-                                        open={isDeleteOpen}
-                                        onOpenChange={setIsDeleteOpen}
-                                        title="Are you absolutely sure?"
-                                        description={`This action cannot be undone. This will permanently delete the ${event.event_name} event and remove all committee assignments from our servers.`}
-                                        onConfirm={deleteEvent}
-                                        isProcessing={isDeleting}
-                                        confirmText="Yes, Delete Event"
-                                        cancelText="Cancel"
-                                    />
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                    {/* DANGER ZONE */}
                 </div>
             </div>
         </AppLayout>

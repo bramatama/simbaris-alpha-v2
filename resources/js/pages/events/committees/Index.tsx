@@ -33,7 +33,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { ArrowLeft, Plus, UserX, Mail } from 'lucide-react';
-import type { BreadcrumbItem } from '@/types';
 
 // 1. Tambahkan import untuk komponen Table dari Shadcn
 import {
@@ -45,22 +44,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-export default function JudgeIndex({
+export default function CommitteeIndex({
     event,
-    existingJudges = [],
+    existingCommittees = [],
 }: {
     event: any;
-    existingJudges: any[];
+    existingCommittees: any[];
 }) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Event Management', href: '/events' },
-        {
-            title: event.event_name,
-            href: `/admin/events/${event.public_id}/edit`,
-        },
-        { title: 'Manage Judges', href: '#' },
-    ];
 
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -79,8 +69,8 @@ export default function JudgeIndex({
     } = useForm({
         name: '',
         email: '',
-        expertise: '',
-        secondary_expertise: '',
+        department: '',
+        position: '',
     });
 
     useEffect(() => {
@@ -91,7 +81,7 @@ export default function JudgeIndex({
 
     const submitAdd = (e: React.FormEvent) => {
         e.preventDefault();
-        post(`/admin/events/${event.public_id}/judges`, {
+        post(`/admin/events/${event.public_id}/committees`, {
             preserveScroll: true,
             onSuccess: () => {
                 setIsAddOpen(false);
@@ -103,11 +93,14 @@ export default function JudgeIndex({
     const confirmDelete = () => {
         if (!deleteId) return;
         setIsDeleting(true);
-        router.delete(`/admin/events/${event.public_id}/judges/${deleteId}`, {
-            preserveScroll: true,
-            onSuccess: () => setDeleteId(null),
-            onFinish: () => setIsDeleting(false),
-        });
+        router.delete(
+            `/admin/events/${event.public_id}/committees/${deleteId}`,
+            {
+                preserveScroll: true,
+                onSuccess: () => setDeleteId(null),
+                onFinish: () => setIsDeleting(false),
+            },
+        );
     };
 
     const confirmSubmit = () => {
@@ -120,7 +113,7 @@ export default function JudgeIndex({
             force_create: true,
         }));
 
-        post(`/admin/events/${event.public_id}/judges`, {
+        post(`/admin/events/${event.public_id}/committees`, {
             preserveScroll: true,
             onSuccess: () => {
                 setIsAddOpen(false);
@@ -134,8 +127,8 @@ export default function JudgeIndex({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Judges - ${event.event_name}`} />
+        <AppLayout>
+            <Head title={`Committees - ${event.event_name}`} />
 
             <div className="mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8">
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -147,7 +140,7 @@ export default function JudgeIndex({
                             <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Judge Roster
+                            Committee Roster
                         </h1>
                         <p className="mt-1 text-muted-foreground">
                             Manage the team organizing{' '}
@@ -173,7 +166,9 @@ export default function JudgeIndex({
                         <DialogContent>
                             <form onSubmit={submitAdd}>
                                 <DialogHeader>
-                                    <DialogTitle>Add Judge Member</DialogTitle>
+                                    <DialogTitle>
+                                        Add Committee Member
+                                    </DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="grid gap-2 border-b border-dashed pb-4">
@@ -183,40 +178,48 @@ export default function JudgeIndex({
                                         </Label>
                                         <Select
                                             onValueChange={(val) => {
-                                                const j = existingJudges.find(
-                                                    (x) =>
-                                                        x.judge_id.toString() ===
-                                                        val,
-                                                );
-                                                if (j) {
+                                                const c =
+                                                    existingCommittees.find(
+                                                        (x) =>
+                                                            x.committee_id.toString() ===
+                                                            val,
+                                                    );
+                                                if (c) {
                                                     // Update state utama
                                                     setData({
                                                         ...data,
                                                         name:
-                                                            j.user?.name || '',
+                                                            c.user?.name || '',
                                                         email:
-                                                            j.user?.email || '',
+                                                            c.user?.email || '',
+                                                        department:
+                                                            c.department || '',
                                                     });
                                                     clearErrors(); // Hapus error merah jika sebelumnya salah ketik
                                                 }
                                             }}
                                         >
                                             <SelectTrigger className="w-full bg-muted/30">
-                                                <SelectValue placeholder="-- Pilih Juri yang sudah terdaftar --" />
+                                                <SelectValue placeholder="-- Pilih Panitia yang sudah terdaftar --" />
                                             </SelectTrigger>
                                             <SelectContent position="popper">
                                                 <SelectGroup>
                                                     <SelectLabel>
-                                                        Daftar Juri
+                                                        Daftar Panitia
                                                     </SelectLabel>
-                                                    {existingJudges.map((c) => (
-                                                        <SelectItem
-                                                            key={c.judge_id}
-                                                            value={c.judge_id.toString()}
-                                                        >
-                                                            {c.user?.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {existingCommittees.map(
+                                                        (c) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    c.committee_id
+                                                                }
+                                                                value={c.committee_id.toString()}
+                                                            >
+                                                                {c.user?.name} -{' '}
+                                                                {c.department}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectGroup>
                                             </SelectContent>
                                         </Select>
@@ -249,107 +252,54 @@ export default function JudgeIndex({
                                         <InputError message={errors.email} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="expertise">
-                                            Expertise
+                                        <Label htmlFor="department">
+                                            Department
                                         </Label>
-                                        <Select
-                                            value={data.expertise}
-                                            onValueChange={(value) =>
-                                                setData('expertise', value)
-                                            }
-                                            required
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select Expertise" />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper">
-                                                <SelectGroup>
-                                                    <SelectLabel>
-                                                        Expertise
-                                                    </SelectLabel>
-                                                    <SelectItem value="pbb">
-                                                        PBB
-                                                    </SelectItem>
-                                                    <SelectItem value="variasi">
-                                                        Variasi
-                                                    </SelectItem>
-                                                    <SelectItem value="formasi">
-                                                        Formasi
-                                                    </SelectItem>
-                                                    <SelectItem value="vafor">
-                                                        Variasi Formasi
-                                                    </SelectItem>
-                                                    <SelectItem value="danton">
-                                                        Komandan
-                                                    </SelectItem>
-                                                    <SelectItem value="make_up">
-                                                        Make Up
-                                                    </SelectItem>
-                                                    <SelectItem value="kostum">
-                                                        Kostum
-                                                    </SelectItem>
-                                                    <SelectItem value="make_up_kostum">
-                                                        Make Up Kostum
-                                                    </SelectItem>
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError
-                                            message={errors.secondary_expertise}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="secondary_expertise">
-                                            Secondary Expertise
-                                        </Label>
-                                        <Select
-                                            value={data.secondary_expertise}
-                                            onValueChange={(value) =>
+                                        <Input
+                                            id="department"
+                                            placeholder="e.g. Divisi Acara"
+                                            value={data.department}
+                                            onChange={(e) =>
                                                 setData(
-                                                    'secondary_expertise',
-                                                    value,
+                                                    'department',
+                                                    e.target.value,
                                                 )
                                             }
                                             required
+                                        />
+                                        <InputError
+                                            message={errors.department}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="position">
+                                            Position / Role
+                                        </Label>
+                                        <Select
+                                            value={data.position}
+                                            onValueChange={(value) =>
+                                                setData('position', value)
+                                            }
+                                            required
                                         >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select Secondary Expertise" />
+                                                <SelectValue placeholder="Select position" />
                                             </SelectTrigger>
                                             <SelectContent position="popper">
                                                 <SelectGroup>
                                                     <SelectLabel>
-                                                        Secondary Expertise
+                                                        Position
                                                     </SelectLabel>
-                                                    <SelectItem value="pbb">
-                                                        PBB
+                                                    <SelectItem value="administration">
+                                                        Administration
                                                     </SelectItem>
-                                                    <SelectItem value="variasi">
-                                                        Variasi
-                                                    </SelectItem>
-                                                    <SelectItem value="formasi">
-                                                        Formasi
-                                                    </SelectItem>
-                                                    <SelectItem value="vafor">
-                                                        Variasi Formasi
-                                                    </SelectItem>
-                                                    <SelectItem value="danton">
-                                                        Komandan
-                                                    </SelectItem>
-                                                    <SelectItem value="make_up">
-                                                        Make Up
-                                                    </SelectItem>
-                                                    <SelectItem value="kostum">
-                                                        Kostum
-                                                    </SelectItem>
-                                                    <SelectItem value="make_up_kostum">
-                                                        Make Up Kostum
+                                                    <SelectItem value="auditor">
+                                                        Auditor
                                                     </SelectItem>
                                                 </SelectGroup>
                                             </SelectContent>
                                         </Select>
-                                        <InputError
-                                            message={errors.secondary_expertise}
-                                        />
+                                        <InputError message={errors.position} />
                                     </div>
                                 </div>
                                 <DialogFooter>
@@ -376,11 +326,11 @@ export default function JudgeIndex({
                     <CardHeader>
                         <CardTitle>
                             Assigned Personnel (
-                            {event.event_judges?.length || 0})
+                            {event.event_committees?.length || 0})
                         </CardTitle>
                         <CardDescription>
-                            All members listed below have access to the judge
-                            dashboard for this event.
+                            All members listed below have access to the
+                            committee dashboard for this event.
                         </CardDescription>
                     </CardHeader>
                     {/* 2. Ganti blok HTML Table dengan komponen Shadcn */}
@@ -389,40 +339,35 @@ export default function JudgeIndex({
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead>Name & Contact</TableHead>
-                                    <TableHead>Expertise</TableHead>
-                                    <TableHead>Secondary Expertise</TableHead>
+                                    <TableHead>Department</TableHead>
+                                    <TableHead>Position</TableHead>
                                     <TableHead className="text-right">
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {event.event_judges?.length > 0 ? (
-                                    event.event_judges.map((ej: any) => (
-                                        <TableRow key={ej.event_judge_id}>
+                                {event.event_committees?.length > 0 ? (
+                                    event.event_committees.map((ec: any) => (
+                                        <TableRow key={ec.event_committee_id}>
                                             <TableCell>
                                                 <div className="text-base font-semibold">
-                                                    {ej.judge?.user?.name}
+                                                    {ec.committee?.user?.name}
                                                 </div>
                                                 <div className="mt-1 flex items-center gap-1.5 text-muted-foreground">
                                                     <Mail className="h-3 w-3" />{' '}
-                                                    {ej.judge?.user?.email}
+                                                    {ec.committee?.user?.email}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="text-sm p-3 tracking-wider uppercase"
-                                                >
-                                                    {ej.expertise}
-                                                </Badge>
+                                                {ec.committee?.department}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
                                                     variant="secondary"
-                                                    className="text-sm p-3 tracking-wider uppercase"
+                                                    className="text-[10px] tracking-wider uppercase"
                                                 >
-                                                    {ej.secondary_expertise}
+                                                    {ec.position}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -432,7 +377,7 @@ export default function JudgeIndex({
                                                     className="text-red-600 hover:bg-red-50 hover:text-red-700"
                                                     onClick={() =>
                                                         setDeleteId(
-                                                            ej.event_judge_id,
+                                                            ec.event_committee_id,
                                                         )
                                                     }
                                                 >
@@ -448,7 +393,7 @@ export default function JudgeIndex({
                                             colSpan={4}
                                             className="h-32 text-center text-muted-foreground"
                                         >
-                                            No judge members assigned yet.
+                                            No committee members assigned yet.
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -457,11 +402,12 @@ export default function JudgeIndex({
                     </CardContent>
                 </Card>
 
+                {/* Dialog Konfirmasi Hapus Panitia */}
                 <ConfirmationDialog
                     open={deleteId !== null}
                     onOpenChange={(open) => !open && setDeleteId(null)}
                     variant="destructive"
-                    title="Remove Judge Member?"
+                    title="Remove Committee Member?"
                     description="This will revoke their access to manage this event. Their actual account will not be deleted."
                     onConfirm={confirmDelete}
                     isProcessing={isDeleting}
@@ -474,7 +420,7 @@ export default function JudgeIndex({
                         if (!open)
                             clearErrors('confirmation' as keyof typeof errors);
                     }}
-                    title="Akun Juri Ditemukan"
+                    title="Akun Panitia Ditemukan"
                     description={
                         errors['confirmation' as keyof typeof errors] as string
                     }

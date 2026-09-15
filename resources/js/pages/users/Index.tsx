@@ -19,11 +19,10 @@ import { Button } from '@/components/ui/button';
 
 import { Users, Filter, Trash2 } from 'lucide-react';
 
-import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
 
-import UserTableHeaders from './partials/UserTableHeaders';
-import UserTableRow, { User } from './partials/UserTableRow';
+import UserTableHeaders from '../../components/user_table/UserTableHeaders';
+import UserTableRow, { User } from '../../components/user_table/UserTableRow';
 
 interface UsersResponse {
     data: User[];
@@ -39,11 +38,6 @@ type UserManagementPageProps = {
         role?: string;
     };
 };
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard() },
-    { title: 'User Management', href: '#' },
-];
 
 export default function UserManagementIndex({
     users,
@@ -162,7 +156,7 @@ export default function UserManagementIndex({
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="User Management" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 overflow-hidden p-4 md:p-6 lg:p-8">
