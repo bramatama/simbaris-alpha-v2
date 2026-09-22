@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,9 @@ import {
     SelectGroup,
     SelectLabel,
 } from '@/components/ui/select';
-import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import { Auth } from '@/types';
 
 const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '';
@@ -37,8 +39,13 @@ const formatDateTime = (dateString: string | null) => {
     return localISOTime;
 };
 
-export default function EventEdit({ event }: { event: any }) {
+type PageProps = {
+    auth: Auth;
+};
 
+export default function EventEdit({ event }: { event: any }) {
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth.user.role;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { data, setData, put, processing, errors } = useForm({
@@ -63,7 +70,9 @@ export default function EventEdit({ event }: { event: any }) {
     };
 
     return (
-        <AppLayout>
+        <InnerAppLayout
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+        >
             <Head title={`Edit: ${event.event_name}`} />
 
             <div className="w-full p-4 md:p-6 lg:p-8">
@@ -379,6 +388,6 @@ export default function EventEdit({ event }: { event: any }) {
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </InnerAppLayout>
     );
 }

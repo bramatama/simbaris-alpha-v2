@@ -2,7 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
-import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Pagination } from '@/components/pagination';
 
 import {
@@ -18,8 +18,6 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 
 import { Users, Filter, Trash2 } from 'lucide-react';
-
-import { dashboard } from '@/routes';
 
 import UserTableHeaders from '../../components/user_table/UserTableHeaders';
 import UserTableRow, { User } from '../../components/user_table/UserTableRow';

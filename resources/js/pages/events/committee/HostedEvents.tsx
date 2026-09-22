@@ -33,7 +33,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                         {events.map((event) => (
                             <Link
                                 key={event.event_id}
-                                href={`/admin/events/${event.public_id}/information`}
+                                href={`committee/my-events/${event.public_id}/information`}
                                 className="block h-full rounded-(--radius) focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                                 <EventCard event={event} />

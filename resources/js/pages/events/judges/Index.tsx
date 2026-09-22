@@ -1,4 +1,4 @@
-import { Head, useForm, router, Link } from '@inertiajs/react';
+import { Head, useForm, router, Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -31,8 +31,9 @@ import {
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { ArrowLeft, Plus, UserX, Mail } from 'lucide-react';
+import { Auth } from '@/types';
 
 // 1. Tambahkan import untuk komponen Table dari Shadcn
 import {
@@ -43,6 +44,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import userPassword from '@/routes/user-password';
+
+type PageProps = {
+    auth: Auth;
+};
 
 export default function JudgeIndex({
     event,
@@ -51,7 +57,8 @@ export default function JudgeIndex({
     event: any;
     existingJudges: any[];
 }) {
-
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth.user.role;
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -81,7 +88,7 @@ export default function JudgeIndex({
 
     const submitAdd = (e: React.FormEvent) => {
         e.preventDefault();
-        post(`/admin/events/${event.public_id}/judges`, {
+        post(`/${userRole}/events/${event.public_id}/judges`, {
             preserveScroll: true,
             onSuccess: () => {
                 setIsAddOpen(false);
@@ -93,7 +100,7 @@ export default function JudgeIndex({
     const confirmDelete = () => {
         if (!deleteId) return;
         setIsDeleting(true);
-        router.delete(`/admin/events/${event.public_id}/judges/${deleteId}`, {
+        router.delete(`/${userRole}/events/${event.public_id}/judges/${deleteId}`, {
             preserveScroll: true,
             onSuccess: () => setDeleteId(null),
             onFinish: () => setIsDeleting(false),
@@ -110,7 +117,7 @@ export default function JudgeIndex({
             force_create: true,
         }));
 
-        post(`/admin/events/${event.public_id}/judges`, {
+        post(`/${userRole}/events/${event.public_id}/judges`, {
             preserveScroll: true,
             onSuccess: () => {
                 setIsAddOpen(false);
@@ -131,7 +138,7 @@ export default function JudgeIndex({
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <Link
-                            href={`/admin/events/${event.public_id}/information`}
+                            href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event

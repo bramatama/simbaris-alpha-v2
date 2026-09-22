@@ -12,7 +12,7 @@ export default function AppLogo({
     className,
 }: AppLogoProps) {
     const { props } = usePage();
-    const appName = props.name;
+    const appName = props.name as string;
 
     if (variants === 'icon') {
         return (
@@ -20,7 +20,7 @@ export default function AppLogo({
                 <AppLogoIcon
                     className={cn(
                         'size-8 fill-current text-black dark:size-5 dark:text-white',
-                        className
+                        className,
                     )}
                 />
             </div>

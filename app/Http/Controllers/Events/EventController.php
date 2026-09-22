@@ -26,14 +26,8 @@ class EventController extends Controller
         $events = $role !== 'admin'
         ? Event::latest()->get()->where('status', '!=', 'draft')
         : Event::withCount('participations')->latest()->get();
-        
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Index',
-            'official_team' => 'official_team/Events/Index',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        return inertia($view, [
+    
+        return inertia( 'events/Index', [
             'events' => $events,
         ]);
     }
@@ -55,8 +49,8 @@ class EventController extends Controller
         };
 
         $view = match ($role) {
-            'committee' => 'committee/HostedEvents/Index',
-            'official_team' => 'official_team/MyEvents/Index',
+            'committee' => 'events/committee/HostedEvents',
+            'official_team' => 'events/official_team/MyEvents',
             default => abort(403, 'Unauthorized access'),
         };
 
@@ -73,9 +67,9 @@ class EventController extends Controller
         $existingCommittees = Committee::with('user:user_id,name,email')->get();
 
         // 2. Kirimkan ke frontend
-        return inertia('admin/EventManagement/Create', [
+        return inertia('events/Create', [
             'existingCommittees' => $existingCommittees
-        ]);    
+        ]);
     }
 
     /**
@@ -224,16 +218,7 @@ class EventController extends Controller
             default => abort(403),
         };
 
-        // Tentukan path view React berdasarkan role
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Show',
-            'committee' => 'committee/HostedEvents/Show',
-            'judge' => 'judge/EventManagement/Show',
-            'official_team' => 'official_team/EventManagement/Show',
-            default => abort(403),
-        };
-
-        return inertia($view, [
+        return inertia('events/Show', [
             'event' => $event,
         ]);
     }
@@ -246,15 +231,8 @@ class EventController extends Controller
         $event = Event::where('public_id', $id)
             ->with(['eventCommittees.committee.user'])
             ->firstOrFail();
-
-        $role = auth()->user()?->role;
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Edit',
-            'committee' => 'committee/HostedEvents/Edit',
-            default => abort(403, 'Unauthorized access'),
-        };
         
-        return inertia($view, [
+        return inertia('events/Edit', [
             'event' => $event
         ]);
     }

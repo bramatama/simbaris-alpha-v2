@@ -31,14 +31,7 @@ class EventJudgeController extends Controller
 
         $existingJudges = Judge::with('user:user_id,name,email')->get();
 
-        $role = auth()->user()?->role;
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Judges/Index',
-            'committee' => 'committee/HostedEvents/Judges/Index',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        return inertia($view, [
+        return inertia('events/judges/Index', [
             'event' => $event,
             'existingJudges' => $existingJudges
         ]);

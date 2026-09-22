@@ -14,7 +14,7 @@ import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
 import { Trash2, Camera, Key, ArrowLeftRightIcon } from 'lucide-react';
-import { FormDialog } from '@/components/form-dialog';
+import { FormDialog } from '@/components/dialogs/form-dialog';
 
 interface User {
     user_id: number;

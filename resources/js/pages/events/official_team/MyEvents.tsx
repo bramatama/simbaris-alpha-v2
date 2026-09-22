@@ -1,8 +1,15 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import EventCard, { EventData } from '@/components/event-card';
+import { Auth } from '@/types';
+
+type PageProps = {
+    auth: Auth;
+};
 
 export default function EventIndex({ events }: { events: EventData[] }) {
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth.user.role;
     return (
         <AppLayout>
             <Head title="Event Management" />
@@ -33,7 +40,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                         {events.map((event) => (
                             <Link
                                 key={event.event_id}
-                                href={`/admin/events/${event.public_id}/information`}
+                                href={`/${userRole}/events/${event.public_id}/information`}
                                 className="block h-full rounded-(--radius) focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                                 <EventCard event={event} />

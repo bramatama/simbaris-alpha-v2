@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Events\Registered;
 
 class EventCommitteeController extends Controller
 {
@@ -25,18 +26,14 @@ class EventCommitteeController extends Controller
                     'eventCommittees.committee.user:user_id,name,email',
                 ])
                 ->firstOrFail();
+        
+        $assignedCommitteeIds = $event->eventCommittees->pluck('committee_id');
 
-        $existingCommittees = Committee::with('user:user_id,name,email')->get();
+        $existingCommittees = Committee::with('user:user_id,name,email')
+                            ->whereNotIn('committee_id', $assignedCommitteeIds)
+                            ->get();
 
-        $role = auth()->user()?->role;
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Committees/Index',
-            'committee' => 'committee/HostedEvents/Committees/Index',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        // TAMBAHKAN existingCommittees KE DALAM ARRAY PENGIRIMAN
-        return inertia($view, [
+        return inertia('events/committees/Index', [
             'event' => $event,
             'existingCommittees' => $existingCommittees
         ]);
@@ -46,7 +43,6 @@ class EventCommitteeController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        // Validasi input, pastikan ada opsi force_create
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
@@ -58,7 +54,6 @@ class EventCommitteeController extends Controller
         $user = User::where('email', $validated['email'])->first();
 
         if ($user) {
-            // Tolak jika email dipakai oleh role selain panitia (misal juri/admin)
             if ($user->role !== 'committee') {
                 throw ValidationException::withMessages([
                     'email' => 'Email ini sudah digunakan oleh akun dengan peran (role) lain.',
@@ -68,7 +63,6 @@ class EventCommitteeController extends Controller
             $committee = Committee::where('user_id', $user->user_id)->first();
 
             if ($committee) {
-                // Cek apakah panitia ini sudah pernah ditugaskan di event INI
                 $isAlreadyAssigned = EventCommittee::where('event_id', $event->event_id)
                     ->where('committee_id', $committee->committee_id)
                     ->exists();
@@ -79,7 +73,6 @@ class EventCommitteeController extends Controller
                     ]);
                 }
 
-                // Lempar konfirmasi jika akun ada tapi belum dikonfirmasi (force_create)
                 if (empty($validated['force_create'])) {
                     throw ValidationException::withMessages([
                         'confirmation' => 'Akun panitia ditemukan: ' . $user->name . ' (' . $committee->department . '). Lanjutkan menugaskan ke acara ini?',
@@ -100,6 +93,10 @@ class EventCommitteeController extends Controller
                 ]
             );
 
+            if ($user->wasRecentlyCreated) {
+                event(new Registered($user));
+            }
+
             $committee = Committee::firstOrCreate(
                 ['user_id' => $user->user_id],
                 ['department' => $validated['department']]
@@ -112,13 +109,13 @@ class EventCommitteeController extends Controller
             ]);
         });
 
-        return back()->with('status', 'Panitia berhasil ditugaskan ke acara ini!');
+        return back()->with('success', 'Panitia berhasil ditugaskan ke acara ini!');
     }
 
     public function destroy($public_id, $event_committee_id)
     {
         EventCommittee::where('event_committee_id', $event_committee_id)->delete();
 
-        return back()->with('status', 'Panitia berhasil diberhentikan dari acara ini.');
+        return back()->with('success', 'Panitia berhasil diberhentikan dari acara ini.');
     }
 }

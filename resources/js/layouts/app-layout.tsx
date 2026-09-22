@@ -1,14 +1,35 @@
 import { router } from '@inertiajs/react';
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { usePage } from '@inertiajs/react';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function SidebarStateManager({ isInnerLayout }: { isInnerLayout: boolean }) {
+    const { setOpen } = useSidebar();
+    const { url } = usePage(); 
+    const prevUrlRef = useRef<string | null>(null);
+
     useEffect(() => {
-        // router.on('success') akan memantau setiap kali request Inertia (seperti form submit) selesai dan berhasil
+        if (prevUrlRef.current !== url) {
+            setOpen(!isInnerLayout);
+            prevUrlRef.current = url; 
+        }
+    }, [url, isInnerLayout, setOpen]);
+
+    return null;
+}
+
+export default function AppLayout({
+    children,
+    isInnerLayout = false,
+}: {
+    children: React.ReactNode;
+    isInnerLayout?: boolean;
+}) {
+    useEffect(() => {
         const unsubscribe = router.on('success', (event) => {
-            // Ambil data flash langsung dari payload event Inertia
             const flash = event.detail.page.props.flash as any;
 
             if (flash?.success) {
@@ -35,6 +56,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <AppLayoutTemplate>
+            <SidebarStateManager isInnerLayout={isInnerLayout} />
             {children}
             <Toaster richColors position="bottom-right" />
         </AppLayoutTemplate>

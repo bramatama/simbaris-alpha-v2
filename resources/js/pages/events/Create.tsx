@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
-import { Trash2, PlusCircle, UserPlus, X} from 'lucide-react';
+import { Trash2, PlusCircle, UserPlus, X, ImagePlus } from 'lucide-react';
 import {
     Select,
     SelectLabel,
@@ -25,13 +25,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 
 export default function EventCreate({
     existingCommittees = [],
 }: {
     existingCommittees: any[];
 }) {
+    // 1. Tambahkan properti poster di inisialisasi useForm
     const { data, setData, post, processing, errors, clearErrors, transform } =
         useForm({
             event_name: '',
@@ -42,11 +43,41 @@ export default function EventCreate({
             registration_end_time: '',
             start_time: '',
             end_time: '',
+            poster: null as File | null, // <-- Field poster baru
             committees: [{ name: '', email: '', department: '', position: '' }],
         });
 
     const [showConfirm, setShowConfirm] = useState(false);
-    const [selectedCommittees, setSelectedCommittees] = useState<(string | null)[]>([]);
+    const [selectedCommittees, setSelectedCommittees] = useState<
+        (string | null)[]
+    >([]);
+
+    // 2. State untuk preview gambar poster
+    const [posterPreview, setPosterPreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 3. Fungsi penanganan perubahan file
+    const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('poster', file);
+            if (posterPreview) {
+                URL.revokeObjectURL(posterPreview);
+            }
+            setPosterPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removePoster = () => {
+        setData('poster', null);
+        if (posterPreview) {
+            URL.revokeObjectURL(posterPreview);
+            setPosterPreview(null);
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     const clearSelectedCommittee = (index: number) => {
         const newCommittees = [...data.committees];
@@ -66,7 +97,6 @@ export default function EventCreate({
             return updated;
         });
     };
-
 
     useEffect(() => {
         if (errors['confirmation' as keyof typeof errors]) {
@@ -108,7 +138,7 @@ export default function EventCreate({
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/admin/events'); // Sesuaikan rute store-nya
+        post('/admin/events');
     };
 
     const confirmSubmit = () => {
@@ -150,6 +180,62 @@ export default function EventCreate({
                                 <CardTitle>Basic Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* 4. Tambahan Field Poster */}
+                                <div className="mb-2 grid gap-2">
+                                    <Label>Event Poster (Optional)</Label>
+                                    <div className="mt-1 flex items-start gap-4">
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            ref={fileInputRef}
+                                            onChange={handlePosterChange}
+                                            accept="image/*"
+                                        />
+
+                                        {posterPreview ? (
+                                            <div className="group relative aspect-3/4 w-32 overflow-hidden rounded-md border border-border shadow-sm">
+                                                <img
+                                                    src={posterPreview}
+                                                    alt="Poster Preview"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-full"
+                                                        onClick={removePoster}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="flex aspect-3/4 w-32 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                                                onClick={() =>
+                                                    fileInputRef.current?.click()
+                                                }
+                                            >
+                                                <ImagePlus className="mb-2 h-8 w-8 opacity-70" />
+                                                <span className="text-xs font-medium">
+                                                    Upload Poster
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex-1 py-2 text-xs text-muted-foreground">
+                                            <p>Recommended format: JPG, PNG.</p>
+                                            <p>Ratio 3:4 (Portrait).</p>
+                                        </div>
+                                    </div>
+                                    <InputError
+                                        message={errors.poster as string}
+                                    />
+                                </div>
+
+                                <Separator className="my-2" />
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="event_name">
                                         Event Name *
@@ -342,7 +428,6 @@ export default function EventCreate({
                             <Separator></Separator>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Alert jika ada error validasi di array panitia (misal email kembar) */}
                             {Object.keys(errors).some((key) =>
                                 key.includes('committees'),
                             ) && (
@@ -507,7 +592,6 @@ export default function EventCreate({
                                                 }
                                                 required
                                             />
-                                            {/* Menampilkan pesan error per indeks jika ada */}
                                             <InputError
                                                 message={
                                                     errors[

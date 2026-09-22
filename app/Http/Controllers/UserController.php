@@ -25,7 +25,7 @@ class UserController extends Controller
 
         $users = $query->paginate(15)->withQueryString();
 
-        return inertia('admin/UserManagement/Index', [
+        return inertia('users/Index', [
             'users' => $users,
             'filters' => $request->only(['role']),
         ]);
@@ -33,7 +33,7 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        return inertia('admin/UserManagement/Show', [
+        return inertia('users/Show', [
             'user' => $user->only(['user_id', 'public_id', 'name', 'email', 'role', 'contact_info']),
         ]);
     }
@@ -52,7 +52,7 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('message', 'User deleted successfully.');
+            ->with('success', 'User deleted successfully.');
     }
 
     public function destroyMany(Request $request)
@@ -68,6 +68,6 @@ class UserController extends Controller
         User::whereIn('user_id', $request->user_ids)->delete(); 
         
         return redirect() ->route('admin.users.index')
-        ->with('message', 'Selected users deleted successfully.');
+        ->with('success', 'Selected users deleted successfully.');
     }
 }

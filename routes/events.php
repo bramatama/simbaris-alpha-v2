@@ -12,8 +12,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // User management routes
-    Route::resource('events', EventController::class)->only(['create', 'store', 'edit', 'update', 'destroy']);
+    Route::resource('events', EventController::class)->only(['create', 'store', 'update', 'destroy']);
     
+    Route::get('events/{event:public_id}/edit', [EventController::class, 'edit'])->name('events.edit');
     Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 
     Route::delete('events/{event:public_id}/committees/{event_committee:event_committee_id}', [EventCommitteeController::class, 'destroy'])->name('events.committees.destroy');
@@ -27,7 +28,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     Route::resource('events', EventController::class)->only(['edit', 'update']);
 
-    Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
+    Route::get('my-events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 
     Route::delete('events/{event:public_id}/committees/{event_committee:event_committee_id}', [EventCommitteeController::class, 'destroy'])->name('events.committees.destroy');
     Route::resource('events/{event:public_id}/committees', EventCommitteeController::class)->only(['index', 'store']);

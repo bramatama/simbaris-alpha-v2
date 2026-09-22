@@ -12,10 +12,10 @@ Route::middleware(['auth','verified'])
         $role = Auth::user()->role;
 
         return match ($role){
-            'admin' => inertia('admin/dashboard'),
-            'judge' => inertia('judge/dashboard'),
-            'committee' => inertia('committee/dashboard'),
-            'official_team' => inertia('official_team/dashboard'),
+            'admin' => inertia('dashboards/admin'),
+            'judge' => inertia('dashboards/judge'),
+            'committee' => inertia('dashboards/committee'),
+            'official_team' => inertia('dashboards/official_team'),
             default => abort(403, 'Unauthorized access'),
         };
     })->name('dashboard');

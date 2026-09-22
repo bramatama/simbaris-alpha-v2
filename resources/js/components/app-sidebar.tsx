@@ -72,7 +72,8 @@ const getMainNavItems = (userRole?: string): NavItem[] => {
 
 export function AppSidebar() {
     const { props } = usePage();
-    const userRole = props.auth?.user?.role;
+    const userRole = (props as { auth?: { user?: { role?: string } } }).auth
+        ?.user?.role;
     const mainNavItems = getMainNavItems(userRole);
     const { appearance, updateAppearance } = useAppearance();
     const footerNavItems = [
@@ -102,7 +103,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={mainNavItems} title={userRole?.toUpperCase() ?? ''} />
             </SidebarContent>
 
             <SidebarFooter>

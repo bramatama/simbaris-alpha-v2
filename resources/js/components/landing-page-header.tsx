@@ -54,7 +54,7 @@ export function LandingPageHeader({
 }: {
     canRegister?: boolean;
 }) {
-    const { props } = usePage();
+    const { props } = usePage<PageProps>();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
     const isMobileDevice = props.isMobileDevice;

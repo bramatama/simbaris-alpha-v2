@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Head, Link, usePage } from '@inertiajs/react';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import { getEventInnerNav } from '@/config/inner_sidebar';
 import {
     Card,
     CardContent,
@@ -20,11 +21,19 @@ import {
     Trophy,
     FileText,
 } from 'lucide-react';
+import { Auth } from '@/types';
+
+type PageProps = {
+    auth: Auth;
+};
 
 export default function EventShow({ event }: { event: any }) {
-
+    const { props } = usePage<PageProps>();
+    const userRole = props.auth.user.role;
     return (
-        <AppLayout>
+        <InnerAppLayout
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+        >
             <Head title={`Dashboard - ${event.event_name}`} />
 
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
@@ -51,7 +60,7 @@ export default function EventShow({ event }: { event: any }) {
                     </div>
                     <div className="flex gap-2">
                         <Link
-                            href={`/committee/events/${event.public_id}/edit`}
+                            href={`/${userRole}/events/${event.public_id}/edit`}
                         >
                             <Button variant="outline" className="gap-2">
                                 <Settings className="h-4 w-4" /> Edit Event
@@ -220,6 +229,6 @@ export default function EventShow({ event }: { event: any }) {
                     </Card>
                 </div>
             </div>
-        </AppLayout>
+        </InnerAppLayout>
     );
 }
