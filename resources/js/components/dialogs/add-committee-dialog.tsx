@@ -117,13 +117,13 @@ export default function AddCommitteeDialog({
                 </DialogTrigger>
                 <DialogContent>
                     <form onSubmit={submitAdd}>
-                        <DialogHeader>
+                        <DialogHeader className="sticky top-0 bg-background/90 backdrop-blur-sm">
                             <DialogTitle>Add Committee Member</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="grid gap-2 border-b border-border pb-4">
-                                <Label className="text-muted-foreground">
-                                    Autofill dari akun yang sudah ada (Opsional)
+                                <Label className="text-muted-foreground" requirement='optional'>
+                                    Autofill dari akun yang sudah ada
                                 </Label>
                                 <Select
                                     onValueChange={(val) => {
@@ -165,7 +165,7 @@ export default function AddCommitteeDialog({
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Full Name</Label>
+                                <Label htmlFor="name" requirement='required'>Full Name</Label>
                                 <Input
                                     id="name"
                                     value={data.name}
@@ -177,7 +177,7 @@ export default function AddCommitteeDialog({
                                 <InputError message={errors.name} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email Address</Label>
+                                <Label htmlFor="email" requirement='required'>Email Address</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -190,7 +190,7 @@ export default function AddCommitteeDialog({
                                 <InputError message={errors.email} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="department">Department</Label>
+                                <Label htmlFor="department" requirement='required'>Department</Label>
                                 <Input
                                     id="department"
                                     placeholder="e.g. Divisi Acara"
@@ -203,7 +203,7 @@ export default function AddCommitteeDialog({
                                 <InputError message={errors.department} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="position">
+                                <Label htmlFor="position" requirement='required'>
                                     Position / Role
                                 </Label>
                                 <Select

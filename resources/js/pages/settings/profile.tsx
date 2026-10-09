@@ -214,7 +214,7 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                     className="space-y-4"
                                 >
                                     <div className="space-y-2 lg:max-w-md">
-                                        <Label htmlFor="name">Full Name</Label>
+                                        <Label requirement='required' htmlFor="name">Full Name</Label>
                                         <Input
                                             id="name"
                                             value={profileForm.data.name}
@@ -233,7 +233,7 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                     </div>
 
                                     <div className="space-y-2 lg:max-w-md">
-                                        <Label htmlFor="contact_info">
+                                        <Label requirement='optional' htmlFor="contact_info">
                                             Contact Information
                                         </Label>
                                         <Input

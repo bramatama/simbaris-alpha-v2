@@ -5,44 +5,45 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventJudge extends Model
 {
     use HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'event_judges';
 
-    /**
-     * The primary key for the model.
-     *
-     * @var string
-     */
     protected $primaryKey = 'event_judge_id';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = ['event_id', 'judge_id', 'expertise', 'secondary_expertise'];
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+    protected $fillable = [
+        'event_id',
+        'judge_id',
     ];
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class, 'event_id');
+        return $this->belongsTo(
+            Event::class,
+            'event_id',
+            'event_id'
+        );
     }
 
     public function judge(): BelongsTo
     {
-        return $this->belongsTo(Judge::class, 'judge_id');
+        return $this->belongsTo(
+            Judge::class,
+            'judge_id',
+            'judge_id'
+        );
+    }
+
+    public function judgeExpertises(): HasMany
+    {
+        return $this->hasMany(
+            JudgeExpertise::class,
+            'event_judge_id',
+            'event_judge_id'
+        );
     }
 }

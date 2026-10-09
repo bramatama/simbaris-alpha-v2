@@ -7,9 +7,14 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
+import { Auth } from '@/types';
+
+type PageProps = {
+    auth: Auth;
+};
 
 export default function VerifyEmail({ status }: { status?: string }) {
-    const { auth } = usePage().props;
+    const { auth } = usePage<PageProps>().props;
 
     const [countdown, setCountdown] = useState(30);
 
@@ -24,6 +29,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
         <AuthLayout
             title="Verifikasi Email Anda"
             description={`Verifikasi email anda dengan menekan link yang kami kirim ke ${auth?.user?.email}`}
+            className="max-w-md"
         >
             <Head title="Email verification" />
 
@@ -62,7 +68,6 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         >
                             Log out
                         </TextLink>
-                        
                     </>
                 )}
             </Form>

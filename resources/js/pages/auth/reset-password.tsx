@@ -17,6 +17,7 @@ export default function ResetPassword({ token, email }: Props) {
         <AuthLayout
             title="Reset Password"
             description="Masukkan password baru anda"
+            className='max-w-md'
         >
             <Head title="Reset password" />
 

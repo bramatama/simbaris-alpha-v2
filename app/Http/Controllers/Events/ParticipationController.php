@@ -179,7 +179,7 @@ class ParticipationController extends Controller
 
         return redirect()
             ->route('events.index')
-            ->with('status', 'Event created successfully!');
+            ->with('success', 'Event created successfully!');
     }
 
     /**

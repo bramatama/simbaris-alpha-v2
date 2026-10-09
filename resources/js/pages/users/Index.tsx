@@ -141,7 +141,7 @@ export default function UserManagementIndex({
 
         setIsDeleting(true);
 
-        router.delete('/admin/users/bulk/delete', {
+        router.delete('/admin/users/bulk-delete', {
             data: {
                 user_ids: selectedUserIds,
             },

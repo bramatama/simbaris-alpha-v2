@@ -31,7 +31,7 @@ test('pengguna dapat memperbarui informasi dasar tanpa mengubah email dan foto',
     $response->assertRedirect(route('profile.edit'));
 
     $response->assertSessionHas(
-        'status',
+        'success',
         'Profile updated successfully.'
     );
 

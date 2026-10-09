@@ -52,11 +52,9 @@ export default function EventCreate({
         (string | null)[]
     >([]);
 
-    // 2. State untuk preview gambar poster
     const [posterPreview, setPosterPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 3. Fungsi penanganan perubahan file
     const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -182,7 +180,7 @@ export default function EventCreate({
                             <CardContent className="space-y-4">
                                 {/* 4. Tambahan Field Poster */}
                                 <div className="mb-2 grid gap-2">
-                                    <Label>Event Poster (Optional)</Label>
+                                    <Label requirement='optional'>Event Poster</Label>
                                     <div className="mt-1 flex items-start gap-4">
                                         <input
                                             type="file"
@@ -237,8 +235,8 @@ export default function EventCreate({
                                 <Separator className="my-2" />
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="event_name">
-                                        Event Name *
+                                    <Label requirement='required' htmlFor="event_name">
+                                        Event Name
                                     </Label>
                                     <Input
                                         id="event_name"
@@ -254,7 +252,7 @@ export default function EventCreate({
                                     <InputError message={errors.event_name} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="location">Location *</Label>
+                                    <Label requirement='required' htmlFor="location">Location</Label>
                                     <Input
                                         id="location"
                                         value={data.location}
@@ -267,7 +265,7 @@ export default function EventCreate({
                                     <InputError message={errors.location} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="description">
+                                    <Label requirement='optional' htmlFor="description">
                                         Description
                                     </Label>
                                     <Textarea
@@ -325,7 +323,7 @@ export default function EventCreate({
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <Label>Start</Label>
+                                            <Label requirement='required'>Start</Label>
                                             <Input
                                                 type="datetime-local"
                                                 value={
@@ -346,7 +344,7 @@ export default function EventCreate({
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>End</Label>
+                                            <Label requirement='required'>End</Label>
                                             <Input
                                                 type="datetime-local"
                                                 value={
@@ -374,7 +372,7 @@ export default function EventCreate({
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <Label>Start</Label>
+                                            <Label requirement='required'>Start</Label>
                                             <Input
                                                 type="datetime-local"
                                                 value={data.start_time}
@@ -391,7 +389,7 @@ export default function EventCreate({
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>End</Label>
+                                            <Label requirement='required'>End</Label>
                                             <Input
                                                 type="datetime-local"
                                                 value={data.end_time}
@@ -463,9 +461,8 @@ export default function EventCreate({
                                     </div>
 
                                     <div className="mb-4 grid gap-2 border-b border-dashed pb-4 md:col-span-2">
-                                        <Label className="text-muted-foreground">
+                                        <Label requirement='optional' className="text-muted-foreground">
                                             Autofill dari akun yang sudah ada
-                                            (Opsional)
                                         </Label>
                                         <div className="flex items-center gap-2">
                                             <Select
@@ -579,7 +576,7 @@ export default function EventCreate({
 
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div className="grid gap-2">
-                                            <Label>Full Name *</Label>
+                                            <Label requirement='required'>Full Name</Label>
                                             <Input
                                                 placeholder="e.g. Budi Santoso"
                                                 value={item.name}
@@ -601,7 +598,7 @@ export default function EventCreate({
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>Email Address *</Label>
+                                            <Label requirement='required'>Email</Label>
                                             <Input
                                                 type="email"
                                                 placeholder="budi@example.com"
@@ -624,7 +621,7 @@ export default function EventCreate({
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>Department *</Label>
+                                            <Label requirement='required'>Department</Label>
                                             <Input
                                                 placeholder="e.g. Divisi Acara"
                                                 value={item.department}
@@ -639,7 +636,7 @@ export default function EventCreate({
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>Event Position *</Label>
+                                            <Label requirement='required'>Committee Position</Label>
                                             <Select
                                                 value={item.position}
                                                 onValueChange={(value) =>

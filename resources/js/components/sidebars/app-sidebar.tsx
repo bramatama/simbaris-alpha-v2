@@ -8,9 +8,9 @@ import {
     Sun,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import { NavFooter } from '@/components/sidebars/nav-footer';
+import { NavMain } from '@/components/sidebars/nav-main';
+import { NavUser } from '@/components/sidebars/nav-user';
 import {
     Sidebar,
     SidebarContent,
@@ -23,52 +23,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import { useAppearance } from '@/hooks/use-appearance';
-
-const getMainNavItems = (userRole?: string): NavItem[] => {
-    const items: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: dashboard(),
-            icon: LayoutGrid,
-        },
-    ];
-
-    // Add User Management only for admin users
-    if (userRole === 'admin') {
-        items.push({
-            title: 'User Management',
-            href: '/admin/users',
-            icon: FolderGit2,
-        });
-        items.push({
-            title: 'Event Management',
-            href: '/events',
-            icon: CalendarCheckIcon,
-        });
-    }
-
-    if (userRole == 'committee') {
-        items.push({
-            title: 'Hosted Events',
-            href: '/my-events',
-            icon: CalendarClockIcon,
-        });
-    }
-
-    if (userRole == 'official_team') {
-        items.push({
-            title: 'Events',
-            href: '/events',
-            icon: CalendarCheckIcon,
-        });
-        items.push({
-            title: 'My Events',
-            href: '/my-events',
-            icon: CalendarClockIcon,
-        });
-    }
-    return items;
-};
+import { getMainNavItems } from '@/config/sidebar';
 
 export function AppSidebar() {
     const { props } = usePage();
@@ -103,7 +58,10 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} title={userRole?.toUpperCase() ?? ''} />
+                <NavMain
+                    items={mainNavItems}
+                    title={userRole?.toUpperCase() ?? ''}
+                />
             </SidebarContent>
 
             <SidebarFooter>

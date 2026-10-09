@@ -5,6 +5,9 @@ use App\Http\Controllers\Events\EventCommitteeController;
 use App\Http\Controllers\Events\EventJudgeController;
 use App\Http\Controllers\Events\ParticipationController;
 
+Route::get('/events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
+Route::get('/events', [EventController::class, 'index'])->name('events.index');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/my-events', [EventController::class, 'my_events'])->name('events.my_events');
@@ -28,7 +31,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     Route::resource('events', EventController::class)->only(['edit', 'update']);
 
-    Route::get('my-events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
+    Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 
     Route::delete('events/{event:public_id}/committees/{event_committee:event_committee_id}', [EventCommitteeController::class, 'destroy'])->name('events.committees.destroy');
     Route::resource('events/{event:public_id}/committees', EventCommitteeController::class)->only(['index', 'store']);

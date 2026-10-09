@@ -12,6 +12,7 @@ export default function ConfirmPassword() {
         <AuthLayout
             title="Confirm your password"
             description="This is a secure area of the application. Please confirm your password before continuing."
+            className='max-w-md'
         >
             <Head title="Confirm password" />
 

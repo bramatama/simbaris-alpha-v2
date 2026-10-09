@@ -48,6 +48,30 @@ class EventSeeder extends Seeder
                 'event_id' => $eventId1, 'judge_id' => $judge->judge_id, 'created_at' => $now, 'updated_at' => $now
             ]);
         }
+
+        $eventJudges = DB::table('event_judges') ->select('event_judge_id') ->get(); 
+        $expertises = DB::table('expertises') ->select('expertise_id') ->get(); 
+        $data = [];
+
+        foreach ($eventJudges as $eventJudge) {
+        $selectedExpertises = $expertises
+            ->shuffle()
+            ->take(rand(1, min(2, $expertises->count())));
+
+        foreach ($selectedExpertises as $expertise) {
+            $data[] = [
+                'event_judge_id' => $eventJudge->event_judge_id,
+                'expertise_id' => $expertise->expertise_id,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (!empty($data)) {
+            DB::table('judge_expertises')->insertOrIgnore($data);
+        }
+    }
+
         $committee = DB::table('committees')->first();
         DB::table('event_committees')->insert([
             'event_id' => $eventId1, 'committee_id' => $committee->committee_id, 'position' => 'administration', 'created_at' => $now, 'updated_at' => $now

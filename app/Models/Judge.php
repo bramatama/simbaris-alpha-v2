@@ -18,12 +18,14 @@ class Judge extends Model
      */
     protected $table = 'judges';
 
+
     /**
      * The primary key for the model.
      *
      * @var string
      */
     protected $primaryKey = 'judge_id';
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.

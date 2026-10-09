@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         // URUTAN PEMANGGILAN SANGAT PENTING! (Mencegah Error Foreign Key)
         $this->call([
             LevelSeeder::class,           // 1. Master Level (Dibutuhkan oleh Tim & Event)
+            ExpertiseSeeder::class,
             // ChampionSeeder::class,        // 2. Master Juara
             UserSeeder::class,            // 3. Users & Profil (Dibutuhkan oleh Event)
             EventSeeder::class,           // 4. Konfigurasi Event (Dibutuhkan oleh Transaksi)

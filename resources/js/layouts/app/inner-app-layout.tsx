@@ -1,6 +1,6 @@
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '../app-layout';
-import InnerSidebar from '@/components/inner-app-sidebar';
+import InnerSidebar from '@/components/sidebars/inner-app-sidebar';
 import { PropsWithChildren, useEffect } from 'react';
 import { NavItem } from '@/types';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -17,12 +17,10 @@ export default function InnerAppLayout({
 }: InnerAppLayoutProps) {
     return (
         <AppLayout isInnerLayout={true}>
-            <div>
-                <div className="flex flex-col lg:flex-row">
-                    <InnerSidebar items={sidebarNavItems} />
-                    <Separator className="my-6 lg:hidden" />
-                    <div className="flex-1">{children}</div>
-                </div>
+            <div className="flex items-start gap-8">
+                <InnerSidebar items={sidebarNavItems} />
+                <Separator className="my-6 lg:hidden" />
+                <div className="min-w-0 flex-1">{children}</div>
             </div>
         </AppLayout>
     );

@@ -27,7 +27,14 @@ class EventController extends Controller
         ? Event::latest()->get()->where('status', '!=', 'draft')
         : Event::withCount('participations')->latest()->get();
     
-        return inertia( 'events/Index', [
+        $view = match ($role) {
+            'admin' => 'events/admin/Index',
+            'official_team' => 'events/Index',
+            'committee' => 'events/committee/HostedEvents',
+            default => abort(403, 'Unauthorized Access')
+        };
+
+        return inertia( $view, [
             'events' => $events,
         ]);
     }
@@ -186,7 +193,7 @@ class EventController extends Controller
 
         return redirect()
             ->route('events.index')
-            ->with('status', 'Event created successfully!');
+            ->with('success', 'Event created successfully!');
     }
 
     /**
@@ -203,7 +210,7 @@ class EventController extends Controller
         $event = match ($role) {
             'admin' => $query->withCount(['participations', 'eventCommittees', 'eventJudges'])->firstOrFail(),
             
-            'committee' => $query->with(['eventCommittees.committee.user', 'eventJudges.judge.user'])
+            'committee' => $query->with(['eventCommittees.committee.user', 'eventJudges.judge.user', 'eventLevels'])
                                 ->withCount('participations', 'eventCommittees','eventJudges')
                                 ->firstOrFail(),
                                 
@@ -218,7 +225,14 @@ class EventController extends Controller
             default => abort(403),
         };
 
-        return inertia('events/Show', [
+        $view = match ($role) {
+            'committee' => 'events/committee/Show',
+            'admin' => 'events/admin/Show',
+            'official_team' => 'events/official_team/Show',
+            default => abort(403, 'Unauthorized access'),
+        };
+
+        return inertia($view, [
             'event' => $event,
         ]);
     }
@@ -290,5 +304,10 @@ class EventController extends Controller
 
         return redirect()->route('events.index')
             ->with('message', 'Event deleted successfully.');
+    }
+
+    public function event_details_check ($id)
+    {
+        $event = Event::where('public_id', $id)->firstOrFail();
     }
 }

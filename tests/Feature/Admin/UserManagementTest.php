@@ -21,7 +21,7 @@ test('admin dapat melihat daftar user dan data sendiri tidak muncul', function (
     // 3. Assert: Berhasil dan data admin (user yang login) tidak ada dalam daftar
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
-        ->component('admin/UserManagement/Index')
+        ->component('users/Index')
         ->has('users.data', 2) // Harusnya hanya 2 user lain, admin tidak masuk
         ->where('users.data.0.user_id', $otherUser2->user_id) // Urutan descending berdasarkan created_at
     );
@@ -54,7 +54,7 @@ test('admin dapat menghapus satu user tetapi tidak bisa menghapus akun sendiri',
     // 2. Kasus Sukses: Admin menghapus user lain
     $responseSuccess = actingAs($admin)->delete(route('admin.users.destroy', $targetUser->user_id));
     $responseSuccess->assertRedirect(route('admin.users.index'));
-    $responseSuccess->assertSessionHas('message', 'User deleted successfully.');
+    $responseSuccess->assertSessionHas('success', 'User deleted successfully.');
 
     // Pastikan data benar-benar hilang dari database
     assertDatabaseMissing('users', ['user_id' => $targetUser->user_id]);
@@ -80,7 +80,7 @@ test('admin dapat menghapus banyak user sekaligus (batch delete) dan gagal jika 
     ]);
     
     $responseBatchSuccess->assertRedirect(route('admin.users.index'));
-    $responseBatchSuccess->assertSessionHas('message', 'Selected users deleted successfully.');
+    $responseBatchSuccess->assertSessionHas('success', 'Selected users deleted successfully.');
 
     assertDatabaseMissing('users', ['user_id' => $user1->user_id]);
     assertDatabaseMissing('users', ['user_id' => $user2->user_id]);

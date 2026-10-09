@@ -16,7 +16,7 @@ export default function AppLogo({
 
     if (variants === 'icon') {
         return (
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground transition-all ease-in-out dark:bg-sidebar-primary">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground transition-all ease-in-out dark:bg-sidebar-accent-foreground">
                 <AppLogoIcon
                     className={cn(
                         'size-8 fill-current text-black dark:size-5 dark:text-white',
@@ -30,7 +30,7 @@ export default function AppLogo({
     if (variants === 'horizontal') {
         return (
             <div className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-primary">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md text-sidebar-primary-foreground dark:bg-sidebar-accent-foreground">
                     <AppLogoIcon
                         className={cn(
                             'size-8 fill-current text-black dark:size-5 dark:text-white',

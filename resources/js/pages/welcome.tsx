@@ -1,30 +1,32 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { dashboard, login, register } from '@/routes'; // Menggabungkan import route
+import { dashboard, login, register } from '@/routes';
 import { Auth } from '@/types';
 import LandingPageLayout from '@/layouts/landing-page-layout';
+import { Calendar, MapPin, Users } from 'lucide-react';
 
 type PageProps = {
     auth: Auth;
     name: string;
-    sidebarOpen: boolean;
-    isMobileDevice: boolean;
 };
 
 export default function Welcome() {
-    // const { auth, name } = usePage<PageProps>().props;
-    const { props } = usePage();
+    const { props } = usePage<PageProps>();
     const appName = props.name;
 
     return (
         <LandingPageLayout>
             <Head title="Welcome" />
-            <div className="flex min-h-screen flex-col rounded-2xl bg-primary/10">
-                {/* Main Content Area */}
-                <main className="flex grow flex-col items-center px-6 pt-24 lg:p-8">
-                    {/* HERO SECTION */}
-                    <section className="flex w-full max-w-4xl flex-col items-center justify-center py-20 text-center lg:py-32">
+
+            {/* Pembungkus utama disederhanakan agar section bisa menyentuh ujung layar */}
+            <main className="flex w-full flex-col">
+                {/* 1. HERO SECTION (Halaman 1) */}
+                <section
+                    id="home"
+                    className="flex min-h-screen w-full flex-col items-center justify-center px-6 pt-16"
+                >
+                    <div className="flex w-full max-w-4xl flex-col items-center text-center">
                         <h1 className="mb-6 text-5xl font-extrabold tracking-tight lg:text-7xl">
-                            Welcome to <span className="text-">{appName}</span>
+                            Welcome to <span>{appName}</span>
                         </h1>
                         <p className="mb-10 max-w-2xl text-lg text-gray-600 md:text-xl dark:text-gray-400">
                             A modern, fast, and secure platform to help you
@@ -56,10 +58,15 @@ export default function Welcome() {
                                 </>
                             )}
                         </div>
-                    </section>
+                    </div>
+                </section>
 
-                    {/* ABOUT SECTION */}
-                    <section className="mt-8 w-full max-w-6xl border-t border-gray-200 py-16 dark:border-gray-800/50">
+                {/* 2. ABOUT SECTION (Halaman 2) */}
+                <section
+                    id="about"
+                    className="flex min-h-screen w-full rounded-4xl flex-col items-center justify-center border bg-muted/30 px-6 py-16 dark:border-gray-800/50"
+                >
+                    <div className="w-full max-w-6xl">
                         <div className="mb-16 text-center">
                             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                                 About Us
@@ -153,9 +160,88 @@ export default function Welcome() {
                                 </p>
                             </div>
                         </div>
-                    </section>
-                </main>
-            </div>
+                    </div>
+                </section>
+
+                {/* 3. EVENTS SECTION (Halaman 3) */}
+                <section
+                    id="events"
+                    className="flex min-h-screen w-full flex-col items-center justify-center px-6 py-16 dark:border-gray-800/50"
+                >
+                    <div className="w-full max-w-6xl">
+                        <div className="mb-16 text-center">
+                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                                Upcoming Events
+                            </h2>
+                            <p className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-400">
+                                Bergabunglah dan ikuti kompetisi marching drill
+                                terbaik yang sedang berlangsung maupun yang akan
+                                segera hadir.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
+                            {/* Dummy Event 1 */}
+                            <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-[#111111] dark:ring-gray-800">
+                                <div>
+                                    <h3 className="mb-2 text-2xl font-bold">
+                                        Grand Championship 2026
+                                    </h3>
+                                    <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4" /> 15
+                                            - 20 November 2026
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4" />{' '}
+                                            Balikpapan Sport Center
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4" /> 50+
+                                            Tim Terdaftar
+                                        </div>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={login()}
+                                    className="mt-6 inline-flex w-fit items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
+                                >
+                                    Daftar Sekarang
+                                </Link>
+                            </div>
+
+                            {/* Dummy Event 2 */}
+                            <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-[#111111] dark:ring-gray-800">
+                                <div>
+                                    <h3 className="mb-2 text-2xl font-bold">
+                                        Regional Marching Drill Festival
+                                    </h3>
+                                    <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4" /> 12
+                                            Desember 2026
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4" />{' '}
+                                            Kaltim Arena
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4" />{' '}
+                                            Registrasi Segera Dibuka
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    disabled
+                                    className="mt-6 inline-flex w-fit items-center justify-center rounded-md border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-400 dark:border-gray-800 dark:bg-[#1a1a1a]"
+                                >
+                                    Segera Hadir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
         </LandingPageLayout>
     );
 }

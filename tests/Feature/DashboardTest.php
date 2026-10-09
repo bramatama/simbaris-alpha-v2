@@ -5,10 +5,10 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\actingAs;
 
 dataset('user_roles', [
-    ['admin', 'admin/dashboard'],
-    // ['judge', 'judge/dashboard'],
-    ['committee', 'committee/dashboard'],
-    ['official_team', 'official_team/dashboard'],
+    ['admin', 'dashboards/admin'],
+    ['judge', 'dashboards/judge'],
+    ['committee', 'dashboards/committee'],
+    ['official_team', 'dashboards/official_team'],
 ]);
 
 test('pengguna melihat halaman dashboard yang sesuai dengan rolenya', function (string $role, string $expectedComponent) {

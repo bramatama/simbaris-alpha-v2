@@ -14,7 +14,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
     const userRole = auth.user.role;
     return (
         <AppLayout>
-            <Head title="Event Management" />
+            <Head title="Events" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
@@ -28,13 +28,14 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                             committees.
                         </p>
                     </div>
-
-                    <Link href={`/${userRole}/events/create`}>
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Create New Event
-                        </Button>
-                    </Link>
+                    {userRole === 'admin' && (
+                        <Link href={`/${userRole}/events/create`}>
+                            <Button className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Create New Event
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Grid Cards Section */}

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Menu, X } from 'lucide-react';
+import { Calendar, Home, Info, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggle } from '@/components/appearance-toggle';
@@ -24,44 +24,58 @@ import {
     DrawerClose,
 } from '@/components/ui/drawer';
 
-import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
 import type { Auth, NavItem } from '@/types';
 
 type PageProps = {
     auth: Auth;
+    isMobileDevice: boolean;
 };
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'Home',
+        href: '/',
+        icon: Home,
     },
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'About',
+        href: '/#about',
+        icon: Info,
+    },
+    {
+        title: 'Events',
+        href: '/#events',
+        icon: Calendar,
     },
 ];
 
-const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+const activeItemStyles = 'dark:text-neutral-100 text-neutral-900';
 
 export function LandingPageHeader({
     canRegister = true,
 }: {
     canRegister?: boolean;
 }) {
-    const { props } = usePage<PageProps>();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { props, url } = usePage<PageProps>();
 
     const isMobileDevice = props.isMobileDevice;
     const [isSmallScreen, setIsSmallScreen] = useState(false);
 
-    // Scroll state tracking
+    const [activeSection, setActiveSection] = useState<string>('/');
+
     const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        if (url === '/') {
+            setActiveSection(
+                window.location.hash ? `/${window.location.hash}` : '/',
+            );
+        } else {
+            setActiveSection(url);
+        }
+    }, [url]);
 
     useEffect(() => {
         const checkScreenSize = () => setIsSmallScreen(window.innerWidth < 768);
@@ -74,11 +88,58 @@ export function LandingPageHeader({
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 10);
+
+            if (window.location.pathname === '/') {
+                // Ambil semua item navigasi yang berupa anchor/hash
+                const hashItems = mainNavItems
+                    .filter((item) => toUrl(item.href).includes('#'))
+                    .map((item) => toUrl(item.href).split('#')[1]);
+
+                let current = '/';
+
+                for (const id of hashItems) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.top <= window.innerHeight / 2) {
+                            current = `/#${id}`;
+                        }
+                    }
+                }
+
+                setActiveSection(current);
+            }
         };
 
         window.addEventListener('scroll', handleScroll);
+        handleScroll();
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    const handleAnchorClick = (
+        e: React.MouseEvent<HTMLAnchorElement>,
+        href: string,
+    ) => {
+        e.currentTarget.blur();
+        if (href.includes('#')) {
+            const targetId = href.split('#')[1];
+            const element = document.getElementById(targetId);
+
+            if (element) {
+                e.preventDefault();
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.history.pushState(null, '', href);
+                setActiveSection(href);
+            }
+        } else if (href === '/') {
+            if (window.location.pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.history.pushState(null, '', '/');
+                setActiveSection('/');
+            }
+        }
+    };
 
     return (
         <header
@@ -128,7 +189,19 @@ export function LandingPageHeader({
                                                 <Link
                                                     key={item.title}
                                                     href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
+                                                    onClick={(e) =>
+                                                        handleAnchorClick(
+                                                            e as React.MouseEvent<HTMLAnchorElement>,
+                                                            toUrl(item.href),
+                                                        )
+                                                    }
+                                                    className={cn(
+                                                        'flex items-center space-x-2 font-medium transition-colors',
+                                                        activeSection ===
+                                                            item.href
+                                                            ? activeItemStyles
+                                                            : 'text-muted-foreground hover:text-foreground',
+                                                    )}
                                                 >
                                                     {item.icon && (
                                                         <item.icon className="h-5 w-5" />
@@ -167,13 +240,21 @@ export function LandingPageHeader({
                                     >
                                         <Link
                                             href={item.href}
+                                            onClick={(e) =>
+                                                handleAnchorClick(
+                                                    e as React.MouseEvent<HTMLAnchorElement>,
+                                                    toUrl(item.href),
+                                                )
+                                            }
                                             className={cn(
                                                 navigationMenuTriggerStyle(),
-                                                whenCurrentUrl(
-                                                    item.href,
-                                                    activeItemStyles,
-                                                ),
-                                                'h-9 cursor-pointer px-3',
+                                                activeSection === item.href
+                                                    ? activeItemStyles
+                                                    : 'text-muted-foreground',
+                                                '',
+                                                isScrolled
+                                                    ? 'h-9 cursor-pointer bg-background/60 px-3 backdrop-blur-md transition-colors'
+                                                    : 'h-9 cursor-pointer bg-background px-3 backdrop-blur-none transition-colors',
                                             )}
                                         >
                                             {item.icon && (
@@ -181,9 +262,14 @@ export function LandingPageHeader({
                                             )}
                                             {item.title}
                                         </Link>
-                                        {isCurrentUrl(item.href) && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
-                                        )}
+                                        <div
+                                            className={cn(
+                                                'absolute bottom-0 left-0 h-0.5 w-full origin-center translate-y-px bg-neutral-900 transition-all duration-300 ease-in-out dark:bg-neutral-100',
+                                                activeSection === item.href
+                                                    ? 'scale-x-100 opacity-100'
+                                                    : 'scale-x-0 opacity-0',
+                                            )}
+                                        ></div>
                                     </NavigationMenuItem>
                                 ))}
                             </NavigationMenuList>
@@ -192,13 +278,15 @@ export function LandingPageHeader({
 
                     {/* BAGIAN KANAN: Login & Register */}
                     <div className="flex flex-1 items-center justify-end space-x-2">
-                        <nav className="flex items-center justify-end gap-4">
-                            <AppearanceToggle />
+                        <nav className="flex items-center justify-end gap-2 md:gap-4">
+                            <div className="hidden items-center md:flex">
+                                <AppearanceToggle />
+                            </div>
 
                             {props.auth.user ? (
                                 <Link
                                     href={dashboard()}
-                                    className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                    className="inline-block rounded-sm border border-neutral-400 px-3 py-1.5 text-sm leading-normal text-neutral-900 hover:border-neutral-900 md:px-5 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-neutral-100"
                                 >
                                     Dashboard
                                 </Link>
@@ -206,13 +294,13 @@ export function LandingPageHeader({
                                 <>
                                     <Link
                                         href={login()}
-                                        className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#19140035] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
+                                        className="inline-block rounded-sm border border-transparent px-3 py-1.5 text-sm leading-normal text-neutral-900 hover:border-neutral-900 md:px-5 dark:text-neutral-100 dark:hover:border-neutral-100"
                                     >
                                         Login
                                     </Link>
                                     <Link
                                         href={register()}
-                                        className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                        className="inline-block rounded-sm border border-neutral-400 px-3 py-1.5 text-sm leading-normal text-neutral-900 hover:border-neutral-900 md:px-5 dark:border-neutral-700 dark:text-[#EDEDEC] dark:hover:border-neutral-100"
                                     >
                                         Register
                                     </Link>

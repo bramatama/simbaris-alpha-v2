@@ -48,17 +48,18 @@ export default function Login({
         <AuthLayout
             title="Masuk ke Akun Anda"
             description="Masukkan email dan password untuk masuk ke akun Anda"
+            className='max-w-md'
         >
             <Head title="Log in" />
 
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-4"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <div className="grid gap-4">
                             <div className="grid gap-2">
                                 <InputError
                                     className="flex  justify-center"

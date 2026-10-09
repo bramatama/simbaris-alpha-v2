@@ -31,8 +31,8 @@ return new class extends Migration
 
         Schema::create('participations', function (Blueprint $table) {
             $table->id('participation_id');
-            $table->foreignId('event_id')->index()->constrained('events','event_id');
-            $table->foreignId('official_team_id')->index()->constrained('official_teams','official_team_id');
+            $table->foreignId('event_id')->index()->constrained('events','event_id')->onDelete('cascade');
+            $table->foreignId('official_team_id')->index()->constrained('official_teams','official_team_id')->onDelete('cascade');
             $table->string('team_name')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('status_message')->nullable();

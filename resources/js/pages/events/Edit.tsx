@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Head, useForm, router, usePage } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import {
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, UserCheck, Trash } from 'lucide-react';
+import { Calendar, UserCheck, ImagePlus, UploadCloud } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -48,7 +48,15 @@ export default function EventEdit({ event }: { event: any }) {
     const userRole = auth.user.role;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const { data, setData, put, processing, errors } = useForm({
+    // State preview gambar
+    const [posterPreview, setPosterPreview] = useState<string | null>(
+        event.poster_path ? `/storage/${event.poster_path}` : null,
+    );
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Form Hook
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'put',
         event_name: event.event_name || '',
         description: event.description || '',
         location: event.location || '',
@@ -57,6 +65,7 @@ export default function EventEdit({ event }: { event: any }) {
         registration_end_time: formatDateTime(event.registration_end_time),
         start_time: formatDateTime(event.start_time),
         end_time: formatDateTime(event.end_time),
+        poster: null as File | null,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -66,7 +75,22 @@ export default function EventEdit({ event }: { event: any }) {
 
     const confirmSubmit = () => {
         setIsDialogOpen(false);
-        put(`/committee/events/${event.public_id}`);
+        post(`/committee/events/${event.public_id}`, {
+            preserveScroll: true,
+        });
+    };
+
+    // Handler Perubahan Gambar
+    const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('poster', file);
+
+            if (posterPreview && posterPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(posterPreview);
+            }
+            setPosterPreview(URL.createObjectURL(file));
+        }
     };
 
     return (
@@ -76,6 +100,7 @@ export default function EventEdit({ event }: { event: any }) {
             <Head title={`Edit: ${event.event_name}`} />
 
             <div className="w-full p-4 md:p-6 lg:p-8">
+                {/* HEADER */}
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
@@ -86,128 +111,233 @@ export default function EventEdit({ event }: { event: any }) {
                             {event.event_name}.
                         </p>
                     </div>
-                    <Badge variant="secondary" className="p-4 text-sm">
+                    <Badge
+                        variant="secondary"
+                        className="px-4 py-2 text-sm font-normal"
+                    >
                         Status:{' '}
-                        <span className="ml-1 font-bold capitalize">
+                        <span className="ml-1 font-bold tracking-wide capitalize">
                             {data.status.replace('_', ' ')}
                         </span>
                     </Badge>
                 </div>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* FORM EDIT (Kiri, Mengambil 2 Kolom) */}
-                    <div className="space-y-6 lg:col-span-2">
+
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                    {/* FORM UTAMA */}
+                    <div className="space-y-6 xl:col-span-9">
                         <form onSubmit={submit} className="space-y-6">
-                            <Card>
-                                <CardHeader>
+                            {/* KARTU 1: DETAIL DASAR & POSTER */}
+                            <Card className="overflow-hidden">
+                                <CardHeader className="border-b border-border/50 bg-muted/30 pb-4">
                                     <CardTitle>Basic Details</CardTitle>
+                                    <CardDescription>
+                                        Informasi umum dan poster event
+                                        kompetisi.
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="event_name">
-                                            Event Name *
-                                        </Label>
-                                        <Input
-                                            id="event_name"
-                                            value={data.event_name}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'event_name',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                        <InputError
-                                            message={errors.event_name}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="location">
-                                            Location *
-                                        </Label>
-                                        <Input
-                                            id="location"
-                                            value={data.location}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'location',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                        <InputError message={errors.location} />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="description">
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            value={data.description}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'description',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            rows={4}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="status">
-                                            Event Status
-                                        </Label>
-                                        <Select
-                                            value={data.status}
-                                            onValueChange={(value) =>
-                                                setData('status', value)
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="status"
-                                                className="w-full"
+                                <CardContent className="p-6">
+                                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+                                        {/* BAGIAN KIRI: UPLOAD POSTER */}
+                                        <div className="flex flex-col items-center border-b border-border/50 pb-6 md:col-span-5 md:items-start md:border-r md:border-b-0 md:pr-6 md:pb-0 lg:col-span-4">
+                                            <Label
+                                                requirement="optional"
+                                                className="mb-3 text-base"
                                             >
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper">
-                                                <SelectGroup>
-                                                    <SelectLabel>
-                                                        Status
-                                                    </SelectLabel>
-                                                    <SelectItem value="draft">
-                                                        Draft (Hidden from
-                                                        Public)
-                                                    </SelectItem>
-                                                    <SelectItem value="registration_open">
-                                                        Registration Open
-                                                    </SelectItem>
-                                                    <SelectItem value="active">
-                                                        Active (On Going)
-                                                    </SelectItem>
-                                                    <SelectItem value="finished">
-                                                        Finished
-                                                    </SelectItem>
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
+                                                Event Poster
+                                            </Label>
+
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handlePosterChange}
+                                                accept="image/*"
+                                            />
+
+                                            <div className="flex w-full flex-col items-center space-y-4">
+                                                {posterPreview ? (
+                                                    <div className="aspect-3/4 w-full max-w-60 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                                                        <img
+                                                            src={posterPreview}
+                                                            alt="Poster Preview"
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex aspect-3/4 w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
+                                                        <ImagePlus className="mb-3 h-12 w-12 opacity-40" />
+                                                        <span className="text-sm font-medium">
+                                                            Belum ada poster
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                <Button
+                                                    type="button"
+                                                    variant={
+                                                        posterPreview
+                                                            ? 'outline'
+                                                            : 'default'
+                                                    }
+                                                    className="w-full max-w-60 gap-2"
+                                                    onClick={() =>
+                                                        fileInputRef.current?.click()
+                                                    }
+                                                >
+                                                    <UploadCloud className="h-4 w-4" />
+                                                    {posterPreview
+                                                        ? 'Ganti Poster Baru'
+                                                        : 'Upload Poster'}
+                                                </Button>
+
+                                                <div className="text-center text-xs leading-relaxed text-muted-foreground">
+                                                    <p>
+                                                        Format file: JPG, JPEG,
+                                                        PNG.
+                                                    </p>
+                                                    <p>
+                                                        Rasio direkomendasikan
+                                                        3:4 (Portrait).
+                                                    </p>
+                                                </div>
+                                                <InputError
+                                                    message={
+                                                        errors.poster as string
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* BAGIAN KANAN: INPUT TEKS */}
+                                        <div className="space-y-5 md:col-span-7 lg:col-span-8">
+                                            <div className="grid gap-2">
+                                                <Label
+                                                    requirement="required"
+                                                    htmlFor="event_name"
+                                                >
+                                                    Event Name
+                                                </Label>
+                                                <Input
+                                                    id="event_name"
+                                                    value={data.event_name}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'event_name',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                                <InputError
+                                                    message={errors.event_name}
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label
+                                                    requirement="required"
+                                                    htmlFor="location"
+                                                >
+                                                    Location
+                                                </Label>
+                                                <Input
+                                                    id="location"
+                                                    value={data.location}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'location',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                                <InputError
+                                                    message={errors.location}
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="status">
+                                                    Event Status
+                                                </Label>
+                                                <Select
+                                                    value={data.status}
+                                                    onValueChange={(value) =>
+                                                        setData('status', value)
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="status"
+                                                        className="w-full"
+                                                    >
+                                                        <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                    <SelectContent position="popper">
+                                                        <SelectGroup>
+                                                            <SelectLabel>
+                                                                Status Publikasi
+                                                            </SelectLabel>
+                                                            <SelectItem value="draft">
+                                                                Draft (Hidden
+                                                                from Public)
+                                                            </SelectItem>
+                                                            <SelectItem value="registration_open">
+                                                                Registration
+                                                                Open
+                                                            </SelectItem>
+                                                            <SelectItem value="active">
+                                                                Active (On
+                                                                Going)
+                                                            </SelectItem>
+                                                            <SelectItem value="finished">
+                                                                Finished
+                                                            </SelectItem>
+                                                        </SelectGroup>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="grid gap-2 pt-1">
+                                                <Label
+                                                    requirement="optional"
+                                                    htmlFor="description"
+                                                >
+                                                    Description
+                                                </Label>
+                                                <Textarea
+                                                    id="description"
+                                                    value={data.description}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'description',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    rows={5}
+                                                    className="resize-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
+                            {/* KARTU 2: PENJADWALAN */}
                             <Card>
-                                <CardHeader>
+                                <CardHeader className="border-b border-border/50 bg-muted/30 pb-4">
                                     <CardTitle>Scheduling</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
+                                <CardContent className="space-y-6 p-6">
                                     <div className="space-y-4">
-                                        <h3 className="flex items-center gap-2 border-b pb-2 text-sm font-semibold">
+                                        <h3 className="flex items-center gap-2 border-b border-border/50 pb-2 text-sm font-semibold">
                                             <Calendar className="h-4 w-4 text-primary" />{' '}
                                             Registration Period
                                         </h3>
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                             <div className="grid gap-2">
-                                                <Label>Start Date</Label>
+                                                <Label requirement="required">
+                                                    Start Date
+                                                </Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={
@@ -228,7 +358,9 @@ export default function EventEdit({ event }: { event: any }) {
                                                 />
                                             </div>
                                             <div className="grid gap-2">
-                                                <Label>End Date</Label>
+                                                <Label requirement="required">
+                                                    End Date
+                                                </Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={
@@ -250,14 +382,17 @@ export default function EventEdit({ event }: { event: any }) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        <h3 className="flex items-center gap-2 border-b pb-2 text-sm font-semibold">
+
+                                    <div className="space-y-4 pt-2">
+                                        <h3 className="flex items-center gap-2 border-b border-border/50 pb-2 text-sm font-semibold">
                                             <Calendar className="h-4 w-4 text-orange-500" />{' '}
                                             Event Execution
                                         </h3>
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                             <div className="grid gap-2">
-                                                <Label>Start Date</Label>
+                                                <Label requirement="required">
+                                                    Start Date
+                                                </Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={data.start_time}
@@ -274,7 +409,9 @@ export default function EventEdit({ event }: { event: any }) {
                                                 />
                                             </div>
                                             <div className="grid gap-2">
-                                                <Label>End Date</Label>
+                                                <Label requirement="required">
+                                                    End Date
+                                                </Label>
                                                 <Input
                                                     type="datetime-local"
                                                     value={data.end_time}
@@ -295,7 +432,8 @@ export default function EventEdit({ event }: { event: any }) {
                                 </CardContent>
                             </Card>
 
-                            <div className="flex justify-end gap-4">
+                            {/* TOMBOL AKSI */}
+                            <div className="flex items-center justify-end gap-4 pt-2">
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -307,6 +445,7 @@ export default function EventEdit({ event }: { event: any }) {
                                     type="submit"
                                     size="lg"
                                     disabled={processing}
+                                    className="px-8"
                                 >
                                     {processing && (
                                         <Spinner className="mr-2 h-4 w-4" />
@@ -316,6 +455,7 @@ export default function EventEdit({ event }: { event: any }) {
                             </div>
                         </form>
                     </div>
+
                     <ConfirmationDialog
                         open={isDialogOpen}
                         onOpenChange={setIsDialogOpen}
@@ -325,20 +465,20 @@ export default function EventEdit({ event }: { event: any }) {
                         isProcessing={processing}
                     />
 
-                    {/* PANEL KANAN: Informasi Panitia (Read-Only List) */}
-                    <div className="space-y-6 lg:col-span-1">
+                    {/* PANEL KANAN (SIDEBAR): Panitia */}
+                    <div className="space-y-6 xl:col-span-3">
                         <Card className="sticky top-6">
-                            <CardHeader className="border-b bg-primary/5 pb-4">
+                            <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg">
-                                    <UserCheck className="h-5 w-5" />
-                                    Assigned Committees
+                                    <UserCheck className="h-5 w-5 text-primary" />
+                                    Committees
                                 </CardTitle>
                                 <CardDescription>
-                                    Team members managing this event.
+                                    Team managing this event.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="max-h-125 divide-y overflow-y-auto">
+                                <div className="max-h-125 divide-y divide-border/50 overflow-y-auto">
                                     {event.event_committees?.length === 0 ? (
                                         <div className="p-6 text-center text-sm text-muted-foreground">
                                             No committees assigned.
@@ -348,7 +488,7 @@ export default function EventEdit({ event }: { event: any }) {
                                             (ec: any) => (
                                                 <div
                                                     key={ec.event_committee_id}
-                                                    className="flex flex-col gap-1 p-4"
+                                                    className="flex flex-col gap-1.5 p-4 transition-colors hover:bg-muted/30"
                                                 >
                                                     <span className="text-sm font-semibold">
                                                         {ec.committee?.user
@@ -364,7 +504,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                         </span>
                                                         <Badge
                                                             variant="outline"
-                                                            className="text-[10px] uppercase"
+                                                            className="bg-muted/50 text-[10px] font-medium uppercase"
                                                         >
                                                             {ec.position}
                                                         </Badge>
@@ -375,13 +515,13 @@ export default function EventEdit({ event }: { event: any }) {
                                     )}
                                 </div>
                             </CardContent>
-                            <div className="border-t bg-muted/20 p-4">
+                            <div className="border-t border-border/50 bg-muted/20 p-4">
                                 <Button
                                     variant="outline"
                                     className="w-full text-xs"
                                     disabled
                                 >
-                                    Manage Committees (Coming Soon)
+                                    Manage Committees
                                 </Button>
                             </div>
                         </Card>

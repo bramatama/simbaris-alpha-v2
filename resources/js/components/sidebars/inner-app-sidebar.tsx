@@ -1,4 +1,4 @@
-import { NavMain } from '@/components/nav-main';
+import { NavMain } from '@/components/sidebars/nav-main';
 import { NavItem } from '@/types';
 
 interface InnerSidebarProps {
@@ -8,8 +8,8 @@ interface InnerSidebarProps {
 export default function InnerSidebar({ items }: InnerSidebarProps) {
     if (!items || items.length === 0) return null;
     return (
-        <aside className="w-full max-w-lg lg:w-48">
-            <nav className="flex flex-col space-y-1 space-x-0">
+        <aside className="sticky top-0 hidden h-fit w-48 shrink-0 lg:block">
+            <nav className="flex flex-col space-y-1">
                 <NavMain items={items} title="" />
             </nav>
         </aside>

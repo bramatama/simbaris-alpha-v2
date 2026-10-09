@@ -15,6 +15,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <AuthLayout
             title="Reset Password"
             description="Masukkan alamat email untuk menerima link reset password"
+            className='max-w-md'
         >
             <Head title="Forgot password" />
 

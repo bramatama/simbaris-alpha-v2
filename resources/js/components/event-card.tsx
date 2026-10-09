@@ -5,6 +5,7 @@ export interface EventData {
     event_id: number;
     public_id: string;
     event_name: string;
+    location:string;
     status: string;
     start_time: string;
     end_time: string;

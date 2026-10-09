@@ -1,8 +1,54 @@
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import EventCard, { EventData } from '@/components/event-card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Eye, Calendar, MapPin, Pen } from 'lucide-react';
+import { EventData } from '@/components/event-card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 export default function EventIndex({ events }: { events: EventData[] }) {
+    // Fungsi pembantu untuk memformat tanggal
+    const formatDate = (start: string, end?: string): string => {
+        if (!start) return '-';
+        const startDate = new Date(start).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
+        const endDate = end
+            ? new Date(end).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+              })
+            : null;
+
+        return startDate === endDate || !endDate
+            ? startDate
+            : `${startDate} - ${endDate}`;
+    };
+
+    // Fungsi pembantu untuk mewarnai badge status
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'registration_open':
+                return 'bg-success text-success-foreground hover:bg-success/80';
+            case 'active':
+                return 'bg-info text-info-foreground hover:bg-info/80';
+            case 'finished':
+                return 'bg-muted text-muted-foreground hover:bg-muted/80';
+            default:
+                return 'bg-warning text-warning-foreground hover:bg-warning/80';
+        }
+    };
+
     return (
         <AppLayout>
             <Head title="Event Management" />
@@ -11,36 +57,99 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                 {/* Header Section */}
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Events
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                            Event Management
                         </h1>
                         <p className="mt-1 text-muted-foreground">
-                            Lists of all competition events, schedules, and
-                            committees.
+                            Kelola semua event kompetisi, jadwal, dan panitia.
                         </p>
                     </div>
                 </div>
 
-                {/* Grid Cards Section */}
-                {events.length === 0 ? (
-                    <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 py-20 text-center">
-                        <p className="text-muted-foreground">
-                            No events found. Start by creating a new event.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {events.map((event) => (
-                            <Link
-                                key={event.event_id}
-                                href={`committee/my-events/${event.public_id}/information`}
-                                className="block h-full rounded-(--radius) focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                                <EventCard event={event} />
-                            </Link>
-                        ))}
-                    </div>
-                )}
+                {/* Table Section */}
+                <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                <TableHead className="w-75">
+                                    Nama Event
+                                </TableHead>
+                                <TableHead>Tanggal Pelaksanaan</TableHead>
+                                <TableHead>Lokasi</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">
+                                    Aksi
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {events.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={5}
+                                        className="h-32 text-center text-muted-foreground"
+                                    >
+                                        Tidak ada event yang ditemukan. Mulai
+                                        dengan membuat event baru.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                events.map((event) => (
+                                    <TableRow key={event.event_id}>
+                                        <TableCell className="font-semibold">
+                                            {event.event_name}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                <Calendar className="h-4 w-4 shrink-0" />
+                                                <span className="whitespace-nowrap">
+                                                    {formatDate(
+                                                        event.start_time,
+                                                        event.end_time,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                <MapPin className="h-4 w-4 shrink-0" />
+                                                <span className="max-w-50 truncate">
+                                                    {event.location || '-'}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className={`tracking-wide whitespace-nowrap capitalize ${getStatusColor(event.status)}`}
+                                            >
+                                                {event.status.replace(
+                                                    /_/g,
+                                                    ' ',
+                                                )}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
+                                            <Link
+                                                href={`committee/events/${event.public_id}/information`}
+                                            >
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-1.5"
+                                                >
+                                                    <Pen className="h-3.5 w-3.5" />
+                                                    Kelola
+                                                </Button>
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </AppLayout>
     );

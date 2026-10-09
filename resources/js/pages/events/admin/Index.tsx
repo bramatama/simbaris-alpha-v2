@@ -1,0 +1,163 @@
+import { Head, Link } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Eye, Calendar, MapPin } from 'lucide-react';
+import { EventData } from '@/components/event-card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+
+export default function EventIndex({ events }: { events: EventData[] }) {
+    // Fungsi pembantu untuk memformat tanggal
+    const formatDate = (start: string, end?: string): string => {
+        if (!start) return '-';
+        const startDate = new Date(start).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
+        const endDate = end
+            ? new Date(end).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+              })
+            : null;
+
+        return startDate === endDate || !endDate
+            ? startDate
+            : `${startDate} - ${endDate}`;
+    };
+
+    // Fungsi pembantu untuk mewarnai badge status
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'registration_open':
+                return 'bg-success text-success-foreground hover:bg-success/80';
+            case 'active':
+                return 'bg-info text-info-foreground hover:bg-info/80';
+            case 'finished':
+                return 'bg-muted text-muted-foreground hover:bg-muted/80';
+            default:
+                return 'bg-warning text-warning-foreground hover:bg-warning/80';
+        }
+    };
+
+    return (
+        <AppLayout>
+            <Head title="Event Management" />
+
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
+                {/* Header Section */}
+                <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                            Event Management
+                        </h1>
+                        <p className="mt-1 text-muted-foreground">
+                            Kelola semua event kompetisi, jadwal, dan panitia.
+                        </p>
+                    </div>
+                    {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
+                    <Link href="/admin/events/create">
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Buat Event Baru
+                        </Button>
+                    </Link>
+                </div>
+
+                {/* Table Section */}
+                <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+                    <Table>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                <TableHead className="w-75">
+                                    Nama Event
+                                </TableHead>
+                                <TableHead>Tanggal Pelaksanaan</TableHead>
+                                <TableHead>Lokasi</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">
+                                    Aksi
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {events.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={5}
+                                        className="h-32 text-center text-muted-foreground"
+                                    >
+                                        Tidak ada event yang ditemukan. Mulai
+                                        dengan membuat event baru.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                events.map((event) => (
+                                    <TableRow key={event.event_id}>
+                                        <TableCell className="font-semibold">
+                                            {event.event_name}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                <Calendar className="h-4 w-4 shrink-0" />
+                                                <span className="whitespace-nowrap">
+                                                    {formatDate(
+                                                        event.start_time,
+                                                        event.end_time,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                <MapPin className="h-4 w-4 shrink-0" />
+                                                <span className="max-w-50 truncate">
+                                                    {event.location || '-'}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className={`tracking-wide whitespace-nowrap capitalize ${getStatusColor(event.status)}`}
+                                            >
+                                                {event.status.replace(
+                                                    /_/g,
+                                                    ' ',
+                                                )}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
+                                            <Link
+                                                href={`/admin/events/${event.public_id}/information`}
+                                            >
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-1.5"
+                                                >
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    Detail
+                                                </Button>
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </div>
+        </AppLayout>
+    );
+}
