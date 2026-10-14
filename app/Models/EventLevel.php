@@ -42,8 +42,18 @@ class EventLevel extends Model
         return $this->belongsTo(Level::class, 'level_id');
     }
 
-    // public function eventChampions(): HasMany
-    // {
-    //     return $this->hasMany(EventChampion::class, 'event_level_id');
-    // }
+    public function participations(): HasMany
+    {
+        return $this->hasMany(Participation::class, 'event_level_id', 'event_level_id');
+    }
+
+    public function eventChampions(): HasMany
+    {
+        return $this->hasMany(EventChampion::class, 'event_level_id');
+    }
+
+    public function eventChampionFormulas(): HasMany
+    {
+        return $this->hasMany(EventChampionFormula::class, 'event_level_id', 'event_level_id');
+    }
 }

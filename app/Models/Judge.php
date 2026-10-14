@@ -44,8 +44,8 @@ class Judge extends Model
         return $this->hasMany(EventJudge::class, 'judge_id');
     }
 
-    // public function teamScores(): HasMany
-    // {
-    //     return $this->hasMany(TeamScore::class, 'judge_id');
-    // }
+    public function teamScores(): HasMany
+    {
+        return $this->hasMany(TeamScore::class, 'judge_id');
+    }
 }

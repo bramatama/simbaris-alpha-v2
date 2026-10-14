@@ -17,10 +17,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('participations', function(Blueprint $table){
-            $table->foreignId('level')->index()->constrained('levels','level_id')->onDelete('restrict');
-        });
-
         Schema::create('event_levels',function(Blueprint $table){
             $table->id('event_level_id');
             $table->foreignId('event_id')->index()->constrained('events','event_id')->onDelete('cascade');
@@ -28,6 +24,10 @@ return new class extends Migration
             $table->integer('registration_fees')->default('0');
             $table->integer('quota')->nullable('0');
             $table->timestamps();
+        });
+
+        Schema::table('participations', function(Blueprint $table){
+            $table->foreignId('event_level_id')->index()->constrained('event_levels','event_level_id')->onDelete('restrict');
         });
     }
 

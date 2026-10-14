@@ -19,6 +19,9 @@ class LevelSeeder extends Seeder
             ['level_name' => 'SD/MI Sederajat', 'created_at' => $now, 'updated_at' => $now],
             ['level_name' => 'SMP/MTs Sederajat', 'created_at' => $now, 'updated_at' => $now],
             ['level_name' => 'SMA/SMK/MA Sederajat', 'created_at' => $now, 'updated_at' => $now],
+            ['level_name' => 'U-12', 'created_at' => $now, 'updated_at' => $now],
+            ['level_name' => 'U-15', 'created_at' => $now, 'updated_at' => $now],
+            ['level_name' => 'U-19', 'created_at' => $now, 'updated_at' => $now],
             ['level_name' => 'Purna/Umum', 'created_at' => $now, 'updated_at' => $now],
         ]);
     }

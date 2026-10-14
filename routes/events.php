@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Events\EventController;
 use App\Http\Controllers\Events\EventCommitteeController;
+use App\Http\Controllers\Events\EventDocumentController;
 use App\Http\Controllers\Events\EventJudgeController;
+use App\Http\Controllers\Events\EventLevelController;
 use App\Http\Controllers\Events\ParticipationController;
 
 Route::get('/events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
@@ -38,8 +40,18 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
 
     Route::delete('events/{event:public_id}/judges/{event_judge:event_judge_id}', [EventJudgeController::class, 'destroy'])->name('events.judges.destroy');
     Route::resource('events/{event:public_id}/judges', EventJudgeController::class)->only(['index', 'store']);
+
+    Route::resource('events/{event:public_id}/levels', EventLevelController::class)->only(['index', 'store']);
+
+    Route::delete('events/{event:public_id}/documents/{event_document:document_id}',[EventDocumentController::class, 'destroy'])->name('events.documents.destroy');
+    Route::resource('events/{event:public_id}/documents', EventDocumentController::class)->only(['index', 'store']);
+
+    Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index', 'destroy');
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
+    Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
+
+    Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index','store', 'destroy');
     Route::get('events/{event:public_id}/enroll', [ParticipationController::class, 'create'])->name('events.official_team.create');
 });

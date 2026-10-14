@@ -7,7 +7,6 @@ use App\Models\Event;
 use App\Models\User;
 use App\Models\Judge;
 use App\Models\EventJudge;
-use App\Models\Expertise;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -21,7 +20,7 @@ class EventJudgeController extends Controller
         $event = Event::where('public_id', $public_id)
             ->with([
                 'eventJudges.judge.user',
-                'eventJudges.judgeExpertises.expertise',
+                'eventJudges.judgeExpertises.scoringCategory.masterCategory',
             ])
             ->firstOrFail();
 
@@ -31,10 +30,15 @@ class EventJudgeController extends Controller
                         ->whereNotIn('judge_id', $assignedJudgeIds)
                         ->get();
 
-        $expertises = Expertise::select(
-            'expertise_id',
-            'expertise_name'
-        )->get();
+        $expertises = $event->scoringCategories
+                    ->map(fn ($category) => [
+                        'scoring_category_id' => $category->scoring_category_id,
+                        'expertise' => [
+                            'id' => $category->masterCategory->master_category_id,
+                            'name' => $category->masterCategory->category_name,
+                        ],
+                    ])
+                    ->values();
 
         return inertia('events/judges/Index', [
             'event' => $event,
@@ -121,7 +125,7 @@ class EventJudgeController extends Controller
             $judgeExpertises = collect($validated['expertise_ids'])
                 ->map(fn ($expertiseId) => [
                     'event_judge_id' => $eventJudge->event_judge_id,
-                    'expertise_id' => $expertiseId,
+                    'scoring_category_id' => $expertiseId,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ])

@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class AuditTrail extends Model
+{
+    protected $primaryKey = 'audit_id';
+
+    protected $fillable = [
+        'participation_id',
+        'judge_id',
+        'criteria_id',
+        'rubric_score_id',
+        'score_value',
+        'ip_address',
+        'user_agent',
+    ];
+
+    protected $casts = [
+        'score_value' => 'float',
+    ];
+
+    public function participation(): BelongsTo
+    {
+        return $this->belongsTo(Participation::class, 'participation_id', 'participation_id');
+    }
+
+    public function judge(): BelongsTo
+    {
+        return $this->belongsTo(Judge::class, 'judge_id', 'judge_id');
+    }
+}

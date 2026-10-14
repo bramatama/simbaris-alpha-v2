@@ -17,7 +17,7 @@ export default function InnerAppLayout({
 }: InnerAppLayoutProps) {
     return (
         <AppLayout isInnerLayout={true}>
-            <div className="flex items-start gap-8">
+            <div className="flex flex-col lg:flex-row items-start">
                 <InnerSidebar items={sidebarNavItems} />
                 <Separator className="my-6 lg:hidden" />
                 <div className="min-w-0 flex-1">{children}</div>

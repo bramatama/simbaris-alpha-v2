@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class ParticipationSeeder extends Seeder
 {
@@ -22,30 +23,39 @@ class ParticipationSeeder extends Seeder
         $levelSmp = 2;
         $levelSma = 3;
 
+        $eventLevelSmp = DB::table('event_levels')->where('event_id', $event->event_id)->where('level_id', $levelSmp)->value('event_level_id');
+        $eventLevelSma = DB::table('event_levels')->where('event_id', $event->event_id)->where('level_id', $levelSma)->value('event_level_id');
+
         // Cari harga berdasarkan event_levels
         $feeSmp = DB::table('event_levels')->where('event_id', $event->event_id)->where('level_id', $levelSmp)->value('registration_fees');
         $feeSma = DB::table('event_levels')->where('event_id', $event->event_id)->where('level_id', $levelSma)->value('registration_fees');
 
         // 1. Tim SMP Mendaftar tapi BELUM divalidasi admin (Status Pending)
         DB::table('participations')->insert([
+            'public_id' => Str::uuid(),
             'event_id' => $event->event_id,
             'official_team_id' => $teamSmp->official_team_id,
-            'level' => $levelSmp,
+            'event_level_id' => $eventLevelSmp,
+            'pic_name' => 'Ahmad',
+            'pic_phone_number' => '087808972890',
             'team_name' => 'Pasukan Garuda Muda',
             'status' => 'pending',
-            'payment_proof_path' => 'proofs/dummy_proof_smp.jpg',
+            'payment_proof_path' => 'payment_proofs/dummy_proof.png',
             'billed_amount' => $feeSmp, // Mengambil harga 150rb
             'created_at' => $now, 'updated_at' => $now
         ]);
 
         // 2. Tim SMA Mendaftar dan SUDAH divalidasi admin (Status Approved)
         $participationSmaId = DB::table('participations')->insertGetId([
+            'public_id' => Str::uuid(),
             'event_id' => $event->event_id,
             'official_team_id' => $teamSma->official_team_id,
-            'level' => $levelSma,
+            'event_level_id' => $eventLevelSma,
+            'pic_name' => 'Ahmad',
+            'pic_phone_number' => '087808972890',
             'team_name' => 'Cobra Paskibra SMAN 5',
             'status' => 'approved',
-            'payment_proof_path' => 'proofs/dummy_proof_sma.jpg',
+            'payment_proof_path' => 'payment_proofs/dummy_proof.png',
             'billed_amount' => $feeSma, // Mengambil harga 200rb
             'created_at' => $now, 'updated_at' => $now
         ]);

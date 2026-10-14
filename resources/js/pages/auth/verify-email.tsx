@@ -7,11 +7,8 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
-import { Auth } from '@/types';
+import type { PageProps } from '@inertiajs/core';
 
-type PageProps = {
-    auth: Auth;
-};
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { auth } = usePage<PageProps>().props;

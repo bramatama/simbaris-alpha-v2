@@ -21,11 +21,7 @@ import {
     Trophy,
     FileText,
 } from 'lucide-react';
-import { Auth } from '@/types';
-
-type PageProps = {
-    auth: Auth;
-};
+import { PageProps } from '@inertiajs/core';
 
 export default function EventShow({ event }: { event: any }) {
     const { props } = usePage<PageProps>();

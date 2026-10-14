@@ -4,283 +4,417 @@ namespace App\Http\Controllers\Events;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
-use App\Models\EventCommittee;
-use App\Models\Committee;
-use App\Models\User;
+use App\Models\EventLevel;
+use App\Models\Participation;
+use App\Models\ParticipationDocument;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ParticipationController extends Controller
 {
     /**
-     * Display a listing of all events.
+     * Menampilkan daftar pendaftar untuk event tertentu.
      */
     public function index($public_id)
     {
-        $event = Event::where('public_id', $public_id)
-                ->with('participations.officialTeam.user')
-                ->firstOrFail();
+        $role = auth()->user()->role;
+        $myOfficialTeamId = auth()->user()->officialTeam->official_team_id?? null;
+        $event = Event::select('event_id', 'public_id', 'event_name')
+            ->where('public_id', $public_id)
+            ->firstOrFail();
 
+        $participations = Participation::where('event_id', $event->event_id)
+            ->with([
+                'officialTeam', 
+                'eventLevel.level', // Mengambil data nama jenjang
+            ])
+            ->latest()
+            ->get();
 
-        $role = auth()->user()?->role;
-        $view = match ($role) {
-            'committee' => 'committee/HostedEvents/Participations/Index',
-            'official_team' => 'official_team/MyEvents/Participations/Index',
-            default => abort(403, 'Unauthorized access'),
+        $component = match($role){
+            'committee' => inertia('events/participations/committee/Index', [
+                                'event' => $event,
+                                'participations' => $participations,
+                            ]),
+            'official_team' => inertia('events/participations/official_team/Index', [
+                                'event' => $event,
+                                'participations' => $participations,
+                                'myOfficialTeamId' => $myOfficialTeamId,
+                            ]),
+            default => abort(403, 'Unauthorized access')
         };
 
-        // TAMBAHKAN existingCommittees KE DALAM ARRAY PENGIRIMAN
-        return inertia($view, [
-            'event' => $event,
-        ]);
+        return $component;
     }
 
     /**
-     * Display the events for the authenticated user.
+     * Menampilkan halaman form pendaftaran event (Khusus Official Team).
      */
-    public function my_events()
-    {
-        $role = auth()->user()?->role;
-        $events = match ($role) {
-            'committee' => Event::whereHas('eventCommittees.committee', function ($query) {
-                $query->where('user_id', auth()->id());
-            })->latest()->get(),
-            'official_team' => Event::whereHas('participations.officialTeam', function ($query) {
-                $query->where('user_id', auth()->id());
-            })->latest()->get(),
-            default => collect([]),
-        };
-
-        $view = match ($role) {
-            'committee' => 'committee/HostedEvents/Index',
-            'official_team' => 'official_team/MyEvents/Index',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        return inertia($view, [
-            'events' => $events,
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new event.
-     */
-    public function create()
-    {
-        $existingCommittees = Committee::with('user:user_id,name,email')->get();
-
-        // 2. Kirimkan ke frontend
-        return inertia('admin/EventManagement/Create', [
-            'existingCommittees' => $existingCommittees
-        ]);    
-    }
-
-    /**
-     * Store a newly created event in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'location' => 'required|string|max:255',
-            'status' => 'required|in:draft,registration_open,active,finished',
-            'registration_start_time' => 'required|date',
-            'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after_or_equal:start_time',
-
-            'committees' => 'required|array|min:1',
-            'committees.*.name' => 'required|string|max:255',
-            'committees.*.email' => 'required|email',
-            'committees.*.department' => 'required|string|max:255',
-            'committees.*.position' => 'required|string|max:255',
-
-            'force_create' => 'nullable|boolean',
-        ]);
-
-        $existingCommittees = [];
-        $validationErrors = [];
-
-        foreach ($validated['committees'] as $index => $committeeData) {
-
-            $user = User::where('email', $committeeData['email'])->first();
-
-            if ($user) {
-
-                if ($user->role !== 'committee') {
-                    $validationErrors["committees.$index.email"] =
-                        "Email already used by another account.";
-                } else {
-
-                    $committee = Committee::where('user_id', $user->user_id)->first();
-
-                    $existingCommittees[] =
-                        $user->name . ' (' . $committee->department . ')';
-                }
-            }
-        }
-
-        if ($validationErrors) {
-            throw ValidationException::withMessages($validationErrors);
-        }
-
-        if ($existingCommittees && empty($validated['force_create'])) {
-            throw ValidationException::withMessages([
-                'confirmation' =>
-                    'Existing committee found: ' .
-                    implode(', ', $existingCommittees) .
-                    '. Continue?',
-            ]);
-        }
-
-        DB::transaction(function () use ($validated, $request) {
-
-            $event = Event::create([
-                'public_id' => Str::uuid(),
-                'event_name' => $validated['event_name'],
-                'description' => $validated['description'],
-                'location' => $validated['location'],
-                'status' => $validated['status'],
-                'registration_start_time' => $validated['registration_start_time'],
-                'registration_end_time' => $validated['registration_end_time'],
-                'start_time' => $validated['start_time'],
-                'end_time' => $validated['end_time'],
-                'created_by' => $request->user()->user_id,
-            ]);
-
-            foreach ($validated['committees'] as $committeeData) {
-
-                $user = User::firstOrCreate(
-                    ['email' => $committeeData['email']],
-                    [
-                        'public_id' => Str::uuid(),
-                        'name' => $committeeData['name'],
-                        'role' => 'committee',
-                        'password' => Hash::make('password123'),
-                    ]
-                );
-
-                $committee = Committee::firstOrCreate(
-                    ['user_id' => $user->user_id],
-                    ['department' => $committeeData['department']]
-                );
-
-                EventCommittee::create([
-                    'event_id' => $event->event_id,
-                    'committee_id' => $committee->committee_id,
-                    'position' => $committeeData['position'],
-                ]);
-            }
-        });
-
-        return redirect()
-            ->route('events.index')
-            ->with('success', 'Event created successfully!');
-    }
-
-    /**
-     * Display the specified event.
-     */
-    public function show($id)
+    public function create($public_id)
     {
         $role = auth()->user()->role;
         
-        // Query dasar untuk mengambil event berdasarkan public_id
-        $query = Event::where('public_id', $id);
+        if ($role !== 'official_team') {
+            abort(403, 'Hanya akun Official Team yang dapat mendaftar pada event ini.');
+        }
 
-        // Eager loading data tambahan berdasarkan role agar dashboard informatif
-        $event = match ($role) {
-            'admin' => $query->withCount(['participations', 'eventCommittees', 'eventJudges'])->firstOrFail(),
-            
-            'committee' => $query->with(['eventCommittees.committee.user', 'eventJudges.judge.user'])
-                                ->withCount('participations', 'eventCommittees','eventJudges')
-                                ->firstOrFail(),
-                                
-            'judge' => $query->with(['eventJudges' => function($q) {
-                $q->where('judge_id', auth()->user()->judge->judge_id);
-            }])->firstOrFail(),
-            
-            'official_team' => $query->with(['participations' => function($q) {
-                $q->where('official_team_id', auth()->user()->officialTeam->official_team_id);
-            }])->firstOrFail(),
-            
-            default => abort(403),
-        };
-
-        // Tentukan path view React berdasarkan role
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Show',
-            'committee' => 'committee/HostedEvents/Show',
-            'judge' => 'judge/EventManagement/Show',
-            'official_team' => 'official_team/EventManagement/Show',
-            default => abort(403),
-        };
-
-        return inertia($view, [
-            'event' => $event,
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified event.
-     */
-    public function edit($id)
-    {
-        $event = Event::where('public_id', $id)
-            ->with(['eventCommittees.committee.user'])
+        $event = Event::select('event_id', 'public_id', 'event_name')
+            ->where('public_id', $public_id)
             ->firstOrFail();
 
-        $role = auth()->user()?->role;
-        $view = match ($role) {
-            'admin' => 'admin/EventManagement/Edit',
-            'committee' => 'committee/HostedEvents/Edit',
-            default => abort(403, 'Unauthorized access'),
-        };
-        
-        return inertia($view, [
-            'event' => $event
+        $eventLevels = EventLevel::where('event_id', $event->event_id)
+            ->with('level:level_id,level_name')
+            ->get();
+
+        return inertia('events/participations/official_team/Create', [
+            'event' => $event,
+            'eventLevels' => $eventLevels,
         ]);
     }
 
-    /**
-     * Update the specified event in storage.
-     */
-    public function update(Request $request, $id)
+    public function store(Request $request, $public_id)
     {
-        $event = Event::where('public_id', $id)->firstOrFail();
+        $event = Event::where('public_id', $public_id)->firstOrFail();
+
         $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'location' => 'required|string|max:255',
-            'status' => 'required|in:draft,registration_open,active,finished',
-            'registration_start_time' => 'required|date',
-            'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after_or_equal:start_time',
+            'teams' => 'required|array|min:1',
+            'teams.*.event_level_id' => 'required|exists:event_levels,event_level_id',
+            'teams.*.team_name' => 'required|string|max:255',
+            'teams.*.pic_name' => 'required|string|max:255',
+            'teams.*.pic_phone_number' => 'required|string|max:20',
+            
+            'payment_proof_path' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $event->update($validated);
+        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
 
-        return redirect()->route('events.index')
-            ->with('message', 'Event updated successfully.');
+        if (!$officialTeamId) {
+            throw ValidationException::withMessages([
+                'error' => 'Hanya akun Official Team yang dapat mendaftar event.',
+            ]);
+        }
+
+        $paymentProofPath = null;
+
+        try {
+            DB::transaction(function () use ($request, $validated, $event, $officialTeamId, &$paymentProofPath) {
+                
+                if ($request->hasFile('payment_proof_path')) {
+                    $paymentProofPath = $request->file('payment_proof_path')->store('payment_proofs', 'public');
+                }
+
+                $levelCounts = collect($validated['teams'])->countBy('event_level_id');
+                
+                $sortedLevelIds = $levelCounts->keys()->sort();
+                $eventLevels = [];
+
+                foreach ($sortedLevelIds as $levelId) {
+                    $level = EventLevel::where('event_level_id', $levelId)
+                        ->where('event_id', $event->event_id)
+                        ->lockForUpdate() 
+                        ->firstOrFail();
+
+                    $requestedQuota = $levelCounts[$levelId];
+
+                    if (!empty($level->quota) && $level->quota > 0) {
+                        $currentParticipations = Participation::where('event_level_id', $level->event_level_id)->count();
+
+                        if (($currentParticipations + $requestedQuota) > $level->quota) {
+                            throw ValidationException::withMessages([
+                                'teams' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: " . ($level->quota - $currentParticipations),
+                            ]);
+                        }
+                    }
+                    $eventLevels[$levelId] = $level;
+                }
+
+                foreach ($validated['teams'] as $team) {
+                    $level = $eventLevels[$team['event_level_id']];
+
+                    Participation::create([
+                        'event_id' => $event->event_id,
+                        'official_team_id' => $officialTeamId,
+                        'event_level_id' => $level->event_level_id,
+                        'team_name' => $team['team_name'],
+                        'pic_name' => $team['pic_name'],
+                        'pic_phone_number' => $team['pic_phone_number'],
+                        'status' => 'pending', 
+                        'billed_amount' => $level->registration_fees, 
+                        'payment_proof_path' => $paymentProofPath,
+                    ]);
+                }
+            });
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            if ($paymentProofPath && Storage::disk('public')->exists($paymentProofPath)) {
+                Storage::disk('public')->delete($paymentProofPath);
+            }
+            throw $e;
+        }
+
+        $totalTeams = count($validated['teams']);
+        return redirect()->back()->with('success', "Pendaftaran {$totalTeams} tim berhasil!");
     }
 
     /**
-     * Remove the specified event from storage.
+     * Menampilkan detail pendaftaran.
      */
-    public function destroy($id)
+    public function show($public_id)
     {
-        $event = Event::where('public_id', $id)->firstOrFail();
-        DB::transaction(function () use ($event) {
-            EventCommittee::where('event_id', $event->event_id)->delete();
-            $event->delete();
+        $role = auth()->user()->role;
+        $participation = Participation::with([
+            'event:event_id,public_id,event_name',
+            'officialTeam',
+            'eventLevel.level',
+            'participationDocuments'
+        ])->where('public_id', $public_id)->firstOrFail();
+
+        if ($role === 'official_team'){
+            $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
+            if ($participation->official_team_id !== $officialTeamId) {
+                abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
+            }
+        } 
+
+        return inertia('events/participations/Show', [
+            'participation' => $participation,
+        ]);
+    }
+
+    /**
+     * Menampilkan form edit pendaftaran.
+     */
+    public function edit($public_id)
+    {
+
+        $participation = Participation::with(['participationDocuments', 'event'])->where('public_id',$public_id)->firstOrFail();
+        
+        $eventLevels = EventLevel::where('event_id', $participation->event_id)
+            ->with('level')
+            ->get();
+            
+        return inertia('events/participations/official_team/Edit', [
+                                'participation' => $participation,
+                                'eventLevels' => $eventLevels,
+                            ]);
+    }
+
+    /**
+     * Memperbarui data pendaftaran (Khusus Official Team).
+     */
+    public function updateRegistration(Request $request, $public_id)
+    {
+        $participation = Participation::where('public_id', $public_id)->firstOrFail();
+
+        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
+        if ($participation->official_team_id !== $officialTeamId) {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah data ini.');
+        }
+
+        $validated = $request->validate([
+            'team_name' => 'required|string|max:255',
+            'pic_name' => 'required|string|max:255',
+            'pic_phone_number' => 'required|string|max:20',
+            'payment_proof_path' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'team_logo_path' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        if ($request->hasFile('payment_proof_path')) {
+            if ($participation->payment_proof_path && Storage::disk('public')->exists($participation->payment_proof_path)) {
+                Storage::disk('public')->delete($participation->payment_proof_path);
+            }
+            $validated['payment_proof_path'] = $request->file('payment_proof_path')->store('payment_proofs', 'public');
+        } else {
+            unset($validated['payment_proof_path']);
+        }
+
+        if ($request->hasFile('team_logo_path')) {
+            if ($participation->team_logo_path && Storage::disk('public')->exists($participation->team_logo_path)) {
+                Storage::disk('public')->delete($participation->team_logo_path);
+            }
+            $validated['team_logo_path'] = $request->file('team_logo_path')->store('team_logos', 'public');
+        } else {
+            unset($validated['team_logo_path']);
+        }
+
+        if ($participation->status === 'rejected') {
+            $validated['status'] = 'pending';
+            $validated['status_message'] = null;
+        }
+
+        $participation->update($validated);
+
+        return redirect()->back()->with('success', 'Data pendaftaran berhasil diperbarui.');
+    }
+
+    /**
+     * Memperbarui status pendaftaran (Khusus Committee / Admin).
+     */
+    public function updateStatus(Request $request, $public_id)
+    {
+        $participation = Participation::where('public_id', $public_id)->firstOrFail();;
+
+        $role = auth()->user()->role;
+        if (!in_array($role, ['committee', 'admin'])) {
+            abort(403, 'Hanya panitia yang dapat mengubah status pendaftaran.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:pending,approved,rejected',
+            'status_message' => 'nullable|string|max:255',
+        ]);
+
+        if ($validated['status'] === 'approved') {
+            $validated['status_message'] = null;
+        }
+
+        if ($validated['status'] === 'rejected' && empty($validated['status_message'])) {
+            return back()->withErrors(['status_message' => 'Alasan penolakan (status message) wajib diisi.']);
+        }
+
+        $participation->update([
+            'status' => $validated['status'],
+            'status_message' => $validated['status_message'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Status pendaftaran berhasil diperbarui.');
+    }
+
+    /**
+     * Menampilkan halaman khusus manajemen dokumen pendaftaran.
+     */
+    public function documentIndex($public_id)
+    {        
+        $participation = Participation::with([
+            'event:event_id,public_id,event_name',
+            'participationDocuments'
+        ])->where('public_id', $public_id)->firstOrFail();
+
+        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
+        if ($participation->official_team_id !== $officialTeamId || $officialTeamId === null) {
+            abort(403, 'Anda tidak memiliki akses untuk melihat dokumen pendaftaran ini.');
+        }
+
+        return inertia('events/documents/official_team/Documents', [
+            'participation' => $participation,
+        ]);
+    }
+
+    /**
+     * Mengunggah dokumen persyaratan untuk pendaftaran.
+     */
+    public function uploadParticipationDocuments(Request $request, $public_id)
+    {
+        $participation = Participation::where('public_id',$public_id)->firstOrFail();
+
+        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
+        if ($participation->official_team_id !== $officialTeamId) {
+            abort(403, 'Anda tidak memiliki akses untuk mengunggah dokumen pada pendaftaran ini.');
+        }
+
+        $request->validate([
+            'documents' => 'required|array|min:1',
+            'documents.*' => 'required|file|extensions:pdf|max:5120',
+        ], [
+            'documents.required' => 'Silakan pilih setidaknya satu dokumen.',
+            'documents.*.extensions' => 'Semua dokumen yang diunggah wajib berformat PDF.',
+            'documents.*.max' => 'Ukuran setiap dokumen tidak boleh melebihi 5MB.',
+        ]);
+
+        $uploadedPaths = [];
+
+        try {
+            DB::transaction(function () use ($request, $participation, &$uploadedPaths) {
+                if ($request->hasFile('documents')) {
+                    foreach ($request->file('documents') as $file) {
+                        
+                        $path = $file->store('participation_documents', 'public');
+                        $uploadedPaths[] = $path; 
+                        
+                        ParticipationDocument::create([
+                            'participation_id' => $participation->participation_id,
+                            'document_name' => $file->getClientOriginalName(),
+                            'document_path' => $path,
+                        ]);
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            foreach ($uploadedPaths as $path) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+            throw $e; 
+        }
+
+        return redirect()->back()->with('success', 'Dokumen persyaratan berhasil diunggah!');
+    }
+
+    /**
+     * Menghapus salah satu dokumen persyaratan.
+     */
+    public function destroyDocument($public_id,$document_id)
+    {
+        // Cari dokumen beserta relasi pendaftarannya untuk validasi kepemilikan
+        $document = ParticipationDocument::get()->findOrFail($document_id);
+        $participation = Participation::where('public_id',$public_id)->firstOrFail();
+
+        $role = auth()->user()->role;
+        
+        // Keamanan: Hanya official team pemilik atau panitia yang boleh menghapus
+        if ($role === 'official_team') {
+            $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
+            if ($participation->official_team_id !== $officialTeamId) {
+                abort(403, 'Anda tidak memiliki akses untuk menghapus dokumen ini.');
+            }
+        } elseif (!in_array($role, ['committee', 'admin'])) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $documentPath = $document->document_path;
+
+        DB::transaction(function () use ($document) {
+            $document->delete();
         });
 
-        return redirect()->route('events.index')
-            ->with('message', 'Event deleted successfully.');
+        // Hapus file fisik dari storage setelah data di database berhasil dihapus
+        if ($documentPath && Storage::disk('public')->exists($documentPath)) {
+            Storage::disk('public')->delete($documentPath);
+        }
+
+        return redirect()->back()->with('success', 'Dokumen berhasil dihapus.');
+    }
+
+    /**
+     * Menghapus data pendaftaran beserta file-filenya.
+     */
+    public function destroy($public_id)
+    {
+        $participation = Participation::with('participationDocuments')->where('public_id',$public_id)->firstOrFail();
+
+        $paymentProofPath = $participation->payment_proof_path;
+        $documentPaths = $participation->participationDocuments->pluck('document_path')->toArray();
+
+        DB::transaction(function () use ($participation) {
+            $participation->delete(); // Ini otomatis menghapus row participation_documents karena onDelete('cascade') di DB
+        });
+
+        // Hapus fisik bukti bayar
+        if ($paymentProofPath && Storage::disk('public')->exists($paymentProofPath)) {
+            Storage::disk('public')->delete($paymentProofPath);
+        }
+
+        // Hapus fisik dokumen persyaratan
+        foreach ($documentPaths as $docPath) {
+            if (Storage::disk('public')->exists($docPath)) {
+                Storage::disk('public')->delete($docPath);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Pendaftaran berhasil dihapus.');
     }
 }

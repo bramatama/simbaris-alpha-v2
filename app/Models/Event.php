@@ -88,8 +88,8 @@ class Event extends Model
         return $this->hasMany(EventLevel::class, 'event_id');
     }
 
-    // public function scoringCategories(): HasMany
-    // {
-    //     return $this->hasMany(ScoringCategory::class, 'event_id');
-    // }
+    public function scoringCategories(): HasMany
+    {
+        return $this->hasMany(ScoringCategory::class, 'event_id');
+    }
 }

@@ -31,15 +31,18 @@ class Participation extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'public_id',
         'event_id',
         'official_team_id',
-        'level',
+        'event_level_id',
         'team_name',
+        'team_logo_path',
+        'pic_name',
+        'pic_phone_number',
         'status',
         'status_message',
         'payment_proof_path',
         'billed_amount',
-        'participation_files',
     ];
 
     public function event(): BelongsTo
@@ -52,9 +55,14 @@ class Participation extends Model
         return $this->belongsTo(OfficialTeam::class, 'official_team_id');
     }
 
-    public function level(): BelongsTo
+    public function eventLevel(): BelongsTo
     {
-        return $this->belongsTo(Level::class, 'level');
+        return $this->belongsTo(EventLevel::class, 'event_level_id');
+    }
+
+    public function participationDocuments(): HasMany
+    {
+        return $this->hasMany(ParticipationDocument::class, 'participation_id');
     }
 
     // public function teamMembers(): HasMany

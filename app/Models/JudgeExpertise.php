@@ -7,30 +7,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class JudgeExpertise extends Model
 {
-    protected $table = 'judge_expertises';
-
     protected $primaryKey = 'judge_expertise_id';
 
     protected $fillable = [
         'event_judge_id',
-        'expertise_id',
+        'scoring_category_id',
     ];
 
     public function eventJudge(): BelongsTo
     {
-        return $this->belongsTo(
-            EventJudge::class,
-            'event_judge_id',
-            'event_judge_id'
-        );
+        return $this->belongsTo(EventJudge::class, 'event_judge_id', 'event_judge_id');
     }
 
-    public function expertise(): BelongsTo
+    public function scoringCategory(): BelongsTo
     {
-        return $this->belongsTo(
-            Expertise::class,
-            'expertise_id',
-            'expertise_id'
-        );
+        return $this->belongsTo(ScoringCategory::class, 'scoring_category_id', 'scoring_category_id');
     }
 }

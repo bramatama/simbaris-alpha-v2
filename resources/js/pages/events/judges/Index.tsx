@@ -15,10 +15,8 @@ import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 import JudgeTable from '@/components/judge_table/judge_table';
 import AddJudgeDialog from '@/components/dialogs/add-judge-dialog';
+import type { PageProps } from '@inertiajs/core';
 
-type PageProps = {
-    auth: Auth;
-};
 
 type Expertise = {
     expertise_id: number;

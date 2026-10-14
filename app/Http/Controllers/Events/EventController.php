@@ -28,9 +28,8 @@ class EventController extends Controller
         : Event::withCount('participations')->latest()->get();
     
         $view = match ($role) {
-            'admin' => 'events/admin/Index',
-            'official_team' => 'events/Index',
-            'committee' => 'events/committee/HostedEvents',
+            'admin' => 'events/event_lists/admin/Index',
+            'official_team' => 'events/event_lists/Index',
             default => abort(403, 'Unauthorized Access')
         };
 
@@ -56,8 +55,8 @@ class EventController extends Controller
         };
 
         $view = match ($role) {
-            'committee' => 'events/committee/HostedEvents',
-            'official_team' => 'events/official_team/MyEvents',
+            'committee' => 'events/event_lists/committee/HostedEvents',
+            'official_team' => 'events/event_lists/official_team/MyEvents',
             default => abort(403, 'Unauthorized access'),
         };
 
@@ -74,7 +73,7 @@ class EventController extends Controller
         $existingCommittees = Committee::with('user:user_id,name,email')->get();
 
         // 2. Kirimkan ke frontend
-        return inertia('events/Create', [
+        return inertia('events/event_create/Create', [
             'existingCommittees' => $existingCommittees
         ]);
     }
@@ -117,9 +116,7 @@ class EventController extends Controller
                     $validationErrors["committees.$index.email"] =
                         "Email already used by another account.";
                 } else {
-
                     $committee = Committee::where('user_id', $user->user_id)->first();
-
                     $existingCommittees[] =
                         $user->name . ' (' . $committee->department . ')';
                 }
@@ -210,8 +207,22 @@ class EventController extends Controller
         $event = match ($role) {
             'admin' => $query->withCount(['participations', 'eventCommittees', 'eventJudges'])->firstOrFail(),
             
-            'committee' => $query->with(['eventCommittees.committee.user', 'eventJudges.judge.user', 'eventLevels'])
-                                ->withCount('participations', 'eventCommittees','eventJudges')
+            'committee' => $query->with([
+                                    'eventJudges:event_id,event_judge_id,judge_id',
+                                    'eventJudges.judge.user:user_id,name',
+                                    'eventJudges.judgeExpertises.scoringCategory.masterCategory:master_category_id,category_name',
+                                    'eventLevels' => function ($q) {
+                                        $q->select(
+                                            'event_level_id',
+                                            'event_id',
+                                            'level_id',
+                                            'registration_fees'
+                                        )->with('level:level_id,level_name')->withCount('participations');
+                                    },
+                                    'participations:event_id,participation_id,event_level_id,team_name',
+                                    'eventDocuments:event_id,document_id,document_name,document_path'
+                                ])
+                                ->withCount('participations', 'eventJudges')
                                 ->firstOrFail(),
                                 
             'judge' => $query->with(['eventJudges' => function($q) {
@@ -225,10 +236,19 @@ class EventController extends Controller
             default => abort(403),
         };
 
+        $event->eventJudges->transform(function ($eventJudge) {
+            $eventJudge->expertises = $eventJudge->judgeExpertises->map(function ($expertise) {
+                return $expertise->scoringCategory->masterCategory->category_name ?? null;
+            })->filter()->values()->toArray(); 
+            unset($eventJudge->judgeExpertises);
+
+            return $eventJudge;
+        });
+
         $view = match ($role) {
-            'committee' => 'events/committee/Show',
-            'admin' => 'events/admin/Show',
-            'official_team' => 'events/official_team/Show',
+            'committee' => 'events/event_details/committee/Show',
+            'admin' => 'events/event_details/Show',
+            'official_team' => 'events/event_details/official_team/Show',
             default => abort(403, 'Unauthorized access'),
         };
 
@@ -242,11 +262,17 @@ class EventController extends Controller
      */
     public function edit($id)
     {
+        $role = auth()->user()->role;
+
+        if (!in_array($role, ['committee', 'admin'])) {
+            abort(403, 'Hanya admin dan panitia yang dapat mengubah event.');
+        }
+
         $event = Event::where('public_id', $id)
             ->with(['eventCommittees.committee.user'])
             ->firstOrFail();
         
-        return inertia('events/Edit', [
+        return inertia('events/event_edit/Edit', [
             'event' => $event
         ]);
     }
@@ -282,8 +308,7 @@ class EventController extends Controller
 
         $event->update($validated);
 
-        return redirect()->route('events.index')
-            ->with('message', 'Event updated successfully.');
+        return redirect()->back()->with('success', 'Event updated successfully.');
     }
 
     /**
@@ -302,12 +327,7 @@ class EventController extends Controller
             Storage::disk('public')->delete($poster_path);
         }
 
-        return redirect()->route('events.index')
+        return redirect()->back()
             ->with('message', 'Event deleted successfully.');
-    }
-
-    public function event_details_check ($id)
-    {
-        $event = Event::where('public_id', $id)->firstOrFail();
     }
 }

@@ -24,16 +24,13 @@ import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { Plus } from 'lucide-react';
-import { Auth } from '@/types';
 
 interface AddCommitteeDialogProps {
     eventPublicId: string;
     existingCommittees: any[];
 }
+import type { PageProps } from '@inertiajs/core';
 
-type PageProps = {
-    auth: Auth;
-};
 
 export default function AddCommitteeDialog({
     eventPublicId,

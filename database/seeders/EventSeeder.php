@@ -41,37 +41,61 @@ class EventSeeder extends Seeder
             'event_id' => $eventId1, 'level_id' => 3, 'registration_fees' => 200000, 'quota' => 25, 'created_at' => $now, 'updated_at' => $now
         ]);
 
-        // 3. Setup Juri & Panitia Bertugas di Event Ini
+        // ========================================================================
+        // LANGKAH BARU: AKTIFKAN SCORING CATEGORY UNTUK EVENT INI
+        // ========================================================================
+        $masterCategories = DB::table('master_scoring_categories')->get();
+        $activeScoringCategoryIds = [];
+
+        foreach ($masterCategories as $master) {
+            $scoringCategoryId = DB::table('scoring_categories')->insertGetId([
+                'event_id' => $eventId1,
+                'master_category_id' => $master->master_category_id,
+                'created_at' => $now,
+                'updated_at' => $now
+            ]);
+            $activeScoringCategoryIds[] = $scoringCategoryId; // Simpan ID untuk dipasangkan ke juri nanti
+        }
+
+        // ========================================================================
+        // 3. SETUP JURI & KEAHLIANNYA DI EVENT INI
+        // ========================================================================
         $judges = DB::table('judges')->get();
+        $eventJudgeIds = [];
+        
+        // A. Masukkan Juri ke Event
         foreach ($judges as $judge) {
-            DB::table('event_judges')->insert([
-                'event_id' => $eventId1, 'judge_id' => $judge->judge_id, 'created_at' => $now, 'updated_at' => $now
+            $eventJudgeIds[] = DB::table('event_judges')->insertGetId([
+                'event_id' => $eventId1, 
+                'judge_id' => $judge->judge_id, 
+                'created_at' => $now, 
+                'updated_at' => $now
             ]);
         }
 
-        $eventJudges = DB::table('event_judges') ->select('event_judge_id') ->get(); 
-        $expertises = DB::table('expertises') ->select('expertise_id') ->get(); 
-        $data = [];
+        // B. Pasangkan Keahlian (Expertise) Juri berdasarkan Scoring Categories Event
+        $judgeExpertiseData = [];
+        foreach ($eventJudgeIds as $eventJudgeId) {
+            $selectedScoringCategoryIds = collect($activeScoringCategoryIds)
+                ->shuffle()
+                ->take(rand(1, min(2, count($activeScoringCategoryIds))));
 
-        foreach ($eventJudges as $eventJudge) {
-        $selectedExpertises = $expertises
-            ->shuffle()
-            ->take(rand(1, min(2, $expertises->count())));
-
-        foreach ($selectedExpertises as $expertise) {
-            $data[] = [
-                'event_judge_id' => $eventJudge->event_judge_id,
-                'expertise_id' => $expertise->expertise_id,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+            foreach ($selectedScoringCategoryIds as $scoringCategoryId) {
+                $judgeExpertiseData[] = [
+                    'event_judge_id' => $eventJudgeId,
+                    'scoring_category_id' => $scoringCategoryId, // Menggunakan ID dari tabel scoring_categories (Event)
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
-        if (!empty($data)) {
-            DB::table('judge_expertises')->insertOrIgnore($data);
+        // Simpan data expertise secara bulk (Mass Insert)
+        if (!empty($judgeExpertiseData)) {
+            DB::table('judge_expertises')->insertOrIgnore($judgeExpertiseData);
         }
-    }
 
+        // Setup Panitia Bertugas
         $committee = DB::table('committees')->first();
         DB::table('event_committees')->insert([
             'event_id' => $eventId1, 'committee_id' => $committee->committee_id, 'position' => 'administration', 'created_at' => $now, 'updated_at' => $now

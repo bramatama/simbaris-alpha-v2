@@ -10,10 +10,14 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-// Mendefinisikan tipe data khusus untuk tabel
-type Expertise = {
-    expertise_id: number;
-    expertise_name: string;
+type MasterCategory = {
+    master_category_id: number;
+    category_name: string;
+};
+
+type ScoringCategory = {
+    scoring_category_id: number;
+    master_category?: MasterCategory;
 };
 
 type EventJudge = {
@@ -26,7 +30,7 @@ type EventJudge = {
     };
     judge_expertises?: {
         judge_expertise_id: number;
-        expertise?: Expertise;
+        scoring_category?: ScoringCategory;
     }[];
 };
 
@@ -74,8 +78,9 @@ export default function JudgeTable({ judges, onDeleteClick }: JudgeTableProps) {
                                                         variant="secondary"
                                                     >
                                                         {judgeExpertise
-                                                            .expertise
-                                                            ?.expertise_name ??
+                                                            .scoring_category
+                                                            ?.master_category
+                                                            ?.category_name ??
                                                             'Unknown'}
                                                     </Badge>
                                                 ),

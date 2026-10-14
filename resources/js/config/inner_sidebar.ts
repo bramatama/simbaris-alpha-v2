@@ -1,5 +1,5 @@
 import type { NavItem } from '@/types';
-import { InfoIcon, Gavel, Edit, Star } from 'lucide-react';
+import { InfoIcon, Gavel, Edit, Star, DoorStairwell, FileText, UserGroup } from 'lucide-react';
 
 export const getEventInnerNav = (
     eventPublicId: string,
@@ -27,16 +27,42 @@ export const getEventInnerNav = (
                 href: `/${role}/events/${eventPublicId}/committees`,
                 icon: Star,
             },
-            
         );
     }
 
     if (role === 'committee') {
-        items.push({
-            title: 'Juri Lomba',
-            href: `/${role}/events/${eventPublicId}/judges`,
-            icon: Gavel,
-        });
+        items.push(
+            {
+                title: 'Juri Lomba',
+                href: `/${role}/events/${eventPublicId}/judges`,
+                icon: Gavel,
+            },
+            {
+                title: 'Peserta Lomba',
+                href: `/${role}/events/${eventPublicId}/participations`,
+                icon: UserGroup,
+            },
+            {
+                title: 'Manajemen Jenjang',
+                href: `/${role}/events/${eventPublicId}/levels`,
+                icon: DoorStairwell,
+            },
+            {
+                title: 'Dokumen Lomba',
+                href: `/${role}/events/${eventPublicId}/documents`,
+                icon: FileText,
+            },
+        );
+    }
+
+    if (role === 'official_team') {
+        items.push(
+            {
+                title: 'Peserta Lomba',
+                href: `/${role}/events/${eventPublicId}/participations`,
+                icon: UserGroup,
+            },
+        );
     }
 
     return items;

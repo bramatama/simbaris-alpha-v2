@@ -31,14 +31,17 @@ return new class extends Migration
 
         Schema::create('participations', function (Blueprint $table) {
             $table->id('participation_id');
+            $table->uuid('public_id')->unique();
             $table->foreignId('event_id')->index()->constrained('events','event_id')->onDelete('cascade');
             $table->foreignId('official_team_id')->index()->constrained('official_teams','official_team_id')->onDelete('cascade');
             $table->string('team_name')->nullable();
+            $table->string('team_logo_path')->nullable();
+            $table->string('pic_name');
+            $table->string('pic_phone_number');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('status_message')->nullable();
             $table->string('payment_proof_path')->nullable();
             $table->integer('billed_amount');
-            $table->string('participation_files')->nullable();
             $table->timestamps();
         });
 
@@ -60,6 +63,14 @@ return new class extends Migration
         Schema::create('event_documents',function (Blueprint $table) {
             $table->id('document_id');
             $table->foreignId('event_id')->index()->constrained('events','event_id')->onDelete('cascade');
+            $table->string('document_name');
+            $table->string('document_path');
+            $table->timestamps();
+        });
+
+        Schema::create('participation_documents',function(Blueprint $table){
+            $table->id('document_id');
+            $table->foreignId('participation_id')->index()->constrained('participations','participation_id')->onDelete('cascade');
             $table->string('document_name');
             $table->string('document_path');
             $table->timestamps();

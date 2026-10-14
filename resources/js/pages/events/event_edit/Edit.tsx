@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Auth } from '@/types';
+import type { PageProps } from '@inertiajs/core';
 
 const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '';
@@ -39,9 +39,6 @@ const formatDateTime = (dateString: string | null) => {
     return localISOTime;
 };
 
-type PageProps = {
-    auth: Auth;
-};
 
 export default function EventEdit({ event }: { event: any }) {
     const { auth } = usePage<PageProps>().props;
