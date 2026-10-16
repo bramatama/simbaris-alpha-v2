@@ -132,7 +132,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                                         <TableCell className="text-right">
                                             {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
                                             <Link
-                                                href={`committee/events/${event.public_id}/information`}
+                                                href={`/committee/events/${event.public_id}/information`}
                                             >
                                                 <Button
                                                     variant="outline"

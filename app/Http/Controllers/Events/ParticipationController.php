@@ -10,6 +10,7 @@ use App\Models\ParticipationDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ParticipationController extends Controller
@@ -50,6 +51,27 @@ class ParticipationController extends Controller
     }
 
     /**
+     * Menampilkan daftar pendaftaran sendiri
+     */
+    public function myParticipations()
+    {
+        $myOfficialTeamId = auth()->user()->officialTeam->official_team_id?? null;
+
+        if ($myOfficialTeamId === null) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $participations = Participation::whereHas('officialTeam', function ($query) {
+                $query->where('user_id', auth()->id());
+            })->with('eventLevel.level')->latest()->get();
+
+        return inertia('events/participations/official_team/MyParticipations', 
+        ['participations' => $participations,
+        'myOfficialTeamId' => $myOfficialTeamId
+        ]);
+    }
+
+    /**
      * Menampilkan halaman form pendaftaran event (Khusus Official Team).
      */
     public function create($public_id)
@@ -85,7 +107,7 @@ class ParticipationController extends Controller
             'teams.*.pic_name' => 'required|string|max:255',
             'teams.*.pic_phone_number' => 'required|string|max:20',
             
-            'payment_proof_path' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'temp_payment_proof_path' => 'required|string',
         ]);
 
         $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
@@ -101,9 +123,19 @@ class ParticipationController extends Controller
         try {
             DB::transaction(function () use ($request, $validated, $event, $officialTeamId, &$paymentProofPath) {
                 
-                if ($request->hasFile('payment_proof_path')) {
-                    $paymentProofPath = $request->file('payment_proof_path')->store('payment_proofs', 'public');
+               // --- LOGIKA BARU PEMINDAHAN BUKTI BAYAR ---
+                $tempPath = $validated['temp_payment_proof_path'];
+                
+                if (!Storage::disk('public')->exists($tempPath)) {
+                    throw ValidationException::withMessages([
+                        'temp_payment_proof_path' => 'File bukti pembayaran tidak ditemukan atau sesi telah kadaluarsa.',
+                    ]);
                 }
+
+                $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
+                $paymentProofPath = 'payment_proofs/' . Str::random(20) . '.' . $extension;
+
+                Storage::disk('public')->move($tempPath, $paymentProofPath);
 
                 $levelCounts = collect($validated['teams'])->countBy('event_level_id');
                 
@@ -134,6 +166,7 @@ class ParticipationController extends Controller
                     $level = $eventLevels[$team['event_level_id']];
 
                     Participation::create([
+                        'public_id' => Str::uuid(),
                         'event_id' => $event->event_id,
                         'official_team_id' => $officialTeamId,
                         'event_level_id' => $level->event_level_id,
@@ -156,7 +189,8 @@ class ParticipationController extends Controller
         }
 
         $totalTeams = count($validated['teams']);
-        return redirect()->back()->with('success', "Pendaftaran {$totalTeams} tim berhasil!");
+        return redirect()->route('official_team.participations.myParticipations')
+                    ->with('success', "Pendaftaran {$totalTeams} tim berhasil!");
     }
 
     /**
@@ -172,12 +206,10 @@ class ParticipationController extends Controller
             'participationDocuments'
         ])->where('public_id', $public_id)->firstOrFail();
 
-        if ($role === 'official_team'){
             $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
             if ($participation->official_team_id !== $officialTeamId) {
                 abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
             }
-        } 
 
         return inertia('events/participations/Show', [
             'participation' => $participation,
@@ -218,27 +250,37 @@ class ParticipationController extends Controller
             'team_name' => 'required|string|max:255',
             'pic_name' => 'required|string|max:255',
             'pic_phone_number' => 'required|string|max:20',
-            'payment_proof_path' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'team_logo_path' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'temp_payment_proof_path' => 'nullable|string',
+            'temp_team_logo_path' => 'nullable|string'
         ]);
 
-        if ($request->hasFile('payment_proof_path')) {
-            if ($participation->payment_proof_path && Storage::disk('public')->exists($participation->payment_proof_path)) {
-                Storage::disk('public')->delete($participation->payment_proof_path);
+        if ($participation->status !== 'approved' && $request->filled('temp_payment_proof_path')) {
+            $tempPayment = $request->input('temp_payment_proof_path');
+            if (Storage::disk('public')->exists($tempPayment)){
+                if ($participation->payment_proof_path && Storage::disk('public')->exists($participation->payment_proof_path)) {
+                    Storage::disk('public')->delete($participation->payment_proof_path);
+                }
+                $newPaymentPath = 'payment_proofs/' . Str::random(20) . '.' . pathinfo($tempPayment, PATHINFO_EXTENSION);   
+                Storage::disk('public')->move($tempPayment, $newPaymentPath);
+                
+                $validated['payment_proof_path'] = $newPaymentPath;
             }
-            $validated['payment_proof_path'] = $request->file('payment_proof_path')->store('payment_proofs', 'public');
-        } else {
-            unset($validated['payment_proof_path']);
-        }
+        } 
+        unset($validated['temp_payment_proof_path']);
 
-        if ($request->hasFile('team_logo_path')) {
-            if ($participation->team_logo_path && Storage::disk('public')->exists($participation->team_logo_path)) {
-                Storage::disk('public')->delete($participation->team_logo_path);
+        if ($request->hasFile('temp_team_logo_path')) {
+            $tempLogo = $request->input('temp_team_logo_path');
+            if (Storage::disk('public')->exists($tempLogo)){
+                if ($participation->team_logo_path && Storage::disk('public')->exists($participation->team_logo_path)) {
+                    Storage::disk('public')->delete($participation->team_logo_path);
+                }
+
+                $newLogoPath = 'team_logos/' . Str::random(20) . '.' . pathinfo($tempLogo, PATHINFO_EXTENSION);
+                Storage::disk('public')->move($tempLogo, $newLogoPath);
+                $validated['team_logo_path'] = $newLogoPath;
             }
-            $validated['team_logo_path'] = $request->file('team_logo_path')->store('team_logos', 'public');
-        } else {
-            unset($validated['team_logo_path']);
         }
+        unset($validated['temp_team_logo_path']);
 
         if ($participation->status === 'rejected') {
             $validated['status'] = 'pending';
@@ -312,46 +354,44 @@ class ParticipationController extends Controller
 
         $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
         if ($participation->official_team_id !== $officialTeamId) {
-            abort(403, 'Anda tidak memiliki akses untuk mengunggah dokumen pada pendaftaran ini.');
+            return response()->json(
+                ['message' => 'Anda tidak memiliki akses untuk mengunggah dokumen pada pendaftaran ini.'],
+                 403); 
         }
 
         $request->validate([
-            'documents' => 'required|array|min:1',
-            'documents.*' => 'required|file|extensions:pdf|max:5120',
+            'file' => 'required|file|mimes:pdf|max:5120',
         ], [
-            'documents.required' => 'Silakan pilih setidaknya satu dokumen.',
-            'documents.*.extensions' => 'Semua dokumen yang diunggah wajib berformat PDF.',
-            'documents.*.max' => 'Ukuran setiap dokumen tidak boleh melebihi 5MB.',
+            'file.required' => 'Silakan pilih setidaknya satu dokumen.',
+            'file.mimes' => 'Dokumen yang diunggah wajib berformat PDF.',
+            'file.max' => 'Ukuran setiap dokumen tidak boleh melebihi 5MB.',
         ]);
 
-        $uploadedPaths = [];
-
         try {
-            DB::transaction(function () use ($request, $participation, &$uploadedPaths) {
-                if ($request->hasFile('documents')) {
-                    foreach ($request->file('documents') as $file) {
-                        
-                        $path = $file->store('participation_documents', 'public');
-                        $uploadedPaths[] = $path; 
-                        
-                        ParticipationDocument::create([
-                            'participation_id' => $participation->participation_id,
-                            'document_name' => $file->getClientOriginalName(),
-                            'document_path' => $path,
-                        ]);
-                    }
+            DB::transaction(function () use ($request, $participation) {
+                if ($request->hasFile('file')) {
+                    $uploadedFile = $request->file('file');
+
+                    $path = $uploadedFile->store('participation_documents', 'public');
+
+                    ParticipationDocument::create([
+                        'participation_id' => $participation->participation_id,
+                        'document_name' => $uploadedFile -> getClientOriginalName(),
+                        'document_path' => $path,
+                    ]);
                 }
             });
-        } catch (\Exception $e) {
-            foreach ($uploadedPaths as $path) {
-                if (Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->delete($path);
-                }
-            }
-            throw $e; 
-        }
 
-        return redirect()->back()->with('success', 'Dokumen persyaratan berhasil diunggah!');
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dokumen berhasil diunggah'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan dokumen.'
+            ], 500); 
+        }
     }
 
     /**

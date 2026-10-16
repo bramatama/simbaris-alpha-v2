@@ -1,7 +1,7 @@
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { getEventInnerNav, getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
     Card,
     CardContent,
@@ -88,10 +88,10 @@ export default function ParticipationShow({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(
+            sidebarNavItems={userRole=== 'committee'?getEventInnerNav(
                 participation.event.public_id,
                 userRole,
-            )}
+            ): getParticipationInnerNav(participation.public_id)}
         >
             <Head title={`Detail Tim - ${participation.team_name}`} />
 

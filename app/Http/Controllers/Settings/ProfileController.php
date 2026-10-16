@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,17 +36,25 @@ class ProfileController extends Controller
     {
         $user = $request->user();       
         $user->fill($request->validated());
-        if ($request->hasFile('photo')) {
-            if ($user->profile_picture_path) {
+
+        if ($request->filled('temp_photo_path')) {
+        $tempPath = $request->input('temp_photo_path');
+
+        if (Storage::disk('public')->exists($tempPath)) {
+            
+            if ($user->profile_picture_path && Storage::disk('public')->exists($user->profile_picture_path)) {
                 Storage::disk('public')->delete($user->profile_picture_path);
             }
 
-            // 2. Simpan foto baru ke dalam folder 'profile_photos' (otomatis terbuat)
-            $path = $request->file('photo')->store('profile_photos', 'public');
+            $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
+            $newPath = 'profile_photos/' . Str::random(20) . '.' . $extension;
             
-            // 3. Simpan nama path file-nya ke database
-            $user->profile_picture_path = $path;
+            Storage::disk('public')->move($tempPath, $newPath);
+
+            $user->profile_picture_path = $newPath;
         }
+    }
+        
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
             $user->save();

@@ -37,3 +37,14 @@ Schedule::call(function () {
         ->update(['status' => 'finished']);
         
 })->everyMinute()->name('update-event-statuses')->withoutOverlapping();
+
+Schedule::call(function () {
+    $files = Storage::disk('public')->files('temp');
+    $now = now()->timestamp;
+
+    foreach ($files as $file) {
+        if ($now - Storage::disk('public')->lastModified($file) > 86400) {
+            Storage::disk('public')->delete($file);
+        }
+    }
+})->daily();

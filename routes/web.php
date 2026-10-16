@@ -2,13 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\TempFileController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
-Route::middleware(['auth','verified'])
-    ->get('/dashboard', function ()  {
+Route::middleware(['auth','verified'])->group(function(){
+    Route::get('/dashboard', function ()  {
         $role = Auth::user()->role;
 
         return match ($role){
@@ -19,6 +20,9 @@ Route::middleware(['auth','verified'])
             default => abort(403, 'Unauthorized access'),
         };
     })->name('dashboard');
+
+    Route::post('/upload-temp-file', [TempFileController::class, 'storeTemp'])->name('uploadTempFile');
+});
 
 require __DIR__.'/users.php';
 require __DIR__.'/settings.php';

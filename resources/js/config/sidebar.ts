@@ -38,7 +38,7 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
     if (userRole == 'committee') {
         items.push({
             title: 'Hosted Events',
-            href: '/my-events',
+            href: '/committee/my-events',
             icon: CalendarClockIcon,
         });
     }
@@ -50,8 +50,8 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
             icon: CalendarCheckIcon,
         });
         items.push({
-            title: 'My Events',
-            href: '/my-events',
+            title: 'My Participations',
+            href: '/official_team/my-participations',
             icon: CalendarClockIcon,
         });
     }

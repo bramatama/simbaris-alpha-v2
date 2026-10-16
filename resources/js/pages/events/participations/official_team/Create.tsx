@@ -1,7 +1,6 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState, useRef } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
 import {
     Card,
     CardContent,
@@ -19,14 +18,13 @@ import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
-    UploadCloud,
-    Image as ImageIcon,
     Plus,
     Trash2,
     ChevronRight,
     Banknote,
     Users,
 } from 'lucide-react';
+import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import komponen uploader baru
 
 interface TeamForm {
     event_level_id: string;
@@ -45,12 +43,7 @@ export default function OfficialTeamParticipationCreate({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
 
-    // State untuk Stepper (Langkah 1 atau 2)
     const [step, setStep] = useState<1 | 2>(1);
-
-    // State Preview Gambar Pembayaran
-    const [paymentPreview, setPaymentPreview] = useState<string | null>(null);
-    const paymentInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, clearErrors } = useForm({
         teams: [
@@ -61,10 +54,10 @@ export default function OfficialTeamParticipationCreate({
                 pic_phone_number: '',
             },
         ] as TeamForm[],
-        payment_proof_path: null as File | null,
+        // Ubah dari File object menjadi string untuk menyimpan path dari folder temp
+        temp_payment_proof_path: null as string | null,
     });
 
-    // Menghitung Total Tagihan secara dinamis
     const totalFee = data.teams.reduce((total, team) => {
         const level = eventLevels.find(
             (l) => l.event_level_id.toString() === team.event_level_id,
@@ -72,7 +65,6 @@ export default function OfficialTeamParticipationCreate({
         return total + (level ? Number(level.registration_fees) : 0);
     }, 0);
 
-    // Handler Manajemen Array Tim
     const addTeam = () => {
         setData('teams', [
             ...data.teams,
@@ -101,17 +93,6 @@ export default function OfficialTeamParticipationCreate({
         clearErrors(`teams.${index}.${field}` as any);
     };
 
-    // Handler Gambar
-    const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('payment_proof_path', file);
-            setPaymentPreview(URL.createObjectURL(file));
-            clearErrors('payment_proof_path');
-        }
-    };
-
-    // Validasi Langkah 1 sebelum lanjut ke Langkah 2
     const canGoToStep2 = data.teams.every(
         (t) =>
             t.event_level_id && t.team_name && t.pic_name && t.pic_phone_number,
@@ -123,24 +104,20 @@ export default function OfficialTeamParticipationCreate({
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Mengirim data menggunakan POST (Tidak perlu _method: 'put' karena ini form create baru)
         post(`/${userRole}/events/${event.public_id}/participations`, {
             preserveScroll: true,
         });
     };
 
     return (
-        <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
-        >
+        <AppLayout>
             <Head title={`Daftar Event - ${event.event_name}`} />
 
-            <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-6 lg:p-8">
-                {/* Header Judul Halaman */}
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
-                            href={`/${userRole}/events/${event.public_id}/participations`}
+                            href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" /> Batal &
@@ -156,7 +133,6 @@ export default function OfficialTeamParticipationCreate({
                     </div>
                 </div>
 
-                {/* Indikator Stepper */}
                 <div className="mb-4 flex items-center gap-2">
                     <div
                         className={`flex flex-1 items-center gap-2 border-b-2 pb-2 transition-colors ${step >= 1 ? 'border-primary text-primary' : 'border-muted text-muted-foreground'}`}
@@ -185,9 +161,6 @@ export default function OfficialTeamParticipationCreate({
                 </div>
 
                 <form onSubmit={submit}>
-                    {/* ==========================================
-                        LANGKAH 1: FORMULIR DATA TIM
-                    ========================================== */}
                     {step === 1 && (
                         <div className="animate-in space-y-6 duration-300 fade-in slide-in-from-left-4">
                             {data.teams.map((team, index) => (
@@ -215,7 +188,6 @@ export default function OfficialTeamParticipationCreate({
                                     </CardHeader>
                                     <CardContent className="space-y-5 p-6">
                                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                            {/* Pilihan Jenjang */}
                                             <div className="space-y-2 md:col-span-2">
                                                 <Label
                                                     htmlFor={`level-${index}`}
@@ -397,12 +369,8 @@ export default function OfficialTeamParticipationCreate({
                         </div>
                     )}
 
-                    {/* ==========================================
-                        LANGKAH 2: FORMULIR PEMBAYARAN
-                    ========================================== */}
                     {step === 2 && (
                         <div className="animate-in space-y-6 duration-300 fade-in slide-in-from-right-4">
-                            {/* Kartu Ringkasan Tagihan */}
                             <Card className="border-emerald-500/30 bg-emerald-500/5 shadow-sm">
                                 <CardContent className="flex flex-col items-center justify-between gap-4 p-6 sm:flex-row">
                                     <div className="flex items-center gap-4">
@@ -441,50 +409,57 @@ export default function OfficialTeamParticipationCreate({
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-6">
-                                    <input
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/jpg"
-                                        className="hidden"
-                                        ref={paymentInputRef}
-                                        onChange={handlePaymentChange}
-                                    />
-
                                     <div className="flex flex-col items-start gap-6 sm:flex-row">
-                                        <div
-                                            className="relative flex aspect-video w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border/70 bg-muted/20 transition-colors hover:border-primary/50 hover:bg-muted/50 sm:w-1/2"
-                                            onClick={() =>
-                                                paymentInputRef.current?.click()
-                                            }
-                                        >
-                                            {paymentPreview ? (
-                                                <img
-                                                    src={paymentPreview}
-                                                    alt="Preview"
-                                                    className="h-full w-full object-cover opacity-60"
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col items-center">
-                                                    <ImageIcon className="mb-2 h-12 w-12 text-muted-foreground/30" />
-                                                    <span className="text-sm font-medium text-foreground">
-                                                        Klik untuk memilih
-                                                        gambar
-                                                    </span>
-                                                    <span className="mt-1 text-xs text-muted-foreground">
-                                                        JPG, PNG maks 2MB
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {paymentPreview && (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 opacity-0 backdrop-blur-[2px] transition-opacity hover:opacity-100">
-                                                    <UploadCloud className="mb-2 h-8 w-8 text-primary" />
-                                                    <span className="text-xs font-semibold text-foreground">
-                                                        Ganti Gambar
-                                                    </span>
-                                                </div>
-                                            )}
+                                        <div className="w-full sm:w-1/2">
+                                            {/* PENGGUNAAN FILE UPLOADER */}
+                                            <FileUploader
+                                                variant="image"
+                                                endpoint="/upload-temp-file"
+                                                maxSizeMB={2}
+                                                multiple={false}
+                                                onUploadSuccess={(
+                                                    fileId,
+                                                    path,
+                                                ) => {
+                                                    setData(
+                                                        'temp_payment_proof_path',
+                                                        path,
+                                                    );
+                                                    clearErrors(
+                                                        'temp_payment_proof_path',
+                                                    );
+                                                }}
+                                                onRemove={() =>
+                                                    setData(
+                                                        'temp_payment_proof_path',
+                                                        null,
+                                                    )
+                                                }
+                                            />
                                         </div>
-                                        <div className="w-full space-y-2 sm:w-1/2">
+                                        <div className="w-full space-y-2 pt-2 sm:w-1/2 sm:pt-0">
+                                            <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm text-foreground shadow-sm">
+                                                <h4 className="mb-1 font-semibold">
+                                                    Panduan Unggah:
+                                                </h4>
+                                                <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                                                    <li>
+                                                        Pastikan nama pengirim
+                                                        dan nominal terlihat
+                                                        jelas.
+                                                    </li>
+                                                    <li>
+                                                        Tunggu hingga proses
+                                                        unggah selesai (status
+                                                        hijau).
+                                                    </li>
+                                                    <li>
+                                                        Maksimal ukuran file
+                                                        adalah 2MB.
+                                                    </li>
+                                                </ul>
+                                            </div>
+
                                             {Object.keys(errors).length > 0 && (
                                                 <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
                                                     <ul className="list-disc space-y-1 pl-4">
@@ -500,7 +475,7 @@ export default function OfficialTeamParticipationCreate({
                                             )}
                                             <InputError
                                                 message={
-                                                    errors.payment_proof_path
+                                                    errors.temp_payment_proof_path
                                                 }
                                             />
                                         </div>
@@ -519,7 +494,7 @@ export default function OfficialTeamParticipationCreate({
                                     <Button
                                         type="submit"
                                         disabled={
-                                            !data.payment_proof_path ||
+                                            !data.temp_payment_proof_path ||
                                             processing
                                         }
                                         className="gap-2"
@@ -537,6 +512,6 @@ export default function OfficialTeamParticipationCreate({
                     )}
                 </form>
             </div>
-        </InnerAppLayout>
+        </AppLayout>
     );
 }

@@ -10,6 +10,8 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
+    Route::get('/my-participations', [ParticipationController::class, 'myParticipations'])->name('participations.myParticipations');
+
     Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participations.information.show');
     Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participations.edit');
     Route::put('/participations/{participation:public_id}/registration', [ParticipationController::class, 'updateRegistration'])->name('participation.registration.update');

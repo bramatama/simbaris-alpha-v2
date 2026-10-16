@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import {
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, UserCheck, ImagePlus, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Calendar, ImagePlus, Star, UserCheck } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -26,6 +26,7 @@ import {
     SelectLabel,
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { FileUploader } from '@/components/ui/file-uploader';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import type { PageProps } from '@inertiajs/core';
 
@@ -39,20 +40,12 @@ const formatDateTime = (dateString: string | null) => {
     return localISOTime;
 };
 
-
 export default function EventEdit({ event }: { event: any }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    // State preview gambar
-    const [posterPreview, setPosterPreview] = useState<string | null>(
-        event.poster_path ? `/storage/${event.poster_path}` : null,
-    );
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Form Hook
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
         event_name: event.event_name || '',
         description: event.description || '',
@@ -62,7 +55,7 @@ export default function EventEdit({ event }: { event: any }) {
         registration_end_time: formatDateTime(event.registration_end_time),
         start_time: formatDateTime(event.start_time),
         end_time: formatDateTime(event.end_time),
-        poster: null as File | null,
+        temp_poster_path: null as string | null,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -77,19 +70,6 @@ export default function EventEdit({ event }: { event: any }) {
         });
     };
 
-    // Handler Perubahan Gambar
-    const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('poster', file);
-
-            if (posterPreview && posterPreview.startsWith('blob:')) {
-                URL.revokeObjectURL(posterPreview);
-            }
-            setPosterPreview(URL.createObjectURL(file));
-        }
-    };
-
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
@@ -100,6 +80,12 @@ export default function EventEdit({ event }: { event: any }) {
                 {/* HEADER */}
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
+                        <Link
+                            href={`/${userRole}/events/${event.public_id}/information`}
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+                        >
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
+                        </Link>
                         <h1 className="text-3xl font-bold tracking-tight">
                             Edit Event
                         </h1>
@@ -133,32 +119,33 @@ export default function EventEdit({ event }: { event: any }) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-6">
-                                    <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-                                        {/* BAGIAN KIRI: UPLOAD POSTER */}
-                                        <div className="flex flex-col items-center border-b border-border/50 pb-6 md:col-span-5 md:items-start md:border-r md:border-b-0 md:pr-6 md:pb-0 lg:col-span-4">
+                                    <div className="space-y-6">
+                                        {/* AREA UPLOAD POSTER (Di Bawah, Lebar Penuh) */}
+                                        <div className="border-t border-border/50 pt-6">
                                             <Label
                                                 requirement="optional"
-                                                className="mb-3 text-base"
+                                                className="mb-1 text-base"
                                             >
                                                 Event Poster
                                             </Label>
+                                            <p className="mb-4 text-sm text-muted-foreground">
+                                                Format file: JPG, JPEG, PNG
+                                                (Maks 5MB). Rasio
+                                                direkomendasikan 3:4.
+                                            </p>
 
-                                            <input
-                                                type="file"
-                                                className="hidden"
-                                                ref={fileInputRef}
-                                                onChange={handlePosterChange}
-                                                accept="image/*"
-                                            />
-
-                                            <div className="flex w-full flex-col items-center space-y-4">
-                                                {posterPreview ? (
-                                                    <div className="aspect-3/4 w-full max-w-60 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                                            <div className="flex flex-col items-start gap-6 sm:flex-row">
+                                                {/* Tampilkan poster saat ini JIKA belum ada file baru yang diunggah */}
+                                                {event.poster_path ? (
+                                                    <div className="group relative aspect-3/4 w-full shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-sm sm:w-48">
                                                         <img
-                                                            src={posterPreview}
-                                                            alt="Poster Preview"
+                                                            src={`/storage/${event.poster_path}`}
+                                                            alt="Current Poster"
                                                             className="h-full w-full object-cover"
                                                         />
+                                                        <div className="absolute inset-x-0 bottom-0 rounded-b-xl bg-background/80 p-2 text-center text-xs font-semibold text-foreground backdrop-blur-sm">
+                                                            Poster Saat Ini
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex aspect-3/4 w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
@@ -169,44 +156,42 @@ export default function EventEdit({ event }: { event: any }) {
                                                     </div>
                                                 )}
 
-                                                <Button
-                                                    type="button"
-                                                    variant={
-                                                        posterPreview
-                                                            ? 'outline'
-                                                            : 'default'
-                                                    }
-                                                    className="w-full max-w-60 gap-2"
-                                                    onClick={() =>
-                                                        fileInputRef.current?.click()
-                                                    }
-                                                >
-                                                    <UploadCloud className="h-4 w-4" />
-                                                    {posterPreview
-                                                        ? 'Ganti Poster Baru'
-                                                        : 'Upload Poster'}
-                                                </Button>
-
-                                                <div className="text-center text-xs leading-relaxed text-muted-foreground">
-                                                    <p>
-                                                        Format file: JPG, JPEG,
-                                                        PNG.
-                                                    </p>
-                                                    <p>
-                                                        Rasio direkomendasikan
-                                                        3:4 (Portrait).
-                                                    </p>
+                                                <div className="w-full min-w-0 flex-1">
+                                                    <FileUploader
+                                                        variant="image"
+                                                        endpoint="/upload-temp-file"
+                                                        maxSizeMB={5}
+                                                        multiple={false}
+                                                        onUploadSuccess={(
+                                                            fileId,
+                                                            path,
+                                                        ) => {
+                                                            setData(
+                                                                'temp_poster_path',
+                                                                path,
+                                                            );
+                                                            clearErrors(
+                                                                'temp_poster_path',
+                                                            );
+                                                        }}
+                                                        onRemove={() =>
+                                                            setData(
+                                                                'temp_poster_path',
+                                                                null,
+                                                            )
+                                                        }
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors.temp_poster_path as string
+                                                        }
+                                                        className="mt-2"
+                                                    />
                                                 </div>
-                                                <InputError
-                                                    message={
-                                                        errors.poster as string
-                                                    }
-                                                />
                                             </div>
                                         </div>
-
-                                        {/* BAGIAN KANAN: INPUT TEKS */}
-                                        <div className="space-y-5 md:col-span-7 lg:col-span-8">
+                                        {/* GRID INPUTAN TEKS (Di Atas) */}
+                                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                             <div className="grid gap-2">
                                                 <Label
                                                     requirement="required"
@@ -253,7 +238,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                 />
                                             </div>
 
-                                            <div className="grid gap-2">
+                                            <div className="grid gap-2 md:col-span-2">
                                                 <Label htmlFor="status">
                                                     Event Status
                                                 </Label>
@@ -294,7 +279,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                 </Select>
                                             </div>
 
-                                            <div className="grid gap-2 pt-1">
+                                            <div className="grid gap-2 pt-1 md:col-span-2">
                                                 <Label
                                                     requirement="optional"
                                                     htmlFor="description"
@@ -310,7 +295,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    rows={5}
+                                                    rows={4}
                                                     className="resize-none"
                                                 />
                                             </div>
@@ -513,13 +498,17 @@ export default function EventEdit({ event }: { event: any }) {
                                 </div>
                             </CardContent>
                             <div className="border-t border-border/50 bg-muted/20 p-4">
-                                <Button
-                                    variant="outline"
-                                    className="w-full text-xs"
-                                    disabled
+                                <Link
+                                    href={`/${userRole}/events/${event.public_id}/committees`}
                                 >
-                                    Manage Committees
-                                </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full text-xs"
+                                    >
+                                        <Star className="h-4 w-4" />
+                                        Manage Committees
+                                    </Button>
+                                </Link>
                             </div>
                         </Card>
                     </div>

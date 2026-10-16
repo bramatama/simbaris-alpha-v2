@@ -164,16 +164,15 @@ export default function LevelManagement({
         >
             <Head title={`Manajemen Jenjang - ${event.event_name}`} />
 
-            <div className="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
                             href={`/${userRole}/events/${event.public_id}/information`}
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke
-                            Dasbor Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             Manajemen Jenjang & Biaya

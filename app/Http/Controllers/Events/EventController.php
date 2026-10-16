@@ -44,23 +44,15 @@ class EventController extends Controller
     public function my_events()
     {
         $role = auth()->user()?->role;
-        $events = match ($role) {
-            'committee' => Event::whereHas('eventCommittees.committee', function ($query) {
+        $events = Event::whereHas('eventCommittees.committee', function ($query) {
                 $query->where('user_id', auth()->id());
-            })->latest()->get(),
-            'official_team' => Event::whereHas('participations.officialTeam', function ($query) {
-                $query->where('user_id', auth()->id());
-            })->latest()->get(),
-            default => collect([]),
+            })->latest()->get();
+
+        if ($role !== 'committee'){
+            abort(403, 'Unauthorized access');
         };
 
-        $view = match ($role) {
-            'committee' => 'events/event_lists/committee/HostedEvents',
-            'official_team' => 'events/event_lists/official_team/MyEvents',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        return inertia($view, [
+        return inertia('events/event_lists/committee/HostedEvents', [
             'events' => $events,
         ]);
     }
@@ -204,37 +196,24 @@ class EventController extends Controller
         $query = Event::where('public_id', $id);
 
         // Eager loading data tambahan berdasarkan role agar dashboard informatif
-        $event = match ($role) {
-            'admin' => $query->withCount(['participations', 'eventCommittees', 'eventJudges'])->firstOrFail(),
-            
-            'committee' => $query->with([
-                                    'eventJudges:event_id,event_judge_id,judge_id',
-                                    'eventJudges.judge.user:user_id,name',
-                                    'eventJudges.judgeExpertises.scoringCategory.masterCategory:master_category_id,category_name',
-                                    'eventLevels' => function ($q) {
-                                        $q->select(
-                                            'event_level_id',
-                                            'event_id',
-                                            'level_id',
-                                            'registration_fees'
-                                        )->with('level:level_id,level_name')->withCount('participations');
-                                    },
-                                    'participations:event_id,participation_id,event_level_id,team_name',
-                                    'eventDocuments:event_id,document_id,document_name,document_path'
-                                ])
-                                ->withCount('participations', 'eventJudges')
-                                ->firstOrFail(),
-                                
-            'judge' => $query->with(['eventJudges' => function($q) {
-                $q->where('judge_id', auth()->user()->judge->judge_id);
-            }])->firstOrFail(),
-            
-            'official_team' => $query->with(['participations' => function($q) {
-                $q->where('official_team_id', auth()->user()->officialTeam->official_team_id);
-            }])->firstOrFail(),
-            
-            default => abort(403),
-        };
+        $event =  $query->with([
+                                'eventJudges:event_id,event_judge_id,judge_id',
+                                'eventJudges.judge.user:user_id,name',
+                                'eventJudges.judgeExpertises.scoringCategory.masterCategory:master_category_id,category_name',
+                                'eventLevels' => function ($q) {
+                                    $q->select(
+                                        'event_level_id',
+                                        'event_id',
+                                        'level_id',
+                                        'registration_fees',
+                                        'quota'
+                                    )->with('level:level_id,level_name')->withCount('participations');
+                                },
+                                'participations:event_id,participation_id,event_level_id,team_name',
+                                'eventDocuments:event_id,document_id,document_name,document_path'
+                            ])
+                            ->withCount('participations', 'eventJudges')
+                            ->firstOrFail();    
 
         $event->eventJudges->transform(function ($eventJudge) {
             $eventJudge->expertises = $eventJudge->judgeExpertises->map(function ($expertise) {
@@ -288,27 +267,32 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'required|string|max:255',
             'status' => 'required|in:draft,registration_open,active,finished',
-            'poster_path' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'temp_poster_path' => 'nullable|string',
             'registration_start_time' => 'required|date',
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after_or_equal:start_time',
         ]);
 
-        if ($request-> hasFile('poster_path')){
-            if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
-                Storage::disk('public')->delete($event->poster_path);
-            }
+        if ($request->filled('temp_poster_path')) {
+            $tempPath = $request->input('temp_poster_path');
 
-            $path = $request->file('poster_path')->store('event_posters', 'public');
-            $validated['poster_path'] = $path;
-        }else{
-            unset($validated['poster_path']);
+            if (Storage::disk('public')->exists($tempPath)) {
+                if ($event->poster_path && Storage::disk('public')->exists($event->poster_path)) {
+                    Storage::disk('public')->delete($event->poster_path);
+                }
+
+                $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
+                $newPath = 'event_posters/' . Str::random(20) . '.' . $extension;
+                Storage::disk('public')->move($tempPath, $newPath);
+
+                $event->poster_path = $newPath;
+            }
         }
 
-        $event->update($validated);
+        $event->save();
 
-        return redirect()->back()->with('success', 'Event updated successfully.');
+        return redirect()->back()->with('success', 'Detail Event berhasil diperbarui');
     }
 
     /**

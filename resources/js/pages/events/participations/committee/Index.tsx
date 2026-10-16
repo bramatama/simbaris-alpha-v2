@@ -22,6 +22,7 @@ import {
     Eye,
     Edit3,
     ShieldAlert,
+    ArrowLeft,
 } from 'lucide-react';
 import { ParticipationTable } from '@/components/participation_table/participation_table';
 
@@ -55,29 +56,6 @@ export default function CommitteeParticipationIndex({
         return matchSearch && matchStatus;
     });
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'approved':
-                return (
-                    <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 shadow-none hover:bg-emerald-500/20">
-                        Disetujui
-                    </Badge>
-                );
-            case 'rejected':
-                return (
-                    <Badge className="border-destructive/20 bg-destructive/10 text-destructive shadow-none hover:bg-destructive/20">
-                        Ditolak
-                    </Badge>
-                );
-            default:
-                return (
-                    <Badge className="border-orange-500/20 bg-orange-500/10 text-orange-600 shadow-none hover:bg-orange-500/20">
-                        Menunggu
-                    </Badge>
-                );
-        }
-    };
-
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
@@ -88,6 +66,12 @@ export default function CommitteeParticipationIndex({
                 {/* Header Section */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
+                        <Link
+                            href={`/${userRole}/events/${event.public_id}/information`}
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+                        >
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
+                        </Link>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             Manajemen Peserta
                         </h1>

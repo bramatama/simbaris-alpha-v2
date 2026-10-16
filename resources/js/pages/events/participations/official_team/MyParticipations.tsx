@@ -1,7 +1,5 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
 import {
     Card,
     CardContent,
@@ -11,17 +9,16 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PageProps } from '@inertiajs/core';
-import { Search, Star, Users } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
 import { ParticipationTable } from '@/components/participation_table/participation_table';
+import AppLayout from '@/layouts/app-layout';
 
-export default function OfficialTeamParticipationIndex({
-    event,
+export default function MyParticipations({
     participations,
-    myOfficialTeamId,
+    myOfficialTeamId
 }: {
-    event: any;
-    participations: any[];
-    myOfficialTeamId: string;
+    participations: any[],
+    myOfficialTeamId:string;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
@@ -29,23 +26,13 @@ export default function OfficialTeamParticipationIndex({
     const [searchTerm, setSearchTerm] = useState('');
     const [filterLevel, setFilterLevel] = useState<string>('all');
 
-    // 1. Pisahkan data sejak awal (Tim Saya vs Tim Lain)
-    const myParticipations = participations.filter(
-        (p) => p.official_team_id === myOfficialTeamId,
-    );
-    const otherParticipations = participations.filter(
-        (p) => p.official_team_id !== myOfficialTeamId,
-    );
-
-    // 2. Ambil jenjang unik hanya dari data peserta lain untuk keperluan filter
+    // 1. Ambil jenjang unik dari pendaftaran Anda sendiri
     const uniqueLevels = Array.from(
-        new Set(
-            otherParticipations.map((p) => p.event_level?.level?.level_name),
-        ),
+        new Set(participations.map((p) => p.event_level?.level?.level_name)),
     ).filter(Boolean);
 
-    // 3. Terapkan pencarian dan filter HANYA pada tabel peserta lain
-    const otherParticipationsFiltered = otherParticipations.filter((p) => {
+    // 2. Terapkan filter & pencarian pada pendaftaran Anda
+    const filteredParticipations = participations.filter((p) => {
         const matchSearch = p.team_name
             .toLowerCase()
             .includes(searchTerm.toLowerCase());
@@ -56,60 +43,32 @@ export default function OfficialTeamParticipationIndex({
     });
 
     return (
-        <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
-        >
-            <Head title={`Daftar Peserta - ${event.event_name}`} />
+        <AppLayout>
+            <Head title="Pendaftaran Saya" />
 
             <div className="mx-auto w-full max-w-7xl space-y-8 p-4 md:p-6 lg:p-8">
                 {/* Header Judul Halaman */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                            Peserta Terdaftar
+                            Pendaftaran Saya
                         </h1>
                         <p className="mt-1 text-muted-foreground">
-                            Pantau pendaftaran tim Anda dan lihat daftar peserta
-                            lain pada <strong>{event.event_name}</strong>.
+                            Pantau dan kelola seluruh pendaftaran tim Anda pada
+                            berbagai event kompetisi.
                         </p>
                     </div>
                 </div>
 
-                {/* TABEL 1: PENDAFTARAN SAYA */}
                 <Card className="overflow-hidden border-primary/30 shadow-sm">
-                    <CardHeader className="border-b border-primary/10 bg-primary/5 px-5 py-4">
+                    <CardHeader className="flex flex-col justify-between gap-4 border-b border-primary/10 bg-primary/5 px-5 py-4 lg:flex-row lg:items-center">
                         <div className="flex flex-col gap-1">
                             <CardTitle className="flex items-center gap-2 text-lg text-primary">
-                                <Star className="h-5 w-5" /> Pendaftaran Tim
-                                Anda
+                                <Star className="h-5 w-5" /> Tim Anda
                             </CardTitle>
                             <CardDescription className="text-primary/70">
-                                Kelola pendaftaran, dokumen persyaratan, dan
-                                pantau status verifikasi tim Anda.
-                            </CardDescription>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        {/* Komponen Tabel Digunakan Ulang */}
-                        <ParticipationTable
-                            participations={myParticipations}
-                            userRole={userRole}
-                            myOfficialTeamId={myOfficialTeamId}
-                        />
-                    </CardContent>
-                </Card>
-
-                {/* TABEL 2: PESERTA LAINNYA */}
-                <Card className="overflow-hidden border-border/50 shadow-sm">
-                    <CardHeader className="flex flex-col justify-between gap-4 border-b border-border/50 bg-muted/10 px-5 py-4 lg:flex-row lg:items-center">
-                        <div className="flex flex-col gap-1">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <Users className="h-5 w-5 text-muted-foreground" />{' '}
-                                Peserta Lainnya
-                            </CardTitle>
-                            <CardDescription>
-                                Daftar tim dari pangkalan atau sekolah lain
-                                (Privasi kontak terjaga).
+                                Kelola dokumen persyaratan dan pantau status
+                                verifikasi seluruh tim.
                             </CardDescription>
                         </div>
 
@@ -122,7 +81,11 @@ export default function OfficialTeamParticipationIndex({
                                             ? 'default'
                                             : 'outline'
                                     }
-                                    className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${filterLevel === 'all' ? '' : 'hover:bg-muted/50'}`}
+                                    className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${
+                                        filterLevel === 'all'
+                                            ? ''
+                                            : 'border-primary/30 text-primary hover:bg-primary/20 hover:text-primary'
+                                    }`}
                                     onClick={() => setFilterLevel('all')}
                                 >
                                     Semua Jenjang
@@ -135,7 +98,11 @@ export default function OfficialTeamParticipationIndex({
                                                 ? 'default'
                                                 : 'outline'
                                         }
-                                        className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${filterLevel === level ? '' : 'hover:bg-muted/50'}`}
+                                        className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${
+                                            filterLevel === level
+                                                ? ''
+                                                : 'border-primary/30 text-primary hover:bg-primary/20 hover:text-primary'
+                                        }`}
                                         onClick={() => setFilterLevel(level)}
                                     >
                                         {level}
@@ -146,7 +113,7 @@ export default function OfficialTeamParticipationIndex({
                                 <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                                 <input
                                     type="text"
-                                    placeholder="Cari nama tim kompetitor..."
+                                    placeholder="Cari nama tim..."
                                     className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 pl-9 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                                     value={searchTerm}
                                     onChange={(e) =>
@@ -159,13 +126,13 @@ export default function OfficialTeamParticipationIndex({
                     <CardContent className="p-0">
                         {/* Komponen Tabel Digunakan Ulang */}
                         <ParticipationTable
-                            participations={otherParticipationsFiltered}
+                            participations={filteredParticipations}
                             userRole={userRole}
                             myOfficialTeamId={myOfficialTeamId}
                         />
                     </CardContent>
                 </Card>
             </div>
-        </InnerAppLayout>
+        </AppLayout>
     );
 }

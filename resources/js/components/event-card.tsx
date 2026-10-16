@@ -62,7 +62,6 @@ export default function EventCard({ event }: EventCardProps) {
                 />
 
                 {event.status && (
-                    // Badge lebih kecil, margin lebih rapat
                     <div
                         className={`absolute top-2 left-2 rounded px-2 py-0.5 text-[9px] font-bold tracking-wide capitalize shadow-sm ${getStatusColor(event.status)}`}
                     >

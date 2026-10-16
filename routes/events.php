@@ -12,7 +12,6 @@ Route::get('/events', [EventController::class, 'index'])->name('events.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
-    Route::get('/my-events', [EventController::class, 'my_events'])->name('events.my_events');
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -31,6 +30,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
+    Route::get('/my-events', [EventController::class, 'my_events'])->name('events.my_events');
     Route::resource('events', EventController::class)->only(['edit', 'update']);
 
     Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');

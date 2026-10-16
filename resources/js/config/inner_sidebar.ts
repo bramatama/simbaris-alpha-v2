@@ -1,5 +1,13 @@
 import type { NavItem } from '@/types';
-import { InfoIcon, Gavel, Edit, Star, DoorStairwell, FileText, UserGroup } from 'lucide-react';
+import {
+    InfoIcon,
+    Gavel,
+    Edit,
+    Star,
+    DoorStairwell,
+    FileText,
+    UserGroup,
+} from 'lucide-react';
 
 export const getEventInnerNav = (
     eventPublicId: string,
@@ -55,15 +63,28 @@ export const getEventInnerNav = (
         );
     }
 
-    if (role === 'official_team') {
-        items.push(
-            {
-                title: 'Peserta Lomba',
-                href: `/${role}/events/${eventPublicId}/participations`,
-                icon: UserGroup,
-            },
-        );
-    }
+    return items;
+};
 
+export const getParticipationInnerNav = (
+    participationId: string,
+): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Informasi Umum',
+            href: `/official_team/participations/${participationId}/information`,
+            icon: InfoIcon,
+        },
+        {
+            title: 'Edit Pendaftaran',
+            href: `/official_team/participations/${participationId}/edit`,
+            icon: Edit,
+        },
+        {
+            title: 'Dokumen Peserta',
+            href: `/official_team/participations/${participationId}/documents`,
+            icon: FileText,
+        },
+    ];
     return items;
 };

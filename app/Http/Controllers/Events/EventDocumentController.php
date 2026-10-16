@@ -40,46 +40,41 @@ class EventDocumentController extends Controller
 
         // Validasi: documents harus berupa array, dan setiap isinya wajib file PDF
         $request->validate([
-            'documents' => 'required|array|min:1',
-            'documents.*' => 'required|file|extensions:pdf|max:10240', // Maksimal 10MB per file
+        'file' => 'required|file|mimes:pdf|max:10240', // PDF Maks 10MB
         ], [
-            'documents.*.extensions' => 'Semua dokumen yang diunggah harus berformat PDF.',
-            'documents.*.max' => 'Ukuran setiap dokumen tidak boleh melebihi 10MB.',
+            'file.required' => 'File dokumen wajib dipilih.',
+            'file.mimes' => 'Format file harus berupa PDF.',
+            'file.max' => 'Ukuran file tidak boleh melebihi 10MB.',
         ]);
 
-        $uploadedPaths = []; // Menyimpan jejak file untuk dihapus jika transaksi gagal
 
         try {
             DB::transaction(function () use ($request, $event, &$uploadedPaths) {
-                if ($request->hasFile('documents')) {
-                    foreach ($request->file('documents') as $file) {
-                        
-                        // Menyimpan file ke folder storage/app/public/event_documents
-                        $path = $file->store('event_documents', 'public');
-                        $uploadedPaths[] = $path; 
-                        
-                        // Mengambil nama asli file dari komputer uploader (misal: "Juknis-PBB.pdf")
-                        $originalName = $file->getClientOriginalName();
+                if ($request->hasFile('file')) {
+                    $uploadedFile = $request->file('file');
+                    
+                    // Simpan file ke storage
+                    $path = $uploadedFile->store('event_documents', 'public');
 
-                        EventDocument::create([
-                            'event_id' => $event->event_id,
-                            'document_name' => $originalName,
-                            'document_path' => $path,
-                        ]);
-                    }
+                    // Simpan record ke database
+                    EventDocument::create([
+                        'event_id' => $event->event_id,
+                        'document_name' => $uploadedFile->getClientOriginalName(),
+                        'document_path' => $path,
+                    ]);
                 }
             });
-        } catch (\Exception $e) {
-            // Jika database gagal, hapus semua file PDF yang sudah terlanjur diunggah di perulangan sebelumnya
-            foreach ($uploadedPaths as $path) {
-                if (Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->delete($path);
-                }
-            }
-            throw $e;
-        }
+            return response()->json([
+                    'status' => 'success',
+                    'message' => 'Dokumen juknis berhasil diunggah.',
+                ]);
 
-        return back()->with('success', 'Dokumen event berhasil diunggah!');
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengunggah dokumen: ' . $e->getMessage(),
+            ], 500);
+        }
     }
     
     /**

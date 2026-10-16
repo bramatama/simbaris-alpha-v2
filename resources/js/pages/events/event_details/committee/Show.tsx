@@ -19,6 +19,7 @@ import {
     ImagePlus,
     FileText,
     Eye,
+    Clock,
 } from 'lucide-react';
 import { PageProps } from '@inertiajs/core';
 import { formatDate } from '@/config/date_datetime';
@@ -70,6 +71,37 @@ export default function EventShow({ event }: { event: any }) {
         },
     ];
 
+    const getStatusConfig = (status: string) => {
+        switch (status) {
+            case 'registration_open':
+                return {
+                    color: 'bg-success text-success-foreground',
+                    icon: <CheckCircle2 className="h-4 w-4" />,
+                    text: 'Pendaftaran Dibuka',
+                };
+            case 'active':
+                return {
+                    color: 'bg-info text-info-foreground',
+                    icon: <CheckCircle2 className="h-4 w-4" />,
+                    text: 'Aktif',
+                };
+            case 'finished':
+                return {
+                    color: 'bg-muted text-muted-foreground',
+                    icon: <CheckCircle2 className="h-4 w-4" />,
+                    text: 'Selesai',
+                };
+            default:
+                return {
+                    color: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+                    icon: <Clock className="h-4 w-4" />,
+                    text: 'Menunggu Verifikasi',
+                };
+        }
+    };
+
+    const statusConfig = getStatusConfig(event.status);
+
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
@@ -80,7 +112,7 @@ export default function EventShow({ event }: { event: any }) {
                 {/* 1. TOP HEADER NAVIGATION */}
                 <div className="mb-2 flex flex-row items-center justify-between gap-4">
                     <Link
-                        href={`/my-events`}
+                        href={`/${userRole}/my-events`}
                         className="flex items-center text-muted-foreground transition-colors hover:text-primary"
                     >
                         <ArrowLeft className="mr-1.5 h-4 w-4" /> Semua Event
@@ -97,103 +129,159 @@ export default function EventShow({ event }: { event: any }) {
                     {/* KOLOM KIRI (Konten Utama) */}
                     <div className="space-y-6 lg:col-span-8">
                         {/* A. KARTU HEADER EVENT */}
-                        <Card className="grid grid-cols-1 grid-rows-6 gap-6 overflow-hidden border-border/50 p-4 md:p-6 lg:grid-cols-6">
-                            {event.poster_path ? (
-                                <div className="col-span-2 row-span-6 aspect-3/4 w-full max-w-60 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
-                                    <img
-                                        src={'/storage/' + event.poster_path}
-                                        alt="Event Poster"
-                                        className="h-full w-full object-cover"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="flex aspect-3/4 w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
-                                    <ImagePlus className="mb-3 h-12 w-12 opacity-40" />
-                                    <span className="text-sm font-medium">
-                                        Belum ada poster
-                                    </span>
-                                </div>
-                            )}
-                            <div className="col-span-4 row-span-2 flex flex-col gap-2">
-                                <h1 className="text-2xl font-bold tracking-tight wrap-break-word">
-                                    {event.event_name || 'Event'}
-                                </h1>
-                            </div>
-
-                            <div className="col-span-4 row-span-4 grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <div className="text-sm leading-tight font-semibold">
-                                        Pendaftaran
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {formatDate(
-                                            event.registration_start_time,
-                                            event.registration_end_time,
+                        <Card className="overflow-hidden border-border/50 p-4 md:p-6">
+                            <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+                                {/* Poster */}
+                                <div className="w-full shrink-0 sm:w-44 lg:w-52">
+                                    <div className="aspect-3/4 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                                        {event.poster_path ? (
+                                            <img
+                                                src={`/storage/${event.poster_path}`}
+                                                alt={`Poster ${event.event_name || 'event'}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+                                                <ImagePlus className="h-10 w-10 opacity-40" />
+                                                <span className="text-sm font-medium">
+                                                    Belum ada poster
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <div className="text-sm leading-tight font-semibold">
-                                        Pelaksanaan
+
+                                {/* Event Information */}
+                                <div className="min-w-0 flex-1 space-y-6">
+                                    {/* Header */}
+                                    <div className="space-y-3">
+                                        <div
+                                            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusConfig.color}`}
+                                        >
+                                            {statusConfig.icon}
+                                            {statusConfig.text}
+                                        </div>
+
+                                        <h1 className="text-2xl leading-tight font-bold tracking-tight wrap-break-word md:text-3xl">
+                                            {event.event_name || 'Event'}
+                                        </h1>
                                     </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {formatDate(
-                                            event.start_time,
-                                            event.end_time,
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <div className="text-sm leading-tight font-semibold">
-                                        Lokasi
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {event.location || '-'}
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <Banknote className="h-4 w-4 text-muted-foreground" />
-                                    <div className="text-sm leading-tight font-semibold">
-                                        Biaya Pendaftaran
-                                    </div>
-                                    <div className="text-[11px] text-muted-foreground">
-                                        {(() => {
-                                            const levels =
-                                                event.event_levels || [];
 
-                                            if (levels.length === 0) {
-                                                return 'Gratis';
-                                            }
+                                    {/* Event Details */}
+                                    <div className="grid grid-cols-1 gap-4 border-t border-border/60 pt-5 sm:grid-cols-2">
+                                        {/* Registration Period */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                <Calendar className="h-4 w-4" />
+                                            </div>
 
-                                            const fees = levels.map(
-                                                (level: {
-                                                    registration_fees?: number;
-                                                }) =>
-                                                    level.registration_fees ??
-                                                    0,
-                                            );
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="text-xs font-medium text-muted-foreground">
+                                                    Periode Pendaftaran
+                                                </p>
+                                                <p className="text-sm leading-relaxed font-semibold">
+                                                    {formatDate(
+                                                        event.registration_start_time,
+                                                        event.registration_end_time,
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                            const minFee = Math.min(...fees);
-                                            const maxFee = Math.max(...fees);
+                                        {/* Event Period */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                <Calendar className="h-4 w-4" />
+                                            </div>
 
-                                            if (maxFee === 0) {
-                                                return 'Gratis';
-                                            }
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="text-xs font-medium text-muted-foreground">
+                                                    Periode Pelaksanaan
+                                                </p>
+                                                <p className="text-sm leading-relaxed font-semibold">
+                                                    {formatDate(
+                                                        event.start_time,
+                                                        event.end_time,
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                            if (minFee === maxFee) {
-                                                return `Rp ${minFee.toLocaleString('id-ID')}`;
-                                            }
+                                        {/* Location */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                <MapPin className="h-4 w-4" />
+                                            </div>
 
-                                            return `${minFee === 0 ? 'Gratis' : `Rp ${minFee.toLocaleString('id-ID')}`} - Rp ${maxFee.toLocaleString('id-ID')}`;
-                                        })()}
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="text-xs font-medium text-muted-foreground">
+                                                    Lokasi
+                                                </p>
+                                                <p className="text-sm leading-relaxed font-semibold wrap-break-word">
+                                                    {event.location || '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Registration Fee */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                <Banknote className="h-4 w-4" />
+                                            </div>
+
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="text-xs font-medium text-muted-foreground">
+                                                    Biaya Pendaftaran
+                                                </p>
+
+                                                <p className="text-sm leading-relaxed font-semibold">
+                                                    {(() => {
+                                                        const levels =
+                                                            event.event_levels ||
+                                                            [];
+
+                                                        if (
+                                                            levels.length === 0
+                                                        ) {
+                                                            return 'Gratis';
+                                                        }
+
+                                                        const fees = levels.map(
+                                                            (level: {
+                                                                registration_fees?: number;
+                                                            }) =>
+                                                                level.registration_fees ??
+                                                                0,
+                                                        );
+
+                                                        const minFee = Math.min(
+                                                            ...fees,
+                                                        );
+                                                        const maxFee = Math.max(
+                                                            ...fees,
+                                                        );
+
+                                                        if (maxFee === 0) {
+                                                            return 'Gratis';
+                                                        }
+
+                                                        if (minFee === maxFee) {
+                                                            return `Rp ${minFee.toLocaleString('id-ID')}`;
+                                                        }
+
+                                                        return `${
+                                                            minFee === 0
+                                                                ? 'Gratis'
+                                                                : `Rp ${minFee.toLocaleString('id-ID')}`
+                                                        } - Rp ${maxFee.toLocaleString('id-ID')}`;
+                                                    })()}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </Card>
-
                         {/* B. DOKUMEN, JURI & PESERTA TERDAFTAR */}
                         <div className="grid grid-cols-1 gap-5">
                             <Card className="border-border/50 shadow-sm">

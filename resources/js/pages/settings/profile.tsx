@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,8 +13,9 @@ import {
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { Trash2, Camera, Key, ArrowLeftRightIcon } from 'lucide-react';
+import { Trash2, Key, ArrowLeftRightIcon } from 'lucide-react';
 import { FormDialog } from '@/components/dialogs/form-dialog';
+import { FileUploader } from '@/components/ui/file-uploader'; // Import FileUploader
 
 interface User {
     user_id: number;
@@ -36,15 +37,13 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
 
     const profileForm = useForm({
         name: user.name,
         contact_info: user.contact_info || '',
         email: user.email,
-        photo: null as File | null,
-        _method: 'PATCH',
+        temp_photo_path: null as string | null, // <-- Ubah dari File menjadi string path
     });
 
     const transferForm = useForm({
@@ -61,25 +60,15 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
         password: '',
     });
 
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            profileForm.setData('photo', file);
-            if (photoPreview) {
-                URL.revokeObjectURL(photoPreview);
-            }
-            setPhotoPreview(URL.createObjectURL(file));
-        }
-    };
-
     const submitProfile = (e: React.FormEvent) => {
         e.preventDefault();
-        profileForm.post('/profile', {
-            forceFormData: true,
+
+        // Gunakan PATCH langsung karena tidak ada objek File yang dikirim
+        profileForm.patch('/profile', {
             preserveScroll: true,
             onSuccess: () => {
-                if (fileInputRef.current) fileInputRef.current.value = '';
-                setPhotoPreview(null);
+                setTempPhotoUrl(null); // Reset URL temp setelah berhasil dipindah di server
+                profileForm.setData('temp_photo_path', null);
             },
         });
     };
@@ -162,11 +151,11 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
 
                         <CardContent className="flex flex-col gap-8 lg:flex-row">
                             {/* BAGIAN KIRI: Foto Profil */}
-                            <div className="flex flex-col items-center gap-4 sm:pt-2">
-                                <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-primary/10 shadow-sm lg:h-80 lg:w-80">
-                                    {photoPreview ? (
+                            <div className="flex w-full flex-col items-center gap-6 sm:pt-2 lg:w-80">
+                                <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-primary/10 shadow-sm lg:h-56 lg:w-56">
+                                    {tempPhotoUrl ? (
                                         <img
-                                            src={photoPreview}
+                                            src={tempPhotoUrl}
                                             className="h-full w-full object-cover"
                                             alt="Preview"
                                         />
@@ -182,29 +171,44 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                         </span>
                                     )}
                                 </div>
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={handlePhotoChange}
-                                    accept="image/*"
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full gap-2"
-                                    onClick={() =>
-                                        fileInputRef.current?.click()
-                                    }
-                                >
-                                    <Camera className="h-4 w-4" />
-                                    {photoPreview
-                                        ? 'Photo Selected'
-                                        : 'Change Photo'}
-                                </Button>
-                                <InputError
-                                    message={profileForm.errors.photo}
-                                />
+
+                                {/* Komponen Reusable Uploader */}
+                                <div className="w-full">
+                                    <FileUploader
+                                        variant="image"
+                                        multiple={false}
+                                        maxSizeMB={2}
+                                        endpoint="/upload-temp-file" // Endpoint Laravel untuk temporary upload
+                                        onUploadSuccess={(
+                                            fileId,
+                                            responsePath,
+                                        ) => {
+                                            profileForm.setData(
+                                                'temp_photo_path',
+                                                responsePath,
+                                            );
+                                            setTempPhotoUrl(
+                                                `/storage/${responsePath}`,
+                                            );
+                                            profileForm.clearErrors(
+                                                'temp_photo_path',
+                                            );
+                                        }}
+                                        onRemove={() => {
+                                            profileForm.setData(
+                                                'temp_photo_path',
+                                                null,
+                                            );
+                                            setTempPhotoUrl(null);
+                                        }}
+                                    />
+                                    <InputError
+                                        message={
+                                            profileForm.errors.temp_photo_path
+                                        }
+                                        className="mt-2 text-center"
+                                    />
+                                </div>
                             </div>
 
                             {/* BAGIAN KANAN: Form Input */}
