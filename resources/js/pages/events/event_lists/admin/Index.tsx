@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Eye, Calendar, MapPin } from 'lucide-react';
 import { EventData } from '@/components/event-card';
 import {
@@ -57,24 +58,92 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                 {/* Header Section */}
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                             Event Management
                         </h1>
-                        <p className="mt-1 text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground md:text-base">
                             Kelola semua event kompetisi, jadwal, dan panitia.
                         </p>
                     </div>
                     {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
-                    <Link href="/admin/events/create">
-                        <Button className="gap-2">
+                    <Link
+                        href="/admin/events/create"
+                        className="w-full sm:w-auto"
+                    >
+                        <Button className="w-full gap-2 sm:w-auto">
                             <Plus className="h-4 w-4" />
                             Buat Event Baru
                         </Button>
                     </Link>
                 </div>
 
-                {/* Table Section */}
-                <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+                {/* Mobile View: Cards (Tampil di layar kecil) */}
+                <div className="flex flex-col gap-3 md:hidden">
+                    {events.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+                            Tidak ada event yang ditemukan. Mulai dengan membuat
+                            event baru.
+                        </div>
+                    ) : (
+                        events.map((event) => (
+                            <Card
+                                key={event.event_id}
+                                className="overflow-hidden border-border/50 shadow-sm"
+                            >
+                                <CardContent className="space-y-3 p-4">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h3 className="text-base leading-snug font-semibold text-foreground">
+                                            {event.event_name}
+                                        </h3>
+                                        <Badge
+                                            variant="secondary"
+                                            className={`shrink-0 text-[10px] tracking-wide whitespace-nowrap capitalize ${getStatusColor(event.status)}`}
+                                        >
+                                            {event.status.replace(/_/g, ' ')}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="space-y-1.5 border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                            <span>
+                                                {formatDate(
+                                                    event.start_time,
+                                                    event.end_time,
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                            <span className="truncate">
+                                                {event.location || '-'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-border/50 pt-2">
+                                        <Link
+                                            href={`/admin/events/${event.public_id}/information`}
+                                            className="block w-full"
+                                        >
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full gap-1.5 text-xs"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                Detail Event
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop View: Table (Tampil di layar md ke atas) */}
+                <div className="hidden overflow-hidden rounded-md border bg-card text-card-foreground shadow-sm md:block">
                     <Table>
                         <TableHeader className="bg-muted/50">
                             <TableRow>
@@ -137,7 +206,6 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {/* Link langsung diarahkan ke /admin karena halaman ini khusus admin */}
                                             <Link
                                                 href={`/admin/events/${event.public_id}/information`}
                                             >

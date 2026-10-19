@@ -10,15 +10,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { PageProps } from '@inertiajs/core';
 import { Search, Star } from 'lucide-react';
-import { ParticipationTable } from '@/components/participation_table/participation_table';
+import { ParticipationTable } from '@/components/tables/participation_table/participation_table';
 import AppLayout from '@/layouts/app-layout';
 
 export default function MyParticipations({
     participations,
-    myOfficialTeamId
+    myOfficialTeamId,
 }: {
-    participations: any[],
-    myOfficialTeamId:string;
+    participations: any[];
+    myOfficialTeamId: string;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
@@ -50,10 +50,10 @@ export default function MyParticipations({
                 {/* Header Judul Halaman */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                             Pendaftaran Saya
                         </h1>
-                        <p className="mt-1 text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground md:text-base">
                             Pantau dan kelola seluruh pendaftaran tim Anda pada
                             berbagai event kompetisi.
                         </p>
@@ -61,27 +61,28 @@ export default function MyParticipations({
                 </div>
 
                 <Card className="overflow-hidden border-primary/30 shadow-sm">
-                    <CardHeader className="flex flex-col justify-between gap-4 border-b border-primary/10 bg-primary/5 px-5 py-4 lg:flex-row lg:items-center">
+                    {/* Header Card yang Responsif untuk Mobile & Desktop */}
+                    <CardHeader className="flex flex-col justify-between gap-4 border-b border-primary/10 bg-primary/5 px-4 py-4 md:px-5 lg:flex-row lg:items-center">
                         <div className="flex flex-col gap-1">
-                            <CardTitle className="flex items-center gap-2 text-lg text-primary">
-                                <Star className="h-5 w-5" /> Tim Anda
+                            <CardTitle className="flex items-center gap-2 text-base text-primary md:text-lg">
+                                <Star className="h-5 w-5 shrink-0" /> Tim Anda
                             </CardTitle>
-                            <CardDescription className="text-primary/70">
+                            <CardDescription className="text-xs text-primary/70 md:text-sm">
                                 Kelola dokumen persyaratan dan pantau status
                                 verifikasi seluruh tim.
                             </CardDescription>
                         </div>
 
-                        {/* Area Filter & Search */}
+                        {/* Area Filter & Search yang Rapih di HP */}
                         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
-                            <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto">
+                            <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                                 <Badge
                                     variant={
                                         filterLevel === 'all'
                                             ? 'default'
                                             : 'outline'
                                     }
-                                    className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${
+                                    className={`cursor-pointer rounded-md px-3 py-1 whitespace-nowrap transition-colors ${
                                         filterLevel === 'all'
                                             ? ''
                                             : 'border-primary/30 text-primary hover:bg-primary/20 hover:text-primary'
@@ -98,7 +99,7 @@ export default function MyParticipations({
                                                 ? 'default'
                                                 : 'outline'
                                         }
-                                        className={`cursor-pointer rounded-md px-3 py-1 transition-colors ${
+                                        className={`cursor-pointer rounded-md px-3 py-1 whitespace-nowrap transition-colors ${
                                             filterLevel === level
                                                 ? ''
                                                 : 'border-primary/30 text-primary hover:bg-primary/20 hover:text-primary'
@@ -123,7 +124,12 @@ export default function MyParticipations({
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0">
+
+                    {/* 
+                      Pemberian padding "p-4 md:p-0" agar Card mobile dari tabel 
+                      memiliki jarak aman di layar kecil dan merentang penuh di desktop.
+                    */}
+                    <CardContent className="p-4 md:p-0">
                         {/* Komponen Tabel Digunakan Ulang */}
                         <ParticipationTable
                             participations={filteredParticipations}

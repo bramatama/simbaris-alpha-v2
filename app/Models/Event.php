@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Event extends Model
 {
@@ -86,10 +87,5 @@ class Event extends Model
     public function eventLevels(): HasMany
     {
         return $this->hasMany(EventLevel::class, 'event_id');
-    }
-
-    public function scoringCategories(): HasMany
-    {
-        return $this->hasMany(ScoringCategory::class, 'event_id');
     }
 }

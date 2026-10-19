@@ -197,9 +197,19 @@ class EventController extends Controller
 
         // Eager loading data tambahan berdasarkan role agar dashboard informatif
         $event =  $query->with([
-                                'eventJudges:event_id,event_judge_id,judge_id',
                                 'eventJudges.judge.user:user_id,name',
-                                'eventJudges.judgeExpertises.scoringCategory.masterCategory:master_category_id,category_name',
+                                'eventJudges:event_id,event_judge_id,judge_id',
+                                'eventJudges.judgeExpertises.scoringCategory' => function ($q) {
+                                    $q->select(
+                                        'scoring_category_id',
+                                        'event_level_id',
+                                        'master_category_id'
+                                    )->with([
+                                        'masterCategory:master_category_id,category_name',
+                                        'eventLevel:event_level_id,event_id,level_id',
+                                        'eventLevel.level:level_id,level_name',
+                                    ]);
+                                },                                
                                 'eventLevels' => function ($q) {
                                     $q->select(
                                         'event_level_id',
@@ -216,9 +226,25 @@ class EventController extends Controller
                             ->firstOrFail();    
 
         $event->eventJudges->transform(function ($eventJudge) {
-            $eventJudge->expertises = $eventJudge->judgeExpertises->map(function ($expertise) {
-                return $expertise->scoringCategory->masterCategory->category_name ?? null;
-            })->filter()->values()->toArray(); 
+            $eventJudge->expertises = $eventJudge->judgeExpertises
+                ->map(function ($expertise) {
+                    $category = $expertise->scoringCategory;
+
+                    if (!$category || !$category->masterCategory) {
+                        return null;
+                    }
+
+                    return [
+                        'scoring_category_id' => $category->scoring_category_id,
+                        'event_level_id' => $category->event_level_id,
+                        'level_name' => $category->eventLevel->level->level_name ?? null,
+                        'category_name' => $category->masterCategory->category_name,
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->toArray();
+
             unset($eventJudge->judgeExpertises);
 
             return $eventJudge;

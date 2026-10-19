@@ -28,8 +28,10 @@ import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Plus } from 'lucide-react';
 
 type Expertise = {
-    expertise_id: number;
-    expertise_name: string;
+    scoring_category_id: number;
+    event_level_id: number;
+    level_name: string;
+    category_name: string;
 };
 
 type Judge = {
@@ -56,102 +58,109 @@ export default function AddJudgeDialog({
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const { data, setData, post, processing, errors, reset, clearErrors } =
-        useForm<{
-            name: string;
-            email: string;
-            expertise_ids: number[];
-            force_create: boolean;
-        }>({
-            name: '',
-            email: '',
-            expertise_ids: [],
-            force_create: false,
-        });
+    const {
+        data,
+        setData,
+        transform,
+        post,
+        processing,
+        errors,
+        reset,
+        clearErrors,
+    } = useForm({
+        name: '',
+        email: '',
+        expertise_ids: [] as number[],
+        force_create: false,
+    });
 
+    const confirmationError = (errors as any).confirmation;
     useEffect(() => {
-        if (errors['confirmation' as keyof typeof errors]) {
+        if (confirmationError) {
             setShowConfirm(true);
         }
-    }, [errors['confirmation' as keyof typeof errors]]);
+    }, [confirmationError]);
+
+    const closeForm = () => {
+        setIsAddOpen(false);
+        reset();
+        clearErrors();
+        setShowConfirm(false);
+    };
 
     const submitAdd = (e: React.FormEvent) => {
         e.preventDefault();
         post(`/${userRole}/events/${eventPublicId}/judges`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsAddOpen(false);
-                reset();
-                setShowConfirm(false);
-            },
+            onSuccess: () => closeForm(),
         });
     };
 
     const confirmSubmit = () => {
         setShowConfirm(false);
-        clearErrors('confirmation' as keyof typeof errors);
-
-        setData('force_create', true);
-
+        clearErrors();
+        transform((formData) => ({ ...formData, force_create: true }));
         post(`/${userRole}/events/${eventPublicId}/judges`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsAddOpen(false);
-                reset();
-                setShowConfirm(false);
-            },
-            onError: (errors) => {
-                if (errors.confirmation) {
-                    setShowConfirm(true);
-                }
-            },
-            onFinish: () => {
-                setData('force_create', false);
-            },
+            onSuccess: () => closeForm(),
+            onFinish: () => transform((fd) => fd),
         });
     };
 
-    const toggleExpertise = (
-        expertiseId: number,
-        checked: boolean | 'indeterminate',
-    ) => {
-        setData(
-            'expertise_ids',
-            checked === true
-                ? [...new Set([...data.expertise_ids, expertiseId])]
-                : data.expertise_ids.filter((id) => id !== expertiseId),
-        );
+    const toggleExpertise = (id: number, checked: boolean) => {
+        if (checked) {
+            setData('expertise_ids', [...new Set([...data.expertise_ids, id])]);
+        } else {
+            setData(
+                'expertise_ids',
+                data.expertise_ids.filter((i) => i !== id),
+            );
+        }
     };
+
+    // Kelompokkan kategori berdasarkan Kategori Induk (Expertise), BUKAN Jenjang
+    const expertisesByCategory = expertises.reduce<Record<string, Expertise[]>>(
+        (groups, expertise) => {
+            const catName = expertise.category_name || 'Kategori lainnya';
+            if (!groups[catName]) {
+                groups[catName] = [];
+            }
+            groups[catName].push(expertise);
+            return groups;
+        },
+        {},
+    );
+
+    const selectedExpertises = expertises.filter((exp) =>
+        data.expertise_ids.includes(exp.scoring_category_id),
+    );
 
     return (
         <>
             <Dialog
                 open={isAddOpen}
                 onOpenChange={(open) => {
-                    setIsAddOpen(open);
-                    if (!open) {
-                        reset();
-                        clearErrors();
-                        setShowConfirm(false);
+                    if (open) {
+                        setIsAddOpen(true);
+                    } else {
+                        closeForm();
                     }
                 }}
             >
                 <DialogTrigger asChild>
                     <Button className="gap-2">
-                        <Plus className="h-4 w-4" /> Assign New Judge
+                        <Plus className="h-4 w-4" /> Tambah Juri Baru
                     </Button>
                 </DialogTrigger>
 
                 <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                     <form onSubmit={submitAdd}>
                         <DialogHeader>
-                            <DialogTitle >Assign Judge to Event</DialogTitle>
+                            <DialogTitle>Tugaskan Juri ke Acara</DialogTitle>
                         </DialogHeader>
 
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-5 py-4">
                             <div className="grid gap-2 border-b border-dashed pb-4">
                                 <Label className="text-muted-foreground">
-                                    Autofill Existing Judge
+                                    Pilih Akun Juri Terdaftar (Otomatis Isi)
                                 </Label>
                                 <Select
                                     onValueChange={(value) => {
@@ -161,8 +170,8 @@ export default function AddJudgeDialog({
                                                 value,
                                         );
                                         if (judge) {
-                                            setData((previous) => ({
-                                                ...previous,
+                                            setData((p) => ({
+                                                ...p,
                                                 name: judge.user?.name ?? '',
                                                 email: judge.user?.email ?? '',
                                             }));
@@ -172,12 +181,12 @@ export default function AddJudgeDialog({
                                     }}
                                 >
                                     <SelectTrigger className="w-full bg-muted/30">
-                                        <SelectValue placeholder="Select an existing judge" />
+                                        <SelectValue placeholder="Pilih juri yang sudah ada di sistem" />
                                     </SelectTrigger>
                                     <SelectContent position="popper">
                                         <SelectGroup>
                                             <SelectLabel>
-                                                Registered Judges
+                                                Daftar Juri
                                             </SelectLabel>
                                             {existingJudges.map((judge) => (
                                                 <SelectItem
@@ -185,7 +194,7 @@ export default function AddJudgeDialog({
                                                     value={judge.judge_id.toString()}
                                                 >
                                                     {judge.user?.name ??
-                                                        'Unnamed Judge'}
+                                                        'Tanpa Nama'}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
@@ -194,9 +203,9 @@ export default function AddJudgeDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Full Name</Label>
+                                <Label htmlFor="judge-name">Nama Lengkap</Label>
                                 <Input
-                                    id="name"
+                                    id="judge-name"
                                     value={data.name}
                                     onChange={(e) =>
                                         setData('name', e.target.value)
@@ -207,9 +216,11 @@ export default function AddJudgeDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email Address</Label>
+                                <Label htmlFor="judge-email">
+                                    Alamat Email
+                                </Label>
                                 <Input
-                                    id="email"
+                                    id="judge-email"
                                     type="email"
                                     value={data.email}
                                     onChange={(e) =>
@@ -222,67 +233,127 @@ export default function AddJudgeDialog({
 
                             <div className="grid gap-3">
                                 <div>
-                                    <Label>Judge Expertise</Label>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Select one or more areas of expertise
-                                        for this event.
+                                    <Label>Kategori Penilaian Juri</Label>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Pilih jenjang untuk masing-masing
+                                        kategori yang ditugaskan kepada juri
+                                        ini.
                                     </p>
                                 </div>
-                                <div className="grid gap-3 rounded-lg border p-3">
-                                    {expertises.map((expertise) => (
-                                        <label
-                                            key={expertise.expertise_id}
-                                            htmlFor={`expertise-${expertise.expertise_id}`}
-                                            className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-muted/50"
-                                        >
-                                            <Checkbox
-                                                id={`expertise-${expertise.expertise_id}`}
-                                                checked={data.expertise_ids.includes(
-                                                    expertise.expertise_id,
-                                                )}
-                                                onCheckedChange={(checked) =>
-                                                    toggleExpertise(
-                                                        expertise.expertise_id,
-                                                        checked,
-                                                    )
+
+                                <div className="grid gap-4 rounded-lg border bg-muted/10 p-3">
+                                    {Object.entries(expertisesByCategory).map(
+                                        ([catName, levels]) => {
+                                            const levelIds = levels.map(
+                                                (l) => l.scoring_category_id,
+                                            );
+                                            const isAllSelected =
+                                                levelIds.every((id) =>
+                                                    data.expertise_ids.includes(
+                                                        id,
+                                                    ),
+                                                );
+
+                                            const toggleAll = () => {
+                                                if (isAllSelected) {
+                                                    setData(
+                                                        'expertise_ids',
+                                                        data.expertise_ids.filter(
+                                                            (id) =>
+                                                                !levelIds.includes(
+                                                                    id,
+                                                                ),
+                                                        ),
+                                                    );
+                                                } else {
+                                                    setData('expertise_ids', [
+                                                        ...new Set([
+                                                            ...data.expertise_ids,
+                                                            ...levelIds,
+                                                        ]),
+                                                    ]);
                                                 }
-                                            />
-                                            <span className="text-sm font-medium">
-                                                {expertise.expertise_name}
-                                            </span>
-                                        </label>
-                                    ))}
+                                            };
+
+                                            return (
+                                                <div
+                                                    key={catName}
+                                                    className="space-y-3 rounded-lg border bg-card p-4 shadow-sm"
+                                                >
+                                                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                                                        <h4 className="text-sm font-bold text-foreground">
+                                                            {catName}
+                                                        </h4>
+                                                        <Button
+                                                            type="button"
+                                                            variant={
+                                                                isAllSelected
+                                                                    ? 'secondary'
+                                                                    : 'outline'
+                                                            }
+                                                            size="sm"
+                                                            onClick={toggleAll}
+                                                            className="h-7 px-2.5 text-xs"
+                                                        >
+                                                            {isAllSelected
+                                                                ? 'Batalkan Semua'
+                                                                : 'Pilih Semua Jenjang'}
+                                                        </Button>
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        {levels.map(
+                                                            (expertise) => (
+                                                                <label
+                                                                    key={
+                                                                        expertise.scoring_category_id
+                                                                    }
+                                                                    className={`flex cursor-pointer items-center gap-3 rounded-md border p-2.5 transition-colors ${data.expertise_ids.includes(expertise.scoring_category_id) ? 'border-primary/40 bg-primary/5' : 'hover:bg-muted/50'}`}
+                                                                >
+                                                                    <Checkbox
+                                                                        checked={data.expertise_ids.includes(
+                                                                            expertise.scoring_category_id,
+                                                                        )}
+                                                                        onCheckedChange={(
+                                                                            checked,
+                                                                        ) =>
+                                                                            toggleExpertise(
+                                                                                expertise.scoring_category_id,
+                                                                                checked as boolean,
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <span className="text-sm leading-none font-medium">
+                                                                        {
+                                                                            expertise.level_name
+                                                                        }
+                                                                    </span>
+                                                                </label>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        },
+                                    )}
                                     {expertises.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
-                                            No expertise data available.
+                                            Belum ada kategori yang
+                                            dikonfigurasi pada acara ini.
                                         </p>
                                     )}
                                 </div>
                                 <InputError message={errors.expertise_ids} />
-                                <InputError
-                                    message={
-                                        errors[
-                                            'expertise_ids.0' as keyof typeof errors
-                                        ]
-                                    }
-                                />
 
-                                {data.expertise_ids.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {expertises
-                                            .filter((expertise) =>
-                                                data.expertise_ids.includes(
-                                                    expertise.expertise_id,
-                                                ),
-                                            )
-                                            .map((expertise) => (
-                                                <Badge
-                                                    key={expertise.expertise_id}
-                                                    variant="secondary"
-                                                >
-                                                    {expertise.expertise_name}
-                                                </Badge>
-                                            ))}
+                                {selectedExpertises.length > 0 && (
+                                    <div className="pt-2 text-sm font-medium">
+                                        Total Terpilih:{' '}
+                                        <Badge
+                                            variant="default"
+                                            className="ml-1"
+                                        >
+                                            {selectedExpertises.length} Form
+                                            Kategori
+                                        </Badge>
                                     </div>
                                 )}
                             </div>
@@ -292,9 +363,9 @@ export default function AddJudgeDialog({
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => setIsAddOpen(false)}
+                                onClick={closeForm}
                             >
-                                Cancel
+                                Batal
                             </Button>
                             <Button
                                 type="submit"
@@ -305,8 +376,8 @@ export default function AddJudgeDialog({
                             >
                                 {processing && (
                                     <Spinner className="mr-2 h-4 w-4" />
-                                )}
-                                Assign Judge
+                                )}{' '}
+                                Tugaskan Juri
                             </Button>
                         </DialogFooter>
                     </form>
@@ -317,15 +388,14 @@ export default function AddJudgeDialog({
                 open={showConfirm}
                 onOpenChange={(open) => {
                     setShowConfirm(open);
-                    if (!open) {
-                        clearErrors();
-                    }
+                    if (!open) clearErrors('confirmation' as any);
                 }}
-                title="Judge Account Found"
+                title="Akun Juri Ditemukan"
                 description={
-                    errors['confirmation' as keyof typeof errors] as string
+                    confirmationError ??
+                    'Akun dengan email tersebut sudah ada. Lanjutkan menugaskan?'
                 }
-                confirmText="Continue Assignment"
+                confirmText="Ya, Tugaskan"
                 onConfirm={confirmSubmit}
                 isProcessing={processing}
             />

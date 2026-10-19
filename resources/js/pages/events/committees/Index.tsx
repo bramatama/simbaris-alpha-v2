@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { ArrowLeft } from 'lucide-react';
-import CommitteeTable from '@/components/committee_table/committee_table';
+import CommitteeTable from '@/components/tables/committee_table/committee_table';
 import AddCommitteeDialog from '@/components/dialogs/add-committee-dialog';
 import type { PageProps } from '@inertiajs/core';
 

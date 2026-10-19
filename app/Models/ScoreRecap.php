@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Models;
 
@@ -15,17 +15,28 @@ class ScoreRecap extends Model
         'final_score',
     ];
 
-    protected $casts = [
-        'final_score' => 'float',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'final_score' => 'decimal:2',
+        ];
+    }
 
     public function participation(): BelongsTo
     {
-        return $this->belongsTo(Participation::class, 'participation_id', 'participation_id');
+        return $this->belongsTo(
+            Participation::class,
+            'participation_id',
+            'participation_id'
+        );
     }
 
     public function championCategory(): BelongsTo
     {
-        return $this->belongsTo(ChampionCategory::class, 'champion_category_id', 'champion_category_id');
+        return $this->belongsTo(
+            ChampionCategory::class,
+            'champion_category_id',
+            'champion_category_id'
+        );
     }
 }

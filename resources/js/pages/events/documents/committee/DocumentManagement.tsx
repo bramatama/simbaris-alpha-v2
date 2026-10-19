@@ -79,7 +79,7 @@ export default function DocumentManagement({
         >
             <Head title={`Manajemen Dokumen - ${event.event_name}`} />
 
-            <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6 lg:p-8">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>

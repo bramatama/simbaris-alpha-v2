@@ -19,7 +19,6 @@ import type { PageProps } from '@inertiajs/core';
 import { ArrowLeft, Plus, Save, Trash2, Tag, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-
 type MasterLevel = {
     level_id: number;
     level_name: string;
@@ -90,7 +89,7 @@ export default function LevelManagement({
                     level_id: levelId.toString(),
                     level_name: levelName,
                     registration_fees: 0,
-                    quota: 0,
+                    quota: "",
                     is_custom: false,
                 },
             ]);
@@ -231,7 +230,7 @@ export default function LevelManagement({
                                                             c as boolean,
                                                         )
                                                     }
-                                                    className="h-5 w-5"
+                                                    className="h-5 w-5 cursor-pointer"
                                                 />
                                                 <Label
                                                     htmlFor={`level-${masterLevel.level_id}`}
@@ -255,8 +254,8 @@ export default function LevelManagement({
                                                                 Rp
                                                             </span>
                                                             <Input
-                                                                type="number"
-                                                                min="0"
+                                                                inputMode="numeric"
+
                                                                 className="bg-background pl-9"
                                                                 value={
                                                                     selectedData.registration_fees
@@ -287,9 +286,8 @@ export default function LevelManagement({
                                                             Kuota (Tim)
                                                         </Label>
                                                         <Input
-                                                            type="number"
-                                                            min="0"
-                                                            placeholder="0 = Tanpa Batas"
+                                                            inputMode="numeric"
+                                                            placeholder="Kosong = Tanpa Batas"
                                                             className="bg-background"
                                                             value={
                                                                 selectedData.quota
@@ -396,8 +394,7 @@ export default function LevelManagement({
                                                             Rp
                                                         </span>
                                                         <Input
-                                                            type="number"
-                                                            min="0"
+                                                            inputMode="numeric"
                                                             className="bg-background pl-9"
                                                             value={
                                                                 customLevel.registration_fees
@@ -428,8 +425,8 @@ export default function LevelManagement({
                                                         Kuota (Tim)
                                                     </Label>
                                                     <Input
-                                                        type="number"
-                                                        min="0"
+                                                        inputMode="numeric"
+
                                                         placeholder="0 = Tanpa Batas"
                                                         className="bg-background"
                                                         value={

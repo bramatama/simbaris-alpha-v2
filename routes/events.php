@@ -5,7 +5,7 @@ use App\Http\Controllers\Events\EventCommitteeController;
 use App\Http\Controllers\Events\EventDocumentController;
 use App\Http\Controllers\Events\EventJudgeController;
 use App\Http\Controllers\Events\EventLevelController;
-use App\Http\Controllers\Events\ParticipationController;
+use App\Http\Controllers\Participations\ParticipationController;
 
 Route::get('/events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
@@ -39,7 +39,7 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
     Route::resource('events/{event:public_id}/committees', EventCommitteeController::class)->only(['index', 'store']);
 
     Route::delete('events/{event:public_id}/judges/{event_judge:event_judge_id}', [EventJudgeController::class, 'destroy'])->name('events.judges.destroy');
-    Route::resource('events/{event:public_id}/judges', EventJudgeController::class)->only(['index', 'store']);
+    Route::resource('events/{event:public_id}/judges', EventJudgeController::class)->only(['index', 'store', 'edit', 'update']);
 
     Route::resource('events/{event:public_id}/levels', EventLevelController::class)->only(['index', 'store']);
 
@@ -54,4 +54,5 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
 
     Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index','store', 'destroy');
     Route::get('events/{event:public_id}/enroll', [ParticipationController::class, 'create'])->name('events.official_team.create');
+    Route::post('events/{event:public_id}/check-quota', [ParticipationController::class, 'checkQuota'])->name('event.official_team.checkQuota');
 });

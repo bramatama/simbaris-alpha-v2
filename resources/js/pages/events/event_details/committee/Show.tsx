@@ -102,6 +102,9 @@ export default function EventShow({ event }: { event: any }) {
 
     const statusConfig = getStatusConfig(event.status);
 
+    // Dapatkan array ID level yang sah pada event ini untuk menghitung kondisi "Semua Jenjang"
+    const totalEventLevels = event.event_levels?.length || 0;
+
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
@@ -161,20 +164,17 @@ export default function EventShow({ event }: { event: any }) {
                                             {statusConfig.icon}
                                             {statusConfig.text}
                                         </div>
-
                                         <h1 className="text-2xl leading-tight font-bold tracking-tight wrap-break-word md:text-3xl">
                                             {event.event_name || 'Event'}
                                         </h1>
                                     </div>
 
-                                    {/* Event Details */}
                                     <div className="grid grid-cols-1 gap-4 border-t border-border/60 pt-5 sm:grid-cols-2">
                                         {/* Registration Period */}
                                         <div className="flex items-start gap-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                 <Calendar className="h-4 w-4" />
                                             </div>
-
                                             <div className="min-w-0 space-y-1">
                                                 <p className="text-xs font-medium text-muted-foreground">
                                                     Periode Pendaftaran
@@ -193,7 +193,6 @@ export default function EventShow({ event }: { event: any }) {
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                 <Calendar className="h-4 w-4" />
                                             </div>
-
                                             <div className="min-w-0 space-y-1">
                                                 <p className="text-xs font-medium text-muted-foreground">
                                                     Periode Pelaksanaan
@@ -212,7 +211,6 @@ export default function EventShow({ event }: { event: any }) {
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                 <MapPin className="h-4 w-4" />
                                             </div>
-
                                             <div className="min-w-0 space-y-1">
                                                 <p className="text-xs font-medium text-muted-foreground">
                                                     Lokasi
@@ -228,52 +226,33 @@ export default function EventShow({ event }: { event: any }) {
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                 <Banknote className="h-4 w-4" />
                                             </div>
-
                                             <div className="min-w-0 space-y-1">
                                                 <p className="text-xs font-medium text-muted-foreground">
                                                     Biaya Pendaftaran
                                                 </p>
-
                                                 <p className="text-sm leading-relaxed font-semibold">
                                                     {(() => {
                                                         const levels =
                                                             event.event_levels ||
                                                             [];
-
-                                                        if (
-                                                            levels.length === 0
-                                                        ) {
+                                                        if (levels.length === 0)
                                                             return 'Gratis';
-                                                        }
-
                                                         const fees = levels.map(
-                                                            (level: {
-                                                                registration_fees?: number;
-                                                            }) =>
+                                                            (level: any) =>
                                                                 level.registration_fees ??
                                                                 0,
                                                         );
-
                                                         const minFee = Math.min(
                                                             ...fees,
                                                         );
                                                         const maxFee = Math.max(
                                                             ...fees,
                                                         );
-
-                                                        if (maxFee === 0) {
+                                                        if (maxFee === 0)
                                                             return 'Gratis';
-                                                        }
-
-                                                        if (minFee === maxFee) {
+                                                        if (minFee === maxFee)
                                                             return `Rp ${minFee.toLocaleString('id-ID')}`;
-                                                        }
-
-                                                        return `${
-                                                            minFee === 0
-                                                                ? 'Gratis'
-                                                                : `Rp ${minFee.toLocaleString('id-ID')}`
-                                                        } - Rp ${maxFee.toLocaleString('id-ID')}`;
+                                                        return `${minFee === 0 ? 'Gratis' : `Rp ${minFee.toLocaleString('id-ID')}`} - Rp ${maxFee.toLocaleString('id-ID')}`;
                                                     })()}
                                                 </p>
                                             </div>
@@ -282,8 +261,10 @@ export default function EventShow({ event }: { event: any }) {
                                 </div>
                             </div>
                         </Card>
+
                         {/* B. DOKUMEN, JURI & PESERTA TERDAFTAR */}
                         <div className="grid grid-cols-1 gap-5">
+                            {/* DOKUMEN JUKNIS */}
                             <Card className="border-border/50 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 px-4 py-2.5">
                                     <div className="flex items-center gap-2">
@@ -314,12 +295,9 @@ export default function EventShow({ event }: { event: any }) {
                                                         key={doc.document_id}
                                                         className="group relative flex flex-col items-center justify-start rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-primary/40 hover:bg-muted/20"
                                                     >
-                                                        {/* Ikon File Besar */}
                                                         <div className="mb-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-500 transition-colors group-hover:bg-red-500/20">
                                                             <FileText className="h-7 w-7" />
                                                         </div>
-
-                                                        {/* Nama File */}
                                                         <span
                                                             className="line-clamp-2 w-full text-center text-xs leading-relaxed font-medium text-foreground"
                                                             title={
@@ -328,7 +306,6 @@ export default function EventShow({ event }: { event: any }) {
                                                         >
                                                             {doc.document_name}
                                                         </span>
-
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -364,6 +341,7 @@ export default function EventShow({ event }: { event: any }) {
                                 </CardContent>
                             </Card>
 
+                            {/* DEWAN JURI */}
                             <Card className="border-border/50 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 px-4 py-2.5">
                                     <div className="flex items-center gap-2">
@@ -372,7 +350,7 @@ export default function EventShow({ event }: { event: any }) {
                                             Dewan Juri
                                         </CardTitle>
                                         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                            {event.event_judges_count || 0}{' '}
+                                            {event.event_judges?.length || 0}{' '}
                                             orang
                                         </span>
                                     </div>
@@ -389,40 +367,108 @@ export default function EventShow({ event }: { event: any }) {
                                     event.event_judges.length > 0 ? (
                                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                                             {event.event_judges.map(
-                                                (ej: any) => (
-                                                    <div
-                                                        key={ej.event_judge_id}
-                                                        className="flex flex-col justify-center rounded-md border border-border/60 bg-card px-3 py-2 shadow-sm"
-                                                    >
-                                                        <span className="mb-1.5 line-clamp-1 text-xs font-semibold text-foreground">
-                                                            {ej.judge?.user
-                                                                ?.name ||
-                                                                'Unknown'}
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {ej.expertises?.map(
-                                                                (
-                                                                    exp: string,
-                                                                    idx: number,
-                                                                ) => (
-                                                                    <Badge
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        variant="secondary"
-                                                                        className="rounded-sm border-0 bg-primary/10 px-1.5 text-[9px] font-medium text-primary hover:bg-primary/20"
-                                                                    >
-                                                                        {exp}
-                                                                    </Badge>
-                                                                ),
-                                                            )}
+                                                (ej: any) => {
+                                                    // Grouping Category seperti di table juri
+                                                    const judgeAssignedMap = (
+                                                        ej.expertises || []
+                                                    ).reduce(
+                                                        (
+                                                            acc: any,
+                                                            exp: any,
+                                                        ) => {
+                                                            const catName =
+                                                                exp.category_name ||
+                                                                'Kategori Lainnya';
+                                                            const levelName =
+                                                                exp.level_name ||
+                                                                'Jenjang Lainnya';
+                                                            if (!acc[catName])
+                                                                acc[catName] =
+                                                                    [];
+                                                            acc[catName].push(
+                                                                levelName,
+                                                            );
+                                                            return acc;
+                                                        },
+                                                        {} as Record<
+                                                            string,
+                                                            string[]
+                                                        >,
+                                                    );
+
+                                                    return (
+                                                        <div
+                                                            key={
+                                                                ej.event_judge_id
+                                                            }
+                                                            className="flex flex-col rounded-md border border-border/60 bg-card px-3 py-2.5 shadow-sm"
+                                                        >
+                                                            <span className="mb-2 line-clamp-1 text-xs font-bold text-foreground">
+                                                                {ej.judge?.user
+                                                                    ?.name ||
+                                                                    'Unknown'}
+                                                            </span>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {Object.keys(
+                                                                    judgeAssignedMap,
+                                                                ).length > 0 ? (
+                                                                    Object.entries(
+                                                                        judgeAssignedMap,
+                                                                    ).map(
+                                                                        ([
+                                                                            catName,
+                                                                            levels,
+                                                                        ]: any) => {
+                                                                            const isSemuaJenjang =
+                                                                                levels.length ===
+                                                                                    totalEventLevels &&
+                                                                                totalEventLevels >
+                                                                                    0;
+                                                                            const levelText =
+                                                                                isSemuaJenjang
+                                                                                    ? 'Semua Jenjang'
+                                                                                    : levels.join(
+                                                                                          ', ',
+                                                                                      );
+
+                                                                            return (
+                                                                                <Badge
+                                                                                    key={
+                                                                                        catName
+                                                                                    }
+                                                                                    variant="secondary"
+                                                                                    className="rounded-sm border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px]"
+                                                                                >
+                                                                                    <span className="mr-1 font-bold text-foreground">
+                                                                                        {
+                                                                                            catName
+                                                                                        }
+                                                                                        :
+                                                                                    </span>
+                                                                                    <span className="font-medium text-muted-foreground">
+                                                                                        {
+                                                                                            levelText
+                                                                                        }
+                                                                                    </span>
+                                                                                </Badge>
+                                                                            );
+                                                                        },
+                                                                    )
+                                                                ) : (
+                                                                    <span className="text-[10px] text-muted-foreground/60 italic">
+                                                                        Belum
+                                                                        ada
+                                                                        kategori
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ),
+                                                    );
+                                                },
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="rounded-md border border-dashed border-border/60 bg-muted/30 text-center">
+                                        <div className="rounded-md border border-dashed border-border/60 bg-muted/30 p-4 text-center">
                                             <p className="text-xs text-muted-foreground">
                                                 Belum ada juri yang ditugaskan.
                                             </p>
@@ -431,7 +477,7 @@ export default function EventShow({ event }: { event: any }) {
                                 </CardContent>
                             </Card>
 
-                            {/* D. SEKOLAH TERDAFTAR DENGAN FILTER TAB */}
+                            {/* PESERTA TERDAFTAR */}
                             <Card className="border-border/50 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between px-4">
                                     <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -461,7 +507,7 @@ export default function EventShow({ event }: { event: any }) {
                                             className={`cursor-pointer rounded-md px-2 py-0.5 text-xs whitespace-nowrap transition-colors ${selectedLevel === 'all' ? 'bg-primary text-primary-foreground' : 'border-transparent text-muted-foreground hover:bg-muted/50'}`}
                                         >
                                             Semua{' '}
-                                            <span className="opacity-60">
+                                            <span className="ml-1 opacity-60">
                                                 {event.participations_count ||
                                                     0}
                                             </span>

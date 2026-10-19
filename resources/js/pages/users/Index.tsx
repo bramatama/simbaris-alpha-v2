@@ -19,8 +19,10 @@ import { Button } from '@/components/ui/button';
 
 import { Users, Filter, Trash2 } from 'lucide-react';
 
-import UserTableHeaders from '../../components/user_table/UserTableHeaders';
-import UserTableRow, { User } from '../../components/user_table/UserTableRow';
+import UserTableHeaders from '../../components/tables/user_table/UserTableHeaders';
+import UserTableRow, {
+    User,
+} from '../../components/tables/user_table/UserTableRow';
 
 interface UsersResponse {
     data: User[];
@@ -41,10 +43,8 @@ export default function UserManagementIndex({
     users,
     filters,
 }: UserManagementPageProps) {
-    // Hapus satu user
     const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
 
-    // Hapus banyak user
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
@@ -55,14 +55,9 @@ export default function UserManagementIndex({
 
     const tableLayoutRole = filters?.role || 'all';
 
-    // =========================
-    // FILTER ROLE
-    // =========================
     const handleRoleChange = (value: string) => {
         setCurrentRole(value);
         setIsLoading(true);
-
-        // Reset selected users ketika filter berubah
         setSelectedUserIds([]);
 
         router.get('/admin/users', value === 'all' ? {} : { role: value }, {
@@ -72,29 +67,20 @@ export default function UserManagementIndex({
         });
     };
 
-    // =========================
-    // PILIH / UNPILIH SATU USER
-    // =========================
     const handleSelectUser = (userId: number, checked: boolean) => {
         setSelectedUserIds((current) => {
             const next = new Set(current);
-
             if (checked) {
                 next.add(userId);
             } else {
                 next.delete(userId);
             }
-
             return [...next];
         });
     };
 
-    // =========================
-    // SELECT ALL USER DI HALAMAN
-    // =========================
     const handleSelectAll = (checked: boolean) => {
         if (!users?.data) return;
-
         if (checked) {
             setSelectedUserIds(users.data.map((user) => user.user_id));
         } else {
@@ -117,12 +103,8 @@ export default function UserManagementIndex({
             selectedUserIds.length < users.data.length,
         ) || false;
 
-    // =========================
-    // HAPUS SATU USER
-    // =========================
     const handleDelete = () => {
         if (!deleteUserId) return;
-
         setIsDeleting(true);
 
         router.delete(`/admin/users/${deleteUserId}`, {
@@ -133,12 +115,8 @@ export default function UserManagementIndex({
         });
     };
 
-    // =========================
-    // HAPUS BANYAK USER
-    // =========================
     const handleBulkDelete = () => {
         if (selectedUserIds.length === 0) return;
-
         setIsDeleting(true);
 
         router.delete('/admin/users/bulk-delete', {
@@ -161,38 +139,38 @@ export default function UserManagementIndex({
                 {/* Header & Filter */}
                 <div className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-                            <Users className="h-8 w-8 text-primary" />
+                        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
+                            <Users className="h-7 w-7 text-primary md:h-8 md:w-8" />
                             User Management
                         </h1>
 
-                        <p className="mt-1 text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground md:text-base">
                             Manage system users, their roles, and specific
                             profiles.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* Tombol Delete Selected */}
                         {selectedUserIds.length > 0 && (
                             <Button
                                 variant="destructive"
                                 onClick={() => setIsBulkDeleteOpen(true)}
+                                size="sm"
+                                className="w-full sm:w-auto"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete Selected ({selectedUserIds.length})
                             </Button>
                         )}
 
-                        {/* Filter */}
-                        <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-1.5">
+                        <div className="flex w-full items-center gap-2 rounded-lg border bg-muted/40 p-1.5 sm:w-auto">
                             <Filter className="ml-2 h-4 w-4 text-muted-foreground" />
 
                             <Select
                                 value={currentRole}
                                 onValueChange={handleRoleChange}
                             >
-                                <SelectTrigger className="w-45 border-none bg-background shadow-sm">
+                                <SelectTrigger className="w-full border-none bg-background shadow-sm sm:w-45">
                                     <SelectValue placeholder="Filter by Role" />
                                 </SelectTrigger>
 
@@ -200,17 +178,13 @@ export default function UserManagementIndex({
                                     <SelectItem value="all">
                                         All Roles
                                     </SelectItem>
-
                                     <SelectItem value="official_team">
                                         Official Team
                                     </SelectItem>
-
                                     <SelectItem value="committee">
                                         Committee
                                     </SelectItem>
-
                                     <SelectItem value="judge">Judge</SelectItem>
-
                                     <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -218,19 +192,21 @@ export default function UserManagementIndex({
                     </div>
                 </div>
 
-                {/* Users Table */}
-                <div className="rounded-md border bg-card shadow-sm">
+                {/* Users Table / List */}
+                <div className="overflow-hidden rounded-md border bg-card shadow-sm">
                     <Table>
-                        {/* Header dengan Select All */}
-                        <UserTableHeaders
-                            role={tableLayoutRole}
-                            selectAllChecked={isAllSelected}
-                            isIndeterminate={isIndeterminate}
-                            onSelectAll={handleSelectAll}
-                        />
+                        {/* Header Tabel hanya muncul di layar desktop (md+) */}
+                        <div className="hidden md:table-header-group">
+                            <UserTableHeaders
+                                role={tableLayoutRole}
+                                selectAllChecked={isAllSelected}
+                                isIndeterminate={isIndeterminate}
+                                onSelectAll={handleSelectAll}
+                            />
+                        </div>
 
                         <TableBody
-                            className={`transition-opacity duration-200 ${
+                            className={`block transition-opacity duration-200 md:table-row-group ${
                                 isLoading
                                     ? 'pointer-events-none opacity-40'
                                     : 'opacity-100'
@@ -243,7 +219,6 @@ export default function UserManagementIndex({
                                         user={user}
                                         role={tableLayoutRole}
                                         onDelete={setDeleteUserId}
-
                                         isSelected={selectedUserIds.includes(
                                             user.user_id,
                                         )}
@@ -256,10 +231,9 @@ export default function UserManagementIndex({
                                         colSpan={7}
                                         className="h-32 text-center"
                                     >
-                                        <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                                             <Users className="mb-2 h-8 w-8 text-muted-foreground/30" />
-
-                                            <p>
+                                            <p className="text-sm">
                                                 No users found for this filter.
                                             </p>
                                         </div>
@@ -277,7 +251,7 @@ export default function UserManagementIndex({
                 />
             </div>
 
-            {/* Dialog hapus satu user */}
+            {/* Dialog konfirmasi hapus */}
             <ConfirmationDialog
                 open={deleteUserId !== null}
                 onOpenChange={(open) => {
@@ -293,7 +267,6 @@ export default function UserManagementIndex({
                 variant="destructive"
             />
 
-            {/* Dialog hapus banyak user */}
             <ConfirmationDialog
                 open={isBulkDeleteOpen}
                 onOpenChange={setIsBulkDeleteOpen}

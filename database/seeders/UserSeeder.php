@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
         $komiteUserId1 = DB::table('users')->insertGetId([
             'public_id' => Str::uuid(), 
             'name' => 'Panitia Pendaftaran', 
-            'email' => 'panitia1@lomba.com', 
+            'email' => 'panitia@lomba.com', 
             'role' => 'committee', 'password' => $password, 
             'created_at' => $now, 
             'updated_at' => $now,

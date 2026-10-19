@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Events;
+namespace App\Http\Controllers\Participations;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
@@ -20,8 +20,6 @@ class ParticipationController extends Controller
      */
     public function index($public_id)
     {
-        $role = auth()->user()->role;
-        $myOfficialTeamId = auth()->user()->officialTeam->official_team_id?? null;
         $event = Event::select('event_id', 'public_id', 'event_name')
             ->where('public_id', $public_id)
             ->firstOrFail();
@@ -34,20 +32,10 @@ class ParticipationController extends Controller
             ->latest()
             ->get();
 
-        $component = match($role){
-            'committee' => inertia('events/participations/committee/Index', [
+        return  inertia('events/participations/participation_lists/committee/Index', [
                                 'event' => $event,
                                 'participations' => $participations,
-                            ]),
-            'official_team' => inertia('events/participations/official_team/Index', [
-                                'event' => $event,
-                                'participations' => $participations,
-                                'myOfficialTeamId' => $myOfficialTeamId,
-                            ]),
-            default => abort(403, 'Unauthorized access')
-        };
-
-        return $component;
+                            ]);
     }
 
     /**
@@ -65,7 +53,7 @@ class ParticipationController extends Controller
                 $query->where('user_id', auth()->id());
             })->with('eventLevel.level')->latest()->get();
 
-        return inertia('events/participations/official_team/MyParticipations', 
+        return inertia('events/participations/participation_lists/official_team/MyParticipations', 
         ['participations' => $participations,
         'myOfficialTeamId' => $myOfficialTeamId
         ]);
@@ -90,10 +78,40 @@ class ParticipationController extends Controller
             ->with('level:level_id,level_name')
             ->get();
 
-        return inertia('events/participations/official_team/Create', [
+        return inertia('events/participations/enroll/Create', [
             'event' => $event,
             'eventLevels' => $eventLevels,
         ]);
+    }
+
+    public function checkQuota(Request $request, $public_id)
+    {
+        $request->validate([
+            'teams' => 'required|array|min:1',
+            'teams.*.event_level_id' => 'required|exists:event_levels,event_level_id',
+        ]);
+
+        $event = Event::where('public_id', $public_id)->firstOrFail();
+        $levelCounts = collect($request->teams)->countBy('event_level_id');
+
+        foreach ($levelCounts as $levelId => $requestedQuota) {
+            $level = EventLevel::where('event_level_id', $levelId)
+                ->where('event_id', $event->event_id)
+                ->firstOrFail();
+
+            // Cek hanya jika kuota tidak kosong/null (berarti dibatasi)
+            if (!empty($level->quota) && $level->quota > 0) {
+                $currentParticipations = Participation::where('event_level_id', $level->event_level_id)->count();
+
+                if (($currentParticipations + $requestedQuota) > $level->quota) {
+                    return response()->json([
+                        'message' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: " . ($level->quota - $currentParticipations)
+                    ], 422); 
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Kuota tersedia.']);
     }
 
     public function store(Request $request, $public_id)
@@ -207,11 +225,11 @@ class ParticipationController extends Controller
         ])->where('public_id', $public_id)->firstOrFail();
 
             $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-            if ($participation->official_team_id !== $officialTeamId) {
+            if ($officialTeamId !== null && $participation->official_team_id !== $officialTeamId) {
                 abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
             }
 
-        return inertia('events/participations/Show', [
+        return inertia('events/participations/participation_details/Show', [
             'participation' => $participation,
         ]);
     }
@@ -228,10 +246,11 @@ class ParticipationController extends Controller
             ->with('level')
             ->get();
             
-        return inertia('events/participations/official_team/Edit', [
-                                'participation' => $participation,
-                                'eventLevels' => $eventLevels,
-                            ]);
+        return inertia('events/participations/participation_edit/Edit', 
+            [
+                'participation' => $participation,
+                'eventLevels' => $eventLevels,
+            ]);
     }
 
     /**
@@ -268,7 +287,7 @@ class ParticipationController extends Controller
         } 
         unset($validated['temp_payment_proof_path']);
 
-        if ($request->hasFile('temp_team_logo_path')) {
+        if ($request->filled('temp_team_logo_path')) {
             $tempLogo = $request->input('temp_team_logo_path');
             if (Storage::disk('public')->exists($tempLogo)){
                 if ($participation->team_logo_path && Storage::disk('public')->exists($participation->team_logo_path)) {

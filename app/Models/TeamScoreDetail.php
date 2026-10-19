@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -16,13 +17,20 @@ class TeamScoreDetail extends Model
         'score_value',
     ];
 
-    protected $casts = [
-        'score_value' => 'float',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'score_value' => 'decimal:2',
+        ];
+    }
 
     public function participation(): BelongsTo
     {
-        return $this->belongsTo(Participation::class, 'participation_id', 'participation_id');
+        return $this->belongsTo(
+            Participation::class,
+            'participation_id',
+            'participation_id'
+        );
     }
 
     public function judge(): BelongsTo
@@ -30,13 +38,21 @@ class TeamScoreDetail extends Model
         return $this->belongsTo(Judge::class, 'judge_id', 'judge_id');
     }
 
-    public function criteria(): BelongsTo
+    public function criterion(): BelongsTo
     {
-        return $this->belongsTo(AssessmentCriteria::class, 'criteria_id', 'criteria_id');
+        return $this->belongsTo(
+            AssessmentCriteria::class,
+            'criteria_id',
+            'criteria_id'
+        );
     }
 
     public function rubricScore(): BelongsTo
     {
-        return $this->belongsTo(RubricScore::class, 'rubric_score_id', 'rubric_score_id');
+        return $this->belongsTo(
+            RubricScore::class,
+            'rubric_score_id',
+            'rubric_score_id'
+        );
     }
 }

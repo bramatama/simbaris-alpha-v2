@@ -7,6 +7,7 @@ import {
     DoorStairwell,
     FileText,
     UserGroup,
+    NotebookPen,
 } from 'lucide-react';
 
 export const getEventInnerNav = (
@@ -41,14 +42,14 @@ export const getEventInnerNav = (
     if (role === 'committee') {
         items.push(
             {
-                title: 'Juri Lomba',
-                href: `/${role}/events/${eventPublicId}/judges`,
-                icon: Gavel,
-            },
-            {
                 title: 'Peserta Lomba',
                 href: `/${role}/events/${eventPublicId}/participations`,
                 icon: UserGroup,
+            },
+            {
+                title: 'Juri Lomba',
+                href: `/${role}/events/${eventPublicId}/judges`,
+                icon: Gavel,
             },
             {
                 title: 'Manajemen Jenjang',
@@ -59,6 +60,11 @@ export const getEventInnerNav = (
                 title: 'Dokumen Lomba',
                 href: `/${role}/events/${eventPublicId}/documents`,
                 icon: FileText,
+            },
+            {
+                title: 'Manajemen Penilaian',
+                href: `/${role}/events/${eventPublicId}/scoring-categories`,
+                icon: NotebookPen,
             },
         );
     }
@@ -84,6 +90,11 @@ export const getParticipationInnerNav = (
             title: 'Dokumen Peserta',
             href: `/official_team/participations/${participationId}/documents`,
             icon: FileText,
+        },
+        {
+            title: 'Manajemen Pasukan',
+            href: `/official_team/participations/${participationId}/members`,
+            icon: UserGroup,
         },
     ];
     return items;

@@ -16,18 +16,29 @@ class TeamScore extends Model
         'total_score',
     ];
 
-    protected $casts = [
-        'total_score' => 'float',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'total_score' => 'decimal:2',
+        ];
+    }
 
     public function participation(): BelongsTo
     {
-        return $this->belongsTo(Participation::class, 'participation_id', 'participation_id');
+        return $this->belongsTo(
+            Participation::class,
+            'participation_id',
+            'participation_id'
+        );
     }
 
     public function scoringCategory(): BelongsTo
     {
-        return $this->belongsTo(ScoringCategory::class, 'scoring_category_id', 'scoring_category_id');
+        return $this->belongsTo(
+            ScoringCategory::class,
+            'scoring_category_id',
+            'scoring_category_id'
+        );
     }
 
     public function judge(): BelongsTo

@@ -16,13 +16,28 @@ class RubricCategory extends Model
         'category_order',
     ];
 
-    public function criteria(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(AssessmentCriteria::class, 'criteria_id', 'criteria_id');
+        return [
+            'category_order' => 'integer',
+        ];
+    }
+
+    public function criterion(): BelongsTo
+    {
+        return $this->belongsTo(
+            AssessmentCriteria::class,
+            'criteria_id',
+            'criteria_id'
+        );
     }
 
     public function rubricScores(): HasMany
     {
-        return $this->hasMany(RubricScore::class, 'rubric_category_id', 'rubric_category_id');
+        return $this->hasMany(
+            RubricScore::class,
+            'rubric_category_id',
+            'rubric_category_id'
+        );
     }
 }

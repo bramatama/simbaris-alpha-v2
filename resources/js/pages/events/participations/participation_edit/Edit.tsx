@@ -34,7 +34,6 @@ export default function OfficialTeamParticipationEdit({
 
     const isApproved = participation.status === 'approved';
 
-    // Form Hook - Ganti File object menjadi string (path sementara)
     const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
         team_name: participation.team_name || '',
@@ -104,7 +103,7 @@ export default function OfficialTeamParticipationEdit({
                                     {/* Area Upload Logo */}
                                     {/* Tampilkan logo saat ini jika tidak ada unggahan baru */}
                                     {participation.team_logo_path ? (
-                                        <div className="group relative aspect-square w-32 shrink-0 overflow-hidden rounded-full border-4 border-muted bg-background shadow-sm">
+                                        <div className="flex aspect-square w-full shrink-0 overflow-hidden rounded-full border-4 border-muted bg-background shadow-sm">
                                             <img
                                                 src={`/storage/${participation.team_logo_path}`}
                                                 alt="Logo Tim Saat Ini"
@@ -112,10 +111,10 @@ export default function OfficialTeamParticipationEdit({
                                             />
                                         </div>
                                     ) : (
-                                        <div className="flex aspect-square w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
+                                        <div className="flex aspect-square w-full max-w-60 flex-col items-center justify-center rounded-full border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
                                             <ImagePlus className="mb-3 h-12 w-12 opacity-40" />
                                             <span className="text-sm font-medium">
-                                                Belum ada poster
+                                                Belum ada Logo
                                             </span>
                                         </div>
                                     )}

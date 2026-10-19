@@ -15,11 +15,25 @@ class EventSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
-        $admin = DB::table('admins')->first(); // Mengambil admin pertama sebagai creator
 
-        // 1. Buat Event yang sedang Buka Pendaftaran
+        // =========================================================
+        // 0. VALIDASI DATA AWAL
+        // =========================================================
+
+        $admin = DB::table('admins')->first();
+
+        if (!$admin) {
+            throw new \RuntimeException(
+                'Data admin belum tersedia. Jalankan AdminSeeder terlebih dahulu.'
+            );
+        }
+
+        // =========================================================
+        // 1. BUAT EVENT
+        // =========================================================
+
         $eventId1 = DB::table('events')->insertGetId([
-            'public_id' => Str::uuid(),
+            'public_id' => (string) Str::uuid(),
             'event_name' => 'Lomba Paskibra Pandawa Vol IV 2026',
             'description' => 'Kompetisi baris berbaris bergengsi tingkat nasional.',
             'location' => 'GOR Bulungan, Jakarta',
@@ -30,86 +44,177 @@ class EventSeeder extends Seeder
             'start_time' => $now->copy()->addDays(20),
             'end_time' => $now->copy()->addDays(22),
             'created_by' => $admin->admin_id,
-            'created_at' => $now, 'updated_at' => $now
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        // 2. Setup Harga Tiket per Jenjang (Event Levels)
+        // =========================================================
+        // 2. SETUP JENJANG EVENT
+        // =========================================================
+
         $eventLevelSmpId = DB::table('event_levels')->insertGetId([
-            'event_id' => $eventId1, 'level_id' => 2, 'registration_fees' => 150000, 'quota' => 20, 'created_at' => $now, 'updated_at' => $now
+            'event_id' => $eventId1,
+            'level_id' => 2,
+            'registration_fees' => 150000,
+            'quota' => 20,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
+
         $eventLevelSmaId = DB::table('event_levels')->insertGetId([
-            'event_id' => $eventId1, 'level_id' => 3, 'registration_fees' => 200000, 'quota' => 25, 'created_at' => $now, 'updated_at' => $now
+            'event_id' => $eventId1,
+            'level_id' => 3,
+            'registration_fees' => 200000,
+            'quota' => 25,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        // ========================================================================
-        // LANGKAH BARU: AKTIFKAN SCORING CATEGORY UNTUK EVENT INI
-        // ========================================================================
-        $masterCategories = DB::table('master_scoring_categories')->get();
-        $activeScoringCategoryIds = [];
+        // =========================================================
+        // 3. SETUP SCORING CATEGORIES BERDASARKAN JENJANG
+        // =========================================================
 
-        foreach ($masterCategories as $master) {
-            $scoringCategoryId = DB::table('scoring_categories')->insertGetId([
-                'event_id' => $eventId1,
-                'master_category_id' => $master->master_category_id,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-            $activeScoringCategoryIds[] = $scoringCategoryId; // Simpan ID untuk dipasangkan ke juri nanti
-        }
+        $masterCategories = DB::table('master_scoring_categories')
+            ->get();
 
-        // ========================================================================
-        // 3. SETUP JURI & KEAHLIANNYA DI EVENT INI
-        // ========================================================================
-        $judges = DB::table('judges')->get();
-        $eventJudgeIds = [];
-        
-        // A. Masukkan Juri ke Event
-        foreach ($judges as $judge) {
-            $eventJudgeIds[] = DB::table('event_judges')->insertGetId([
-                'event_id' => $eventId1, 
-                'judge_id' => $judge->judge_id, 
-                'created_at' => $now, 
-                'updated_at' => $now
-            ]);
-        }
+        // Menyimpan ID kategori berdasarkan jenjang event.
+        // Setiap jenjang memiliki scoring_categories sendiri.
+        $scoringCategoryIdsByLevel = [
+            'smp' => [],
+            'sma' => [],
+        ];
 
-        // B. Pasangkan Keahlian (Expertise) Juri berdasarkan Scoring Categories Event
-        $judgeExpertiseData = [];
-        foreach ($eventJudgeIds as $eventJudgeId) {
-            $selectedScoringCategoryIds = collect($activeScoringCategoryIds)
-                ->shuffle()
-                ->take(rand(1, min(2, count($activeScoringCategoryIds))));
+        $eventLevels = [
+            'smp' => $eventLevelSmpId,
+            'sma' => $eventLevelSmaId,
+        ];
 
-            foreach ($selectedScoringCategoryIds as $scoringCategoryId) {
-                $judgeExpertiseData[] = [
-                    'event_judge_id' => $eventJudgeId,
-                    'scoring_category_id' => $scoringCategoryId, // Menggunakan ID dari tabel scoring_categories (Event)
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
+        foreach ($eventLevels as $level => $eventLevelId) {
+            foreach ($masterCategories as $master) {
+                $scoringCategoryId = DB::table('scoring_categories')
+                    ->insertGetId([
+                        'event_level_id' => $eventLevelId,
+                        'master_category_id' => $master->master_category_id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
+                $scoringCategoryIdsByLevel[$level][] =
+                    $scoringCategoryId;
             }
         }
 
-        // Simpan data expertise secara bulk (Mass Insert)
-        if (!empty($judgeExpertiseData)) {
-            DB::table('judge_expertises')->insertOrIgnore($judgeExpertiseData);
+        // Gabungkan semua kategori dari jenjang SMP dan SMA.
+        // Digunakan untuk simulasi pembagian keahlian juri.
+        $activeScoringCategoryIds = collect(
+            $scoringCategoryIdsByLevel
+        )
+            ->flatten()
+            ->unique()
+            ->values();
+
+        // =========================================================
+        // 4. SETUP JURI DAN KEAHLIANNYA
+        // =========================================================
+
+        $judges = DB::table('judges')->get();
+
+        // ---------------------------------------------------------
+        // A. Masukkan setiap juri ke event satu kali
+        // ---------------------------------------------------------
+
+        $eventJudgeIds = [];
+
+        foreach ($judges as $judge) {
+            $eventJudgeId = DB::table('event_judges')
+                ->insertGetId([
+                    'event_id' => $eventId1,
+                    'judge_id' => $judge->judge_id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+
+            $eventJudgeIds[] = $eventJudgeId;
         }
 
-        // Setup Panitia Bertugas
-        $committee = DB::table('committees')->first();
-        DB::table('event_committees')->insert([
-            'event_id' => $eventId1, 'committee_id' => $committee->committee_id, 'position' => 'administration', 'created_at' => $now, 'updated_at' => $now
-        ]);
+        // ---------------------------------------------------------
+        // B. Pembagian keahlian juri berdasarkan kategori
+        // ---------------------------------------------------------
 
-        // 4. Setup Hadiah Event (Simulasi untuk Jenjang SMA - Juara Utama 1)
-        // $championUtama1 = DB::table('champions')->where('champion_name', 'Juara Utama 1')->first();
-        // DB::table('event_champions')->insert([
-        //     'event_level_id' => $eventLevelSmaId,
-        //     'champion_id' => $championUtama1->champion_id,
-        //     'prize_money' => 2000000,
-        //     'certificate' => true,
-        //     'prize_descriptions' => 'Trophy Tetap + Uang pembinaan + Piagam',
-        //     'created_at' => $now, 'updated_at' => $now
-        // ]);
+        $judgeExpertiseData = [];
+
+        // Jika kategori tersedia, setiap juri mendapat
+        // 1-2 kategori secara acak untuk kebutuhan data dummy.
+        if ($activeScoringCategoryIds->isNotEmpty()) {
+            foreach ($eventJudgeIds as $eventJudgeId) {
+                $maxCategories = min(
+                    2,
+                    $activeScoringCategoryIds->count()
+                );
+
+                $numberOfCategories = rand(1, $maxCategories);
+
+                $selectedScoringCategoryIds = $activeScoringCategoryIds
+                    ->shuffle()
+                    ->take($numberOfCategories);
+
+                foreach ($selectedScoringCategoryIds as $scoringCategoryId) {
+                    $judgeExpertiseData[] = [
+                        'event_judge_id' => $eventJudgeId,
+                        'scoring_category_id' => $scoringCategoryId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // C. Simpan seluruh keahlian juri sekaligus
+        // ---------------------------------------------------------
+
+        if (!empty($judgeExpertiseData)) {
+            DB::table('judge_expertises')
+                ->insertOrIgnore($judgeExpertiseData);
+        }
+
+        // =========================================================
+        // 5. SETUP PANITIA EVENT
+        // =========================================================
+
+        $committee = DB::table('committees')->first();
+
+        if ($committee) {
+            DB::table('event_committees')->insert([
+                'event_id' => $eventId1,
+                'committee_id' => $committee->committee_id,
+                'position' => 'administration',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // =========================================================
+        // 6. SETUP HADIAH EVENT (OPSIONAL)
+        // =========================================================
+
+        /*
+        $championUtama1 = DB::table('champions')
+            ->where('champion_name', 'Juara Utama 1')
+            ->first();
+
+        if ($championUtama1) {
+            DB::table('event_champions')->insert([
+                'event_level_id' => $eventLevelSmaId,
+                'champion_id' => $championUtama1->champion_id,
+                'prize_money' => 2000000,
+                'certificate' => true,
+                'prize_descriptions' =>
+                    'Trophy Tetap + Uang pembinaan + Piagam',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+        */
     }
 }

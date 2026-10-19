@@ -10,13 +10,13 @@ class ScoringCategory extends Model
     protected $primaryKey = 'scoring_category_id';
 
     protected $fillable = [
-        'event_id',
+        'event_level_id',
         'master_category_id',
     ];
 
-    public function event(): BelongsTo
+    public function eventLevel(): BelongsTo
     {
-        return $this->belongsTo(Event::class, 'event_id', 'event_id');
+        return $this->belongsTo(EventLevel::class, 'event_level_id', 'event_level_id');
     }
 
     public function masterCategory(): BelongsTo
@@ -25,6 +25,24 @@ class ScoringCategory extends Model
             MasterScoringCategory::class,
             'master_category_id',
             'master_category_id'
+        );
+    }
+
+    public function eventPenalties(): HasMany
+    {
+        return $this->hasMany(
+            EventPenalty::class,
+            'scoring_category_id',
+            'scoring_category_id'
+        );
+    }
+
+    public function formulas(): HasMany
+    {
+        return $this->hasMany(
+            EventChampionFormula::class,
+            'scoring_category_id',
+            'scoring_category_id'
         );
     }
 

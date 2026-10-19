@@ -1,12 +1,15 @@
 <?php
 
-use App\Http\Controllers\Events\ParticipationController;
+use App\Http\Controllers\Participations\ParticipationController;
+use App\Http\Controllers\Participations\TeamMemberController;
 use Dom\Document;
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');
     Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participation.edit');
     Route::patch('/participations/{participation:public_id}/status', [ParticipationController::class, 'updateStatus'])->name('participations.status.update');
+
+    Route::get('/participations/{public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
@@ -18,4 +21,7 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
     Route::get('/participations/{participation:public_id}/documents', [ParticipationController::class, 'documentIndex'])->name('participations.documents.index');
     Route::post('/participations/{participation:public_id}/documents', [ParticipationController::class, 'uploadParticipationDocuments'])->name('participations.documents.store');
     Route::delete('/participations/{participation:public_id}/documents/{participation_document:document_id}',[ParticipationController::class, 'destroyDocument'])->name('participations.documents.delete');
+
+    Route::get('/participations/{public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
+    Route::post('/participations/{public_id}/members', [TeamMemberController::class, 'sync'])->name('participations.members.sync');
 });

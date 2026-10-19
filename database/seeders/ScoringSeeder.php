@@ -4,22 +4,28 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ScoringSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
-        DB::table('master_scoring_categories')->insert([
-            ['category_name' => 'PBB', 'created_at' => $now, 'updated_at' => $now],
-            ['category_name' => 'Danton', 'created_at' => $now, 'updated_at' => $now],
-            ['category_name' => 'Variasi', 'created_at' => $now, 'updated_at' => $now],
-            ['category_name' => 'Formasi', 'created_at' => $now, 'updated_at' => $now],
-        ]);
+        $categories = [
+            'PBB',
+            'Danton',
+            'Variasi',
+            'Formasi',
+        ];
+
+        foreach ($categories as $categoryName) {
+            DB::table('master_scoring_categories')->updateOrInsert(
+                ['category_name' => $categoryName],
+                [
+                    'updated_at' => $now,
+                    'created_at' => $now,
+                ]
+            );
+        }
     }
 }

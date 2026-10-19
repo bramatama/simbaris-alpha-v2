@@ -1,5 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
+import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import AppLayout from '@/layouts/app-layout';
 import {
     Card,
@@ -9,6 +10,14 @@ import {
     CardDescription,
     CardFooter,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -24,7 +33,7 @@ import {
     Banknote,
     Users,
 } from 'lucide-react';
-import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import komponen uploader baru
+import { FileUploader } from '@/components/ui/file-uploader';
 
 interface TeamForm {
     event_level_id: string;
@@ -45,18 +54,26 @@ export default function OfficialTeamParticipationCreate({
 
     const [step, setStep] = useState<1 | 2>(1);
 
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
-        teams: [
-            {
-                event_level_id: '',
-                team_name: '',
-                pic_name: '',
-                pic_phone_number: '',
-            },
-        ] as TeamForm[],
-        // Ubah dari File object menjadi string untuk menyimpan path dari folder temp
-        temp_payment_proof_path: null as string | null,
-    });
+    const [isValidating, setIsValidating] = useState(false);
+
+    const formTopRef = useRef<HTMLDivElement>(null);
+
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+    const [forceLeave, setForceLeave] = useState(false);
+
+    const { data, setData, post, processing, errors, clearErrors, setError , isDirty} =
+        useForm({
+            teams: [
+                {
+                    event_level_id: '',
+                    team_name: '',
+                    pic_name: '',
+                    pic_phone_number: '',
+                },
+            ] as TeamForm[],
+            temp_payment_proof_path: null as string | null,
+        });
 
     const totalFee = data.teams.reduce((total, team) => {
         const level = eventLevels.find(
@@ -64,6 +81,15 @@ export default function OfficialTeamParticipationCreate({
         );
         return total + (level ? Number(level.registration_fees) : 0);
     }, 0);
+
+    const scrollToError = () => {
+        setTimeout(() => {
+            formTopRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        }, 100);
+    };
 
     const addTeam = () => {
         setData('teams', [
@@ -91,6 +117,7 @@ export default function OfficialTeamParticipationCreate({
         newTeams[index][field] = value;
         setData('teams', newTeams);
         clearErrors(`teams.${index}.${field}` as any);
+        clearErrors('teams' as any);
     };
 
     const canGoToStep2 = data.teams.every(
@@ -98,16 +125,98 @@ export default function OfficialTeamParticipationCreate({
             t.event_level_id && t.team_name && t.pic_name && t.pic_phone_number,
     );
 
-    const handleNextStep = () => {
-        if (canGoToStep2) setStep(2);
+    const handleNextStep = async () => {
+        if (!canGoToStep2) return;
+
+        setIsValidating(true);
+        clearErrors('teams' as any);
+
+        try {
+            // Panggil rute khusus untuk ngecek kuota (mengirim array event_level_id)
+            await axios.post(
+                `/official_team/events/${event.public_id}/check-quota`,
+                {
+                    teams: data.teams.map((t) => ({
+                        event_level_id: t.event_level_id,
+                    })),
+                },
+            );
+
+            setStep(2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error: any) {
+            // Jika gagal (status 422), tangkap pesan dari server dan set error
+            if (error.response && error.response.status === 422) {
+                setError(
+                    'teams' as any,
+                    error.response.data.message ||
+                        'Sisa kuota tidak mencukupi.',
+                );
+            } else {
+                setError(
+                    'teams' as any,
+                    'Terjadi kesalahan saat mengecek kuota server.',
+                );
+            }
+            scrollToError();
+        } finally {
+            setIsValidating(false);
+        }
     };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(`/${userRole}/events/${event.public_id}/participations`, {
             preserveScroll: true,
+            onError: () => {
+                scrollToError();
+            },
         });
     };
+
+    const confirmLeave = () => {
+        setForceLeave(true); // Izinkan navigasi melewati proteksi
+        setShowLeaveDialog(false);
+
+        if (pendingUrl) {
+            setTimeout(() => {
+                router.visit(pendingUrl);
+            }, 0);
+        }
+    };
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        const unsubscribe = router.on('before', (event) => {
+            if (event.detail.visit.method.toLowerCase() !== 'get') {
+                return;
+            }
+
+            if (isDirty && !forceLeave) {
+                event.preventDefault();
+
+                const destinationUrl =
+                    typeof event.detail.visit.url === 'string'
+                        ? event.detail.visit.url
+                        : event.detail.visit.url.href;
+
+                setPendingUrl(destinationUrl);
+                setShowLeaveDialog(true);
+            }
+        });
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            unsubscribe();
+        };
+    }, [isDirty, forceLeave]);
 
     return (
         <AppLayout>
@@ -132,7 +241,7 @@ export default function OfficialTeamParticipationCreate({
                         </p>
                     </div>
                 </div>
-
+                <div ref={formTopRef} className="scroll-mt-24"></div>
                 <div className="mb-4 flex items-center gap-2">
                     <div
                         className={`flex flex-1 items-center gap-2 border-b-2 pb-2 transition-colors ${step >= 1 ? 'border-primary text-primary' : 'border-muted text-muted-foreground'}`}
@@ -163,6 +272,18 @@ export default function OfficialTeamParticipationCreate({
                 <form onSubmit={submit}>
                     {step === 1 && (
                         <div className="animate-in space-y-6 duration-300 fade-in slide-in-from-left-4">
+                            {/* PESAN ERROR KUOTA GLOBAL */}
+                            {errors.teams &&
+                                typeof errors.teams === 'string' && (
+                                    <div className="rounded-md border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
+                                        <div className="flex items-start gap-3">
+                                            <div className="font-semibold">
+                                                {errors.teams}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                             {data.teams.map((team, index) => (
                                 <Card
                                     key={index}
@@ -191,11 +312,9 @@ export default function OfficialTeamParticipationCreate({
                                             <div className="space-y-2 md:col-span-2">
                                                 <Label
                                                     htmlFor={`level-${index}`}
+                                                    requirement='required'
                                                 >
-                                                    Kategori / Jenjang Lomba{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    Kategori / Jenjang Lomba
                                                 </Label>
                                                 <select
                                                     id={`level-${index}`}
@@ -252,11 +371,9 @@ export default function OfficialTeamParticipationCreate({
                                             <div className="space-y-2 md:col-span-2">
                                                 <Label
                                                     htmlFor={`team_name-${index}`}
+                                                    requirement='required'
                                                 >
-                                                    Nama Tim / Pangkalan{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    Nama Tim / Pangkalan
                                                 </Label>
                                                 <Input
                                                     id={`team_name-${index}`}
@@ -282,11 +399,9 @@ export default function OfficialTeamParticipationCreate({
                                             <div className="space-y-2">
                                                 <Label
                                                     htmlFor={`pic_name-${index}`}
+                                                    requirement='required'
                                                 >
-                                                    Nama PIC{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    Nama PIC
                                                 </Label>
                                                 <Input
                                                     id={`pic_name-${index}`}
@@ -312,11 +427,9 @@ export default function OfficialTeamParticipationCreate({
                                             <div className="space-y-2">
                                                 <Label
                                                     htmlFor={`pic_phone-${index}`}
+                                                    requirement='required'
                                                 >
-                                                    No. HP / WA{' '}
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    No. HP / WA
                                                 </Label>
                                                 <Input
                                                     id={`pic_phone-${index}`}
@@ -360,10 +473,16 @@ export default function OfficialTeamParticipationCreate({
                                     type="button"
                                     className="w-full gap-2 sm:w-auto"
                                     onClick={handleNextStep}
-                                    disabled={!canGoToStep2}
+                                    disabled={!canGoToStep2 || isValidating}
                                 >
-                                    Lanjut Pembayaran{' '}
-                                    <ChevronRight className="h-4 w-4" />
+                                    {isValidating ? (
+                                        <Spinner className="h-4 w-4" />
+                                    ) : (
+                                        'Lanjut Pembayaran'
+                                    )}
+                                    {!isValidating && (
+                                        <ChevronRight className="h-4 w-4" />
+                                    )}
                                 </Button>
                             </div>
                         </div>
@@ -411,10 +530,9 @@ export default function OfficialTeamParticipationCreate({
                                 <CardContent className="p-6">
                                     <div className="flex flex-col items-start gap-6 sm:flex-row">
                                         <div className="w-full sm:w-1/2">
-                                            {/* PENGGUNAAN FILE UPLOADER */}
                                             <FileUploader
                                                 variant="image"
-                                                endpoint="/upload-temp-file"
+                                                endpoint="/api/upload-temp"
                                                 maxSizeMB={2}
                                                 multiple={false}
                                                 onUploadSuccess={(
@@ -497,10 +615,10 @@ export default function OfficialTeamParticipationCreate({
                                             !data.temp_payment_proof_path ||
                                             processing
                                         }
-                                        className="gap-2"
+                                        className="gap-2 px-8"
                                     >
                                         {processing ? (
-                                            <Spinner className="h-4 w-4" />
+                                            <Spinner className="mr-2 h-4 w-4" />
                                         ) : (
                                             <Save className="h-4 w-4" />
                                         )}
@@ -512,6 +630,35 @@ export default function OfficialTeamParticipationCreate({
                     )}
                 </form>
             </div>
+            <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Tinggalkan Halaman?</DialogTitle>
+                        <DialogDescription>
+                            Anda memiliki data pendaftaran tim pangkalan atau
+                            bukti pembayaran yang belum disimpan. Jika Anda
+                            meninggalkan halaman ini, perubahan tersebut akan
+                            hilang.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowLeaveDialog(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={confirmLeave}
+                        >
+                            Ya, Tinggalkan Halaman
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

@@ -1,13 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login, register } from '@/routes';
-import { Auth } from '@/types';
 import LandingPageLayout from '@/layouts/landing-page-layout';
 import { Calendar, MapPin, Users } from 'lucide-react';
-
-type PageProps = {
-    auth: Auth;
-    name: string;
-};
+import {PageProps} from '@inertiajs/core';
 
 export default function Welcome() {
     const { props } = usePage<PageProps>();

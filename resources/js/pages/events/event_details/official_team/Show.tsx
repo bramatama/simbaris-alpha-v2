@@ -11,7 +11,6 @@ import {
     Banknote,
     CheckCircle2,
     AlertTriangle,
-    ChevronRight,
     Gavel,
     GraduationCap,
     ImagePlus,
@@ -82,6 +81,7 @@ export default function EventShow({ event }: { event: any }) {
     };
 
     const statusConfig = getStatusConfig(event.status);
+    const totalEventLevels = event.event_levels?.length || 0;
 
     return (
         <AppLayout>
@@ -295,7 +295,7 @@ export default function EventShow({ event }: { event: any }) {
                             </div>
                         </div>
                     </Card>
-                    
+
                     {/* B. DOKUMEN, JURI & PESERTA TERDAFTAR */}
                     <div className="grid grid-cols-1 gap-5">
                         <Card className="border-border/50 shadow-sm">
@@ -380,42 +380,102 @@ export default function EventShow({ event }: { event: any }) {
                                         {event.event_judges_count || 0} orang
                                     </span>
                                 </div>
-                                
                             </CardHeader>
                             <CardContent>
                                 {event.event_judges &&
                                 event.event_judges.length > 0 ? (
                                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                                        {event.event_judges.map((ej: any) => (
-                                            <div
-                                                key={ej.event_judge_id}
-                                                className="flex flex-col justify-center rounded-md border border-border/60 bg-card px-3 py-2 shadow-sm"
-                                            >
-                                                <span className="mb-1.5 line-clamp-1 text-xs font-semibold text-foreground">
-                                                    {ej.judge?.user?.name ||
-                                                        'Unknown'}
-                                                </span>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {ej.expertises?.map(
-                                                        (
-                                                            exp: string,
-                                                            idx: number,
-                                                        ) => (
-                                                            <Badge
-                                                                key={idx}
-                                                                variant="secondary"
-                                                                className="rounded-sm border-0 bg-primary/10 px-1.5 text-[9px] font-medium text-primary hover:bg-primary/20"
-                                                            >
-                                                                {exp}
-                                                            </Badge>
-                                                        ),
-                                                    )}
+                                        {event.event_judges.map((ej: any) => {
+                                            // Grouping Category seperti di table juri
+                                            const judgeAssignedMap = (
+                                                ej.expertises || []
+                                            ).reduce(
+                                                (acc: any, exp: any) => {
+                                                    const catName =
+                                                        exp.category_name ||
+                                                        'Kategori Lainnya';
+                                                    const levelName =
+                                                        exp.level_name ||
+                                                        'Jenjang Lainnya';
+                                                    if (!acc[catName])
+                                                        acc[catName] = [];
+                                                    acc[catName].push(
+                                                        levelName,
+                                                    );
+                                                    return acc;
+                                                },
+                                                {} as Record<string, string[]>,
+                                            );
+
+                                            return (
+                                                <div
+                                                    key={ej.event_judge_id}
+                                                    className="flex flex-col rounded-md border border-border/60 bg-card px-3 py-2.5 shadow-sm"
+                                                >
+                                                    <span className="mb-2 line-clamp-1 text-xs font-bold text-foreground">
+                                                        {ej.judge?.user?.name ||
+                                                            'Unknown'}
+                                                    </span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {Object.keys(
+                                                            judgeAssignedMap,
+                                                        ).length > 0 ? (
+                                                            Object.entries(
+                                                                judgeAssignedMap,
+                                                            ).map(
+                                                                ([
+                                                                    catName,
+                                                                    levels,
+                                                                ]: any) => {
+                                                                    const isSemuaJenjang =
+                                                                        levels.length ===
+                                                                            totalEventLevels &&
+                                                                        totalEventLevels >
+                                                                            0;
+                                                                    const levelText =
+                                                                        isSemuaJenjang
+                                                                            ? 'Semua Jenjang'
+                                                                            : levels.join(
+                                                                                  ', ',
+                                                                              );
+
+                                                                    return (
+                                                                        <Badge
+                                                                            key={
+                                                                                catName
+                                                                            }
+                                                                            variant="secondary"
+                                                                            className="rounded-sm border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px]"
+                                                                        >
+                                                                            <span className="mr-1 font-bold text-foreground">
+                                                                                {
+                                                                                    catName
+                                                                                }
+
+                                                                                :
+                                                                            </span>
+                                                                            <span className="font-medium text-muted-foreground">
+                                                                                {
+                                                                                    levelText
+                                                                                }
+                                                                            </span>
+                                                                        </Badge>
+                                                                    );
+                                                                },
+                                                            )
+                                                        ) : (
+                                                            <span className="text-[10px] text-muted-foreground/60 italic">
+                                                                Belum ada
+                                                                kategori
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
-                                    <div className="rounded-md border border-dashed border-border/60 bg-muted/30 text-center">
+                                    <div className="rounded-md border border-dashed border-border/60 bg-muted/30 p-4 text-center">
                                         <p className="text-xs text-muted-foreground">
                                             Belum ada juri yang ditugaskan.
                                         </p>

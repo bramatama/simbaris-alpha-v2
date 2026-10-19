@@ -28,3 +28,4 @@ require __DIR__.'/users.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/events.php';
 require __DIR__.'/participations.php';
+require __DIR__.'/scorings.php';

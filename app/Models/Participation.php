@@ -65,8 +65,8 @@ class Participation extends Model
         return $this->hasMany(ParticipationDocument::class, 'participation_id');
     }
 
-    // public function teamMembers(): HasMany
-    // {
-    //     return $this->hasMany(TeamMember::class, 'participation_id');
-    // }
+    public function teamMembers(): HasMany
+    {
+        return $this->hasMany(TeamMember::class, 'participation_id');
+    }
 }

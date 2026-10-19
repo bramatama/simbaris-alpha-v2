@@ -10,17 +10,17 @@ import {
 } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { ArrowLeft } from 'lucide-react';
-import { Auth } from '@/types';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-
-import JudgeTable from '@/components/judge_table/judge_table';
+import JudgeTable from '@/components/tables/judge_table/judge_table';
 import AddJudgeDialog from '@/components/dialogs/add-judge-dialog';
 import type { PageProps } from '@inertiajs/core';
-
+import type { Auth } from '@/types';
 
 type Expertise = {
-    expertise_id: number;
-    expertise_name: string;
+    scoring_category_id: number;
+    event_level_id: number;
+    level_name: string;
+    category_name: string;
 };
 
 type Judge = {
@@ -31,18 +31,25 @@ type Judge = {
     };
 };
 
+type JudgeExpertise = {
+    judge_expertise_id: number;
+    scoring_category_id?: number;
+    event_level_id?: number;
+    level_name?: string;
+    category_name?: string;
+};
+
 type EventJudge = {
     event_judge_id: number;
     judge?: {
+        judge_id: number;
         user?: {
             name: string;
             email: string;
         };
     };
-    judge_expertises?: {
-        judge_expertise_id: number;
-        expertise?: Expertise;
-    }[];
+    expertises?: Expertise[];
+    judge_expertises?: JudgeExpertise[];
 };
 
 type Event = {
@@ -62,7 +69,7 @@ export default function JudgeIndex({
     existingJudges = [],
     expertises = [],
 }: JudgeIndexProps) {
-    const { auth } = usePage<PageProps>().props;
+    const { auth } = usePage<PageProps & { auth: Auth }>().props;
     const userRole = auth.user.role;
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -71,7 +78,6 @@ export default function JudgeIndex({
     const confirmDelete = () => {
         if (deleteId === null) return;
         setIsDeleting(true);
-
         router.delete(
             `/${userRole}/events/${event.public_id}/judges/${deleteId}`,
             {
@@ -82,34 +88,44 @@ export default function JudgeIndex({
         );
     };
 
+    // Ringkasan kategori di halaman utama dikelompokkan berdasarkan Kategori (Expertise)
+    const expertisesByCategory = expertises.reduce<Record<string, Expertise[]>>(
+        (groups, expertise) => {
+            const catName = expertise.category_name || 'Kategori lainnya';
+            if (!groups[catName]) {
+                groups[catName] = [];
+            }
+            groups[catName].push(expertise);
+            return groups;
+        },
+        {},
+    );
+
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
         >
-            <Head title={`Judges - ${event.event_name}`} />
+            <Head title={`Daftar Juri - ${event.event_name}`} />
 
-            <div className="mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8">
-                <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
+                <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
                             href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back to Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke
+                            Dasbor Event
                         </Link>
-
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Judge Roster
+                            Manajemen Juri
                         </h1>
-
                         <p className="mt-1 text-muted-foreground">
-                            Manage the judges for{' '}
+                            Kelola penugasan juri dan kategori penilaian untuk{' '}
                             <strong>{event.event_name}</strong>.
                         </p>
                     </div>
 
-                    {/* Komponen Form Dialog Penambahan Juri */}
                     <AddJudgeDialog
                         eventPublicId={event.public_id}
                         userRole={userRole}
@@ -121,33 +137,64 @@ export default function JudgeIndex({
                 <Card>
                     <CardHeader>
                         <CardTitle>
-                            Assigned Judges ({event.event_judges?.length ?? 0})
+                            Juri yang Bertugas (
+                            {event.event_judges?.length ?? 0})
                         </CardTitle>
                         <CardDescription>
-                            Judges assigned to this event and their areas of
-                            expertise.
+                            Daftar juri yang ditugaskan ke acara ini beserta
+                            keahlian kategorinya pada masing-masing jenjang
+                            perlombaan.
                         </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="px-6">
-                        {/* Komponen Tabel Juri */}
-                        <JudgeTable
-                            judges={event.event_judges || []}
-                            onDeleteClick={(id) => setDeleteId(id)}
-                        />
+                    <CardContent className="space-y-6 px-6">
+                        {Object.keys(expertisesByCategory).length > 0 && (
+                            <div className="space-y-3 rounded-lg border bg-muted/10 p-4">
+                                <h3 className="text-sm font-semibold">
+                                    Ringkasan Kategori Penilaian Tersedia
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {Object.entries(expertisesByCategory).map(
+                                        ([catName, levels]) => (
+                                            <div
+                                                key={catName}
+                                                className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 shadow-sm"
+                                            >
+                                                <span className="text-sm font-bold text-foreground">
+                                                    {catName}
+                                                </span>
+                                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                                                    {levels.length} Jenjang
+                                                </span>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div>
+                            {/* Pass allExpertises ke JudgeTable agar fitur 'Semua Jenjang' berfungsi */}
+                            <JudgeTable
+                                judges={event.event_judges || []}
+                                onDeleteClick={(id) => setDeleteId(id)}
+                                eventPublicId={event.public_id}
+                                userRole={userRole}
+                                allExpertises={expertises}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 
-                {/* Dialog Konfirmasi Hapus Juri Tetap di Level Index */}
                 <ConfirmationDialog
                     open={deleteId !== null}
                     onOpenChange={(open) => !open && setDeleteId(null)}
                     variant="destructive"
-                    title="Remove Judge?"
-                    description="This will revoke the judge's access to this event. Their account will not be deleted."
+                    title="Berhentikan Juri?"
+                    description="Akses juri untuk menilai event ini akan dicabut. Akun dan data juri itu sendiri tidak akan terhapus dari sistem."
                     onConfirm={confirmDelete}
                     isProcessing={isDeleting}
-                    confirmText="Yes, Remove"
+                    confirmText="Ya, Berhentikan"
                 />
             </div>
         </InnerAppLayout>

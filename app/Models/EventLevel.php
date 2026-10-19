@@ -56,4 +56,9 @@ class EventLevel extends Model
     {
         return $this->hasMany(EventChampionFormula::class, 'event_level_id', 'event_level_id');
     }
+
+    public function scoringCategories(): HasMany
+    {
+        return $this->hasMany(ScoringCategory::class, 'event_level_id');
+    }
 }
