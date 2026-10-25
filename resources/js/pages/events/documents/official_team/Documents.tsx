@@ -1,4 +1,5 @@
 import { Head, Link, usePage, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -14,7 +15,7 @@ import { PageProps } from '@inertiajs/core';
 import { ArrowLeft, FileText, Eye, FileCode2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import komponen uploader
+import { FileUploader } from '@/components/ui/file-uploader';
 
 export default function OfficialTeamParticipationDocuments({
     participation,
@@ -88,7 +89,6 @@ export default function OfficialTeamParticipationDocuments({
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 p-5">
-                                {/* PENGGUNAAN FILE UPLOADER DENGAN SKENARIO LANGSUNG */}
                                 <FileUploader
                                     variant="document"
                                     multiple={true}
@@ -150,7 +150,10 @@ export default function OfficialTeamParticipationDocuments({
                                                         onClick={() =>
                                                             setViewDocument({
                                                                 name: doc.document_name,
-                                                                url: `/storage/${doc.document_path}`,
+                                                                url: route(
+                                                                    'participation-document.file',
+                                                                    doc.document_id,
+                                                                ),
                                                             })
                                                         }
                                                     >

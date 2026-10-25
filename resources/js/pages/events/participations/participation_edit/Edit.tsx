@@ -1,4 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -254,7 +255,7 @@ export default function OfficialTeamParticipationEdit({
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     {/* Tampilkan bukti saat ini jika belum diubah */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                         {participation.payment_proof_path && (
                                             <div className="col-span-1">
                                                 <Label className="mb-2 block text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -262,7 +263,10 @@ export default function OfficialTeamParticipationEdit({
                                                 </Label>
                                                 <div className="aspect-3/4 w-full max-w-2xs overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
                                                     <img
-                                                        src={`/storage/${participation.payment_proof_path}`}
+                                                        src={route(
+                                                            'participation-payment-proof.file',
+                                                            participation,
+                                                        )}
                                                         alt="Bukti Bayar Saat Ini"
                                                         className="h-full w-full object-cover"
                                                     />
@@ -270,7 +274,7 @@ export default function OfficialTeamParticipationEdit({
                                             </div>
                                         )}
                                         {isApproved && (
-                                            <div className="col-span-1 mt-6 h-fit flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm leading-tight text-emerald-700">
+                                            <div className="col-span-1 mt-6 flex h-fit items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm leading-tight text-emerald-700">
                                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                                                 <p>
                                                     Pendaftaran telah disetujui
@@ -283,7 +287,7 @@ export default function OfficialTeamParticipationEdit({
 
                                         {participation.status ===
                                             'rejected' && (
-                                            <div className="col-span-1 h-fit mt-6 rounded-md border border-orange-500/20 bg-orange-500/10 p-3 text-sm leading-tight text-orange-700">
+                                            <div className="col-span-1 mt-6 h-fit rounded-md border border-orange-500/20 bg-orange-500/10 p-3 text-sm leading-tight text-orange-700">
                                                 Status pendaftaran sebelumnya{' '}
                                                 <strong>Ditolak</strong>.
                                                 Menyimpan pembaruan akan

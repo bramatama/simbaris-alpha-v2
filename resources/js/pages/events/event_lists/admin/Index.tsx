@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { getMasterDataInnerNav } from '@/config/inner_sidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function EventIndex({ events }: { events: EventData[] }) {
     // Fungsi pembantu untuk memformat tanggal
@@ -51,7 +52,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
     };
 
     return (
-        <AppLayout>
+        <InnerAppLayout sidebarNavItems={getMasterDataInnerNav()}>
             <Head title="Event Management" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
@@ -226,6 +227,6 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                     </Table>
                 </div>
             </div>
-        </AppLayout>
+        </InnerAppLayout>
     );
 }

@@ -11,14 +11,19 @@ class ScoreRecap extends Model
 
     protected $fillable = [
         'participation_id',
-        'champion_category_id',
+        'event_champion_category_id',
         'final_score',
+        'is_disqualified',
+        'raw_score',
+        'total_penalty_deduction'
     ];
 
     protected function casts(): array
     {
         return [
             'final_score' => 'decimal:2',
+            'raw_score' => 'decimal:2',
+            'total_penalty_deduction' => 'decimal:2'
         ];
     }
 
@@ -31,10 +36,10 @@ class ScoreRecap extends Model
         );
     }
 
-    public function championCategory(): BelongsTo
+    public function eventChampionCategory(): BelongsTo
     {
         return $this->belongsTo(
-            ChampionCategory::class,
+            EventChampionCategory::class,
             'champion_category_id',
             'champion_category_id'
         );

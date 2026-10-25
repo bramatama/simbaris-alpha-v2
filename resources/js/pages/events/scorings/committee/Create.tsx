@@ -84,6 +84,13 @@ export default function DynamicScoringBuilderCreate({
         }),
     );
 
+    const selectedMasterCategory = masterCategories?.find(
+        (mc: any) =>
+            mc.master_category_id.toString() === data.master_category_id,
+    );
+    const availableMasterCriteria =
+        selectedMasterCategory?.master_assessment_criteria || [];
+
     const isLevelDisabled = (level: any) => {
         if (!data.master_category_id) return true;
         const existingCategories =
@@ -312,7 +319,7 @@ export default function DynamicScoringBuilderCreate({
         transform((currentData) => ({
             ...currentData,
             criteria: uiCriteria.map((crit, cIdx) => ({
-                criteria_name: crit.name,
+                master_criteria_id: Number(crit.name),
                 order_index: cIdx + 1,
                 rubrics: globalRubrics.map((gr, rIdx) => ({
                     category_label: gr.name,
@@ -516,6 +523,9 @@ export default function DynamicScoringBuilderCreate({
                                             <Input
                                                 type="number"
                                                 min="1"
+                                                onWheel={(e) =>
+                                                    e.currentTarget.blur()
+                                                }
                                                 value={newRubricCount}
                                                 onChange={(e) =>
                                                     setNewRubricCount(
@@ -594,6 +604,9 @@ export default function DynamicScoringBuilderCreate({
                                             index={cIdx}
                                             globalRubrics={globalRubrics}
                                             localErrors={localErrors}
+                                            availableMasterCriteria={
+                                                availableMasterCriteria
+                                            }
                                             onUpdateName={updateCriteriaName}
                                             onDuplicate={duplicateCriteria}
                                             onRemove={removeCriteriaRow}

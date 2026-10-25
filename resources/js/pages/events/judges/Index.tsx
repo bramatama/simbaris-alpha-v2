@@ -12,7 +12,7 @@ import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { ArrowLeft } from 'lucide-react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import JudgeTable from '@/components/tables/judge_table/judge_table';
-import AddJudgeDialog from '@/components/dialogs/add-judge-dialog';
+import AddJudgeDialog from '@/components/dialogs/judges/add-judge-dialog';
 import type { PageProps } from '@inertiajs/core';
 import type { Auth } from '@/types';
 
@@ -174,7 +174,6 @@ export default function JudgeIndex({
                         )}
 
                         <div>
-                            {/* Pass allExpertises ke JudgeTable agar fitur 'Semua Jenjang' berfungsi */}
                             <JudgeTable
                                 judges={event.event_judges || []}
                                 onDeleteClick={(id) => setDeleteId(id)}

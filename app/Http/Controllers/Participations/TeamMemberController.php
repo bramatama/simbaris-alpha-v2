@@ -54,8 +54,6 @@ class TeamMemberController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk mengubah anggota tim pada pendaftaran ini.');
         }
 
-        // Validasi array members
-        // Catatan: input file dinamakan 'photo' untuk membedakan dengan path dari database
         $validated = $request->validate([
             'members' => 'nullable|array',
             'members.*.team_member_id' => 'nullable|exists:team_members,team_member_id',
@@ -83,8 +81,8 @@ class TeamMemberController extends Controller
 
                 foreach ($membersToDelete as $member) {
                     // Hapus fisik foto
-                    if ($member->member_photo_path && Storage::disk('public')->exists($member->member_photo_path)) {
-                        Storage::disk('public')->delete($member->member_photo_path);
+                    if ($member->member_photo_path && Storage::disk('local')->exists($member->member_photo_path)) {
+                        Storage::disk('local')->delete($member->member_photo_path);
                     }
                     $member->delete(); // Hapus dari DB
                 }
@@ -96,7 +94,7 @@ class TeamMemberController extends Controller
 
                     // Cek apakah ada file foto baru yang diunggah untuk anggota di index ini
                     if ($request->hasFile("members.{$index}.photo")) {
-                        $photoPath = $request->file("members.{$index}.photo")->store('team_members', 'public');
+                        $photoPath = $request->file("members.{$index}.photo")->store('team_members', 'local');
                     }
 
                     if ($memberId) {
@@ -114,8 +112,8 @@ class TeamMemberController extends Controller
 
                             // Jika ada foto baru, hapus foto lama dan update dengan path baru
                             if ($photoPath) {
-                                if ($existingMember->member_photo_path && Storage::disk('public')->exists($existingMember->member_photo_path)) {
-                                    Storage::disk('public')->delete($existingMember->member_photo_path);
+                                if ($existingMember->member_photo_path && Storage::disk('local')->exists($existingMember->member_photo_path)) {
+                                    Storage::disk('local')->delete($existingMember->member_photo_path);
                                 }
                                 $updateData['member_photo_path'] = $photoPath;
                             }

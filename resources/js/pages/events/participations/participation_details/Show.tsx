@@ -1,7 +1,11 @@
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav, getParticipationInnerNav } from '@/config/inner_sidebar';
+import {
+    getEventInnerNav,
+    getParticipationInnerNav,
+} from '@/config/inner_sidebar';
 import {
     Card,
     CardContent,
@@ -88,10 +92,11 @@ export default function ParticipationShow({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={userRole=== 'committee'?getEventInnerNav(
-                participation.event.public_id,
-                userRole,
-            ): getParticipationInnerNav(participation.public_id)}
+            sidebarNavItems={
+                userRole === 'committee'
+                    ? getEventInnerNav(participation.event.public_id, userRole)
+                    : getParticipationInnerNav(participation.public_id)
+            }
         >
             <Head title={`Detail Tim - ${participation.team_name}`} />
 
@@ -258,7 +263,10 @@ export default function ParticipationShow({
                                                                 setViewDocument(
                                                                     {
                                                                         name: doc.document_name,
-                                                                        url: `/storage/${doc.document_path}`,
+                                                                        url: route(
+                                                                            'participation-document.file',
+                                                                            doc,
+                                                                        ),
                                                                     },
                                                                 )
                                                             }
@@ -295,13 +303,19 @@ export default function ParticipationShow({
                                     <div className="space-y-3">
                                         <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
                                             <img
-                                                src={`/storage/${participation.payment_proof_path}`}
+                                                src={route(
+                                                    'participation-payment-proof.file',
+                                                    participation,
+                                                )}
                                                 alt="Bukti Transfer"
                                                 className="max-h-75 w-full object-contain"
                                             />
                                         </div>
                                         <a
-                                            href={`/storage/${participation.payment_proof_path}`}
+                                            href={route(
+                                                'participation-payment-proof.file',
+                                                participation,
+                                            )}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="block"
@@ -323,7 +337,6 @@ export default function ParticipationShow({
                             </CardContent>
                         </Card>
 
-                        {/* FORM VERIFIKASI (Hanya muncul jika Role = Committee) */}
                         {userRole === 'committee' && (
                             <form onSubmit={submitStatus}>
                                 <Card className="border-primary/20 shadow-md">

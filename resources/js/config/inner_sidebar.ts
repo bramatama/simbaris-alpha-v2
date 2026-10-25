@@ -8,7 +8,36 @@ import {
     FileText,
     UserGroup,
     NotebookPen,
+    TriangleAlert,
+    Trophy,
+    CalendarCheck2,
 } from 'lucide-react';
+
+export const getMasterDataInnerNav = (): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Daftar Event',
+            href: '/events',
+            icon: CalendarCheck2,
+        },
+        {
+            title: 'Kategori Penilaian',
+            href: `/admin/master-scorings`,
+            icon: NotebookPen,
+        },
+        {
+            title: 'Kategori Juara',
+            href: `/admin/master-champion-categories`,
+            icon: Trophy,
+        },
+        {
+            title: 'Kategori Penalti',
+            href: `/admin/master-penalties`,
+            icon: TriangleAlert,
+        },
+    ];
+    return items;
+};
 
 export const getEventInnerNav = (
     eventPublicId: string,
@@ -22,10 +51,8 @@ export const getEventInnerNav = (
         },
     ];
 
-    if (role === 'committee' || role === 'admin') {
-        items.splice(
-            1,
-            0,
+    if (role === 'admin') {
+        items.push(
             {
                 title: 'Edit Lomba',
                 href: `/${role}/events/${eventPublicId}/edit`,
@@ -42,14 +69,14 @@ export const getEventInnerNav = (
     if (role === 'committee') {
         items.push(
             {
-                title: 'Peserta Lomba',
-                href: `/${role}/events/${eventPublicId}/participations`,
-                icon: UserGroup,
+                title: 'Edit Lomba',
+                href: `/${role}/events/${eventPublicId}/edit`,
+                icon: Edit,
             },
             {
-                title: 'Juri Lomba',
-                href: `/${role}/events/${eventPublicId}/judges`,
-                icon: Gavel,
+                title: 'Panitia Lomba',
+                href: `/${role}/events/${eventPublicId}/committees`,
+                icon: Star,
             },
             {
                 title: 'Manajemen Jenjang',
@@ -65,6 +92,26 @@ export const getEventInnerNav = (
                 title: 'Manajemen Penilaian',
                 href: `/${role}/events/${eventPublicId}/scoring-categories`,
                 icon: NotebookPen,
+            },
+            {
+                title: 'Juri Lomba',
+                href: `/${role}/events/${eventPublicId}/judges`,
+                icon: Gavel,
+            },
+            {
+                title: 'Manajemen Juara',
+                href: `/${role}/events/${eventPublicId}/champions`,
+                icon: Trophy,
+            },
+            {
+                title: 'Manajemen Penalti',
+                href: `/${role}/events/${eventPublicId}/penalties`,
+                icon: TriangleAlert,
+            },
+            {
+                title: 'Peserta Lomba',
+                href: `/${role}/events/${eventPublicId}/participations`,
+                icon: UserGroup,
             },
         );
     }

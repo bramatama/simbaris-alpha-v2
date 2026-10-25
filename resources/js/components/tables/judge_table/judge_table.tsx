@@ -174,7 +174,7 @@ export default function JudgeTable({
                                         {userRole === 'committee' && (
                                             <Link
                                                 href={`/${userRole}/events/${eventPublicId}/judges/${eventJudge.event_judge_id}/edit`}
-                                                className="w-full"
+                                                className="flex-1"
                                             >
                                                 <Button
                                                     variant="outline"
@@ -189,7 +189,7 @@ export default function JudgeTable({
                                         <Button
                                             variant="destructive"
                                             size="sm"
-                                            className="w-full"
+                                            className="flex-1"
                                             onClick={() =>
                                                 onDeleteClick(
                                                     eventJudge.event_judge_id,
@@ -213,16 +213,16 @@ export default function JudgeTable({
 
             {/* VIEW DESKTOP: SHADCN TABLE (Disembunyikan di layar kecil) */}
             <div className="hidden w-full overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm md:block">
-                <Table className="min-w-max border-collapse">
+                <Table className="table-fixed border-collapse w-full">
                     <TableHeader className="bg-muted/30">
                         <TableRow className="hover:bg-transparent">
-                            <TableHead className="border-b border-border/50 p-4 font-semibold">
+                            <TableHead className="w-[20%] min-w-62.5 border-b border-border/50 p-4 font-semibold">
                                 Nama & Kontak
                             </TableHead>
-                            <TableHead className="border-b border-border/50 p-4 font-semibold">
+                            <TableHead className="w-[60%] min-w-62.5 border-b border-border/50 p-4 font-semibold">
                                 Kategori Penilaian (Expertise)
                             </TableHead>
-                            <TableHead className="border-b border-border/50 p-4 text-right font-semibold">
+                            <TableHead className="w-[20%] min-w-62.5 border-b border-border/50 text-right p-4 font-semibold">
                                 Aksi
                             </TableHead>
                         </TableRow>
@@ -257,19 +257,19 @@ export default function JudgeTable({
                                         key={eventJudge.event_judge_id}
                                         className="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/10"
                                     >
-                                        <TableCell className="p-4">
+                                        <TableCell className="w-[40%] max-w-100 p-4">
                                             <div className="text-base font-semibold">
                                                 {eventJudge.judge?.user?.name ??
                                                     '-'}
                                             </div>
                                             <div className="mt-1 flex items-center gap-1.5 text-muted-foreground">
-                                                <Mail className="h-3.5 w-3.5" />
+                                                <Mail className="h-3.5 w-3.5 hidden lg:flex" />
                                                 {eventJudge.judge?.user
                                                     ?.email ?? '-'}
                                             </div>
                                         </TableCell>
 
-                                        <TableCell className="p-4">
+                                        <TableCell className="w-[40%] max-w-100 p-4">
                                             {Object.keys(judgeAssignedMap)
                                                 .length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
@@ -299,7 +299,7 @@ export default function JudgeTable({
                                                                         catName
                                                                     }
                                                                     variant="secondary"
-                                                                    className="border-border/50 bg-muted/40 text-left whitespace-normal shadow-sm"
+                                                                    className="max-w-full border-border/50 bg-muted/40 text-left wrap-break-word whitespace-normal shadow-sm"
                                                                 >
                                                                     <span className="mr-1.5 font-bold text-foreground">
                                                                         {
@@ -325,15 +325,17 @@ export default function JudgeTable({
                                             )}
                                         </TableCell>
 
-                                        <TableCell className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
+                                        <TableCell className="w-[40%] max-w-100 p-4 text-right">
+                                            <div className="flex flex-col lg:flex-row items-center justify-end gap-2">
                                                 {userRole === 'committee' && (
                                                     <Link
                                                         href={`/${userRole}/events/${eventPublicId}/judges/${eventJudge.event_judge_id}/edit`}
+                                                        className='w-full lg:flex-1'
                                                     >
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
+                                                            className='w-full'
                                                         >
                                                             <Edit className="mr-1.5 h-4 w-4" />{' '}
                                                             Edit

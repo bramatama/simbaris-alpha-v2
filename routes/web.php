@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
-use App\Http\Controllers\TempFileController;
+use App\Http\Controllers\Files\TempFileController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -29,3 +29,4 @@ require __DIR__.'/settings.php';
 require __DIR__.'/events.php';
 require __DIR__.'/participations.php';
 require __DIR__.'/scorings.php';
+require __DIR__.'/champions.php';

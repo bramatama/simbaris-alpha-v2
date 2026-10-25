@@ -49,6 +49,7 @@ export default function DynamicScoringBuilderEdit({
     event,
     eventLevel,
     scoringCategory,
+    masterCategories
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
@@ -83,7 +84,7 @@ export default function DynamicScoringBuilderEdit({
                 });
                 return {
                     id: crit.criteria_id.toString(),
-                    name: crit.criteria_name,
+                    name: crit.master_criteria_id.toString(),
                     dbRubricIds,
                     rubricData,
                 };
@@ -94,6 +95,12 @@ export default function DynamicScoringBuilderEdit({
     const [newRubricName, setNewRubricName] = useState('');
     const [newRubricCount, setNewRubricCount] = useState<number | ''>('');
     const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+    const selectedMasterCategory = masterCategories?.find(
+        (mc: any) =>
+            mc.master_category_id === scoringCategory.master_category_id,
+    );
+    const availableMasterCriteria =
+        selectedMasterCategory?.master_assessment_criteria || [];
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -320,7 +327,7 @@ export default function DynamicScoringBuilderEdit({
                 const isNewCrit = crit.id.startsWith('new_');
                 return {
                     ...(isNewCrit ? {} : { criteria_id: Number(crit.id) }),
-                    criteria_name: crit.name,
+                    master_criteria_id: Number(crit.name),
                     order_index: cIdx + 1,
                     rubrics: globalRubrics.map((gr, rIdx) => {
                         const dbRubricId = crit.dbRubricIds
@@ -475,6 +482,9 @@ export default function DynamicScoringBuilderEdit({
                                             <Input
                                                 type="number"
                                                 min="1"
+                                                onWheel={(e) =>
+                                                    e.currentTarget.blur()
+                                                }
                                                 value={newRubricCount}
                                                 onChange={(e) =>
                                                     setNewRubricCount(
@@ -553,6 +563,9 @@ export default function DynamicScoringBuilderEdit({
                                             index={cIdx}
                                             globalRubrics={globalRubrics}
                                             localErrors={localErrors}
+                                            availableMasterCriteria={
+                                                availableMasterCriteria
+                                            }
                                             onUpdateName={updateCriteriaName}
                                             onDuplicate={duplicateCriteria}
                                             onRemove={removeCriteriaRow}

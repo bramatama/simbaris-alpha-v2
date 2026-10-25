@@ -11,7 +11,7 @@ class EventChampionFormula extends Model
 
     protected $fillable = [
         'event_level_id',
-        'champion_category_id',
+        'event_champion_category_id',
         'component_type',
         'scoring_category_id',
         'weight_multiplier',
@@ -33,10 +33,10 @@ class EventChampionFormula extends Model
         );
     }
 
-    public function championCategory(): BelongsTo
+    public function eventChampionCategory(): BelongsTo
     {
         return $this->belongsTo(
-            ChampionCategory::class,
+            EventChampionCategory::class,
             'champion_category_id',
             'champion_category_id'
         );

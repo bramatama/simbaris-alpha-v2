@@ -45,7 +45,7 @@ export function FormDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent>
+            <DialogContent className='max-w-lg'>
                 <form onSubmit={onSubmit}>
                     <DialogHeader>
                         <DialogTitle className={titleClass}>{title}</DialogTitle>

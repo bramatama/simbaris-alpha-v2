@@ -34,7 +34,7 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className='max-w-md'>
                 <DialogHeader>
                     <DialogTitle
                         className={

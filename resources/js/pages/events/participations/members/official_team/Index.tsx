@@ -1,4 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -59,7 +60,7 @@ export default function OfficialTeamParticipationMembers({
                   member_position: m.member_position || '',
                   photo: null,
                   preview_url: m.member_photo_path
-                      ? `/storage/${m.member_photo_path}`
+                      ? route('participation-member-photo.file', m)
                       : null,
               }))
             : [];

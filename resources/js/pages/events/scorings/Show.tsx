@@ -14,7 +14,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table'; // <-- Pastikan path komponen ini benar sesuai struktur Shadcn Anda
+} from '@/components/ui/table';
 
 export default function ScoringCategoryShow({
     event,
@@ -23,7 +23,6 @@ export default function ScoringCategoryShow({
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
-
     const isCommittee = ['committee', 'admin'].includes(userRole);
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -75,7 +74,6 @@ export default function ScoringCategoryShow({
                             <strong className="text-foreground">
                                 {eventLevel.level?.level_name}
                             </strong>
-                            .
                         </p>
                     </div>
 
@@ -117,7 +115,6 @@ export default function ScoringCategoryShow({
                         </div>
                     ) : (
                         <>
-                            {/* VIEW MOBILE: COMPACT CARD */}
                             <div className="flex flex-col gap-3 sm:gap-4 md:hidden">
                                 {scoringCategory.assessment_criteria.map(
                                     (criteria: any) => (
@@ -130,7 +127,10 @@ export default function ScoringCategoryShow({
                                                     {criteria.order_index}
                                                 </div>
                                                 <CardTitle className="min-w-0 text-sm leading-tight font-bold wrap-break-word sm:text-base">
-                                                    {criteria.criteria_name}
+                                                    {
+                                                        criteria.master_criteria
+                                                            ?.criteria_name
+                                                    }
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-5 p-3 sm:p-4">
@@ -184,7 +184,6 @@ export default function ScoringCategoryShow({
                                 )}
                             </div>
 
-                            {/* VIEW DESKTOP/TABLET: SHADCN TABLE */}
                             <div className="hidden min-w-0 md:block">
                                 <div className="max-w-full overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
                                     <Table className="min-w-max">
@@ -200,7 +199,7 @@ export default function ScoringCategoryShow({
                                                     rowSpan={2}
                                                     className="min-w-40 border-r border-border/50 text-center font-bold text-foreground"
                                                 >
-                                                    Materi Gerakan
+                                                    Materi Penilaian
                                                 </TableHead>
                                                 {tableHeaders.map(
                                                     (
@@ -245,7 +244,9 @@ export default function ScoringCategoryShow({
                                                         </TableCell>
                                                         <TableCell className="max-w-[20rem] min-w-40 border-r border-border/50 p-2 font-bold wrap-break-word whitespace-normal text-foreground sm:p-3">
                                                             {
-                                                                criteria.criteria_name
+                                                                criteria
+                                                                    .master_criteria
+                                                                    ?.criteria_name
                                                             }
                                                         </TableCell>
 

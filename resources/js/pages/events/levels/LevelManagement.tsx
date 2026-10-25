@@ -89,7 +89,7 @@ export default function LevelManagement({
                     level_id: levelId.toString(),
                     level_name: levelName,
                     registration_fees: 0,
-                    quota: "",
+                    quota: '',
                     is_custom: false,
                 },
             ]);
@@ -254,8 +254,10 @@ export default function LevelManagement({
                                                                 Rp
                                                             </span>
                                                             <Input
-                                                                inputMode="numeric"
-
+                                                                type="number"
+                                                                onWheel={(e) =>
+                                                                    e.currentTarget.blur()
+                                                                }
                                                                 className="bg-background pl-9"
                                                                 value={
                                                                     selectedData.registration_fees
@@ -286,7 +288,10 @@ export default function LevelManagement({
                                                             Kuota (Tim)
                                                         </Label>
                                                         <Input
-                                                            inputMode="numeric"
+                                                            type="number"
+                                                            onWheel={(e) =>
+                                                                e.currentTarget.blur()
+                                                            }
                                                             placeholder="Kosong = Tanpa Batas"
                                                             className="bg-background"
                                                             value={
@@ -394,7 +399,10 @@ export default function LevelManagement({
                                                             Rp
                                                         </span>
                                                         <Input
-                                                            inputMode="numeric"
+                                                            type="number"
+                                                            onWheel={(e) =>
+                                                                e.currentTarget.blur()
+                                                            }
                                                             className="bg-background pl-9"
                                                             value={
                                                                 customLevel.registration_fees
@@ -425,8 +433,10 @@ export default function LevelManagement({
                                                         Kuota (Tim)
                                                     </Label>
                                                     <Input
-                                                        inputMode="numeric"
-
+                                                        type="number"
+                                                        onWheel={(e) =>
+                                                            e.currentTarget.blur()
+                                                        }
                                                         placeholder="0 = Tanpa Batas"
                                                         className="bg-background"
                                                         value={

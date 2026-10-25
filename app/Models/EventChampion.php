@@ -12,6 +12,7 @@ class EventChampion extends Model
     protected $fillable = [
         'event_level_id',
         'champion_id',
+        'rank_position',
         'prize_money',
         'certificate',
         'prize_descriptions',

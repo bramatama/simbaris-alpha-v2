@@ -250,14 +250,7 @@ class EventController extends Controller
             return $eventJudge;
         });
 
-        $view = match ($role) {
-            'committee' => 'events/event_details/committee/Show',
-            'admin' => 'events/event_details/Show',
-            'official_team' => 'events/event_details/official_team/Show',
-            default => abort(403, 'Unauthorized access'),
-        };
-
-        return inertia($view, [
+        return inertia('events/event_details/Show', [
             'event' => $event,
         ]);
     }

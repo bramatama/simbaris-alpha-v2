@@ -12,7 +12,7 @@ import {
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { ArrowLeft } from 'lucide-react';
 import CommitteeTable from '@/components/tables/committee_table/committee_table';
-import AddCommitteeDialog from '@/components/dialogs/add-committee-dialog';
+import AddCommitteeDialog from '@/components/dialogs/committees/add-committee-dialog';
 import type { PageProps } from '@inertiajs/core';
 
 export default function CommitteeIndex({

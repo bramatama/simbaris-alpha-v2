@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeamPenalty extends Model
 {
+    protected $table = 'team_penalties';
     protected $primaryKey = 'team_penalty_id';
 
     protected $fillable = [
@@ -14,17 +15,16 @@ class TeamPenalty extends Model
         'event_penalty_id',
         'judge_id',
         'penalty_value',
+        'calculation_type',
+        'penalty_action',
         'occurrence_count',
         'reason',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'penalty_value' => 'decimal:2',
-            'occurrence_count' => 'integer',
-        ];
-    }
+    protected $casts = [
+        'penalty_value' => 'decimal:2',
+        'occurrence_count' => 'integer',
+    ];
 
     public function participation(): BelongsTo
     {
@@ -34,7 +34,6 @@ class TeamPenalty extends Model
             'participation_id'
         );
     }
-
     public function eventPenalty(): BelongsTo
     {
         return $this->belongsTo(

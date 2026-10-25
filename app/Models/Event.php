@@ -88,4 +88,13 @@ class Event extends Model
     {
         return $this->hasMany(EventLevel::class, 'event_id');
     }
+
+    public function eventChampionCategories(): HasMany
+    {
+        return $this->hasMany(
+            EventChampionCategory::class,
+            'event_id',
+            'event_id'
+        );
+    }
 }

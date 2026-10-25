@@ -1,6 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Files;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class TempFileController extends Controller

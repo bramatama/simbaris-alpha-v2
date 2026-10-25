@@ -1,6 +1,15 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Combobox,
+    ComboboxInput,
+    ComboboxContent,
+    ComboboxList,
+    ComboboxItem,
+    ComboboxEmpty,
+    ComboboxGroup,
+} from '@/components/ui/combobox';
 import { GripVertical, X, Copy, Trash2, CheckSquare, Plus } from 'lucide-react';
 import {
     useSortable,
@@ -8,6 +17,7 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useState } from 'react';
 
 // =========================================================================
 // INTERFACE & TYPES
@@ -129,8 +139,8 @@ export function SortableScoreBox({
                 {index + 1}
             </div>
             <Input
-                inputMode="numeric"
-                step="0.01"
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 placeholder="0"
                 value={score.value}
                 onChange={(e) =>
@@ -154,6 +164,7 @@ export function SortableCriteriaRow({
     index,
     globalRubrics,
     localErrors,
+    availableMasterCriteria,
     onUpdateName,
     onDuplicate,
     onRemove,
@@ -172,6 +183,18 @@ export function SortableCriteriaRow({
         id: crit.id,
         data: { type: 'criteria' },
     });
+    const initialMatchedCriteria = availableMasterCriteria?.find(
+        (mc: any) => mc.master_criteria_id.toString() === crit.name,
+    );
+    const [uiName, setUiName] = useState(
+        initialMatchedCriteria ? initialMatchedCriteria.criteria_name : '',
+    );
+    const [searchValue, setSearchValue] = useState('');
+
+    const filteredMasterCriteria =
+        availableMasterCriteria?.filter((mc: any) =>
+            mc.criteria_name.toLowerCase().includes(searchValue.toLowerCase()),
+        ) || [];
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -197,14 +220,63 @@ export function SortableCriteriaRow({
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-sm">
                             {index + 1}
                         </div>
-                        <Input
-                            placeholder="Nama Gerakan / Kriteria (Cth: Langkah Tegap)"
-                            value={crit.name}
-                            onChange={(e) =>
-                                onUpdateName(crit.id, e.target.value)
-                            }
-                            className="h-9 w-full rounded-none border-0 border-b-2 border-dashed border-border bg-transparent px-1 text-base font-bold shadow-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-primary/50 focus:border-solid focus-visible:border-primary focus-visible:ring-0"
-                        />
+                        <div className="w-full flex-1">
+                            <Combobox
+                                value={uiName}
+                                onValueChange={(val: any) => {
+                                    const selectedCriteria =
+                                        availableMasterCriteria?.find(
+                                            (mc: any) =>
+                                                mc.criteria_name === val,
+                                        );
+
+                                    setUiName(val ?? '');
+
+                                    // Kirim ID ke parent melalui onUpdateName
+                                    onUpdateName(
+                                        crit.id,
+                                        selectedCriteria
+                                            ? selectedCriteria.master_criteria_id.toString()
+                                            : '',
+                                    );
+                                }}
+                                inputValue={searchValue}
+                                onInputValueChange={(val: string) =>
+                                    setSearchValue(val)
+                                }
+                            >
+                                <ComboboxInput
+                                    placeholder="Pilih Kriteria/Materi Gerakan..."
+                                    showClear={!!uiName}
+                                    className="h-9 w-full rounded-none border-0 border-b-2 border-dashed border-border bg-transparent px-1 text-base font-bold shadow-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-primary/50 focus:border-solid focus-visible:border-primary focus-visible:ring-0"
+                                />
+                                <ComboboxContent>
+                                    <ComboboxList>
+                                        {filteredMasterCriteria.length ===
+                                            0 && (
+                                            <ComboboxEmpty>
+                                                Kriteria tidak ditemukan.
+                                            </ComboboxEmpty>
+                                        )}
+                                        <ComboboxGroup>
+                                            {filteredMasterCriteria.map(
+                                                (mc: any) => (
+                                                    <ComboboxItem
+                                                        key={
+                                                            mc.master_criteria_id
+                                                        }
+                                                        value={mc.criteria_name}
+                                                        className="rounded-none px-4 py-2 text-sm"
+                                                    >
+                                                        {mc.criteria_name}
+                                                    </ComboboxItem>
+                                                ),
+                                            )}
+                                        </ComboboxGroup>
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 self-end pl-11 sm:self-auto sm:pl-0">

@@ -42,6 +42,7 @@ return new class extends Migration
             $table->string('status_message')->nullable();
             $table->string('payment_proof_path')->nullable();
             $table->integer('billed_amount');
+            $table->decimal('performance_duration_seconds', 10,2)->nullable();
             $table->timestamps();
         });
 

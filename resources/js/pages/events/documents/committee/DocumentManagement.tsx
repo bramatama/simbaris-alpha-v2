@@ -120,7 +120,6 @@ export default function DocumentManagement({
                                     maxSizeMB={10}
                                     endpoint={`/${userRole}/events/${event.public_id}/documents`}
                                     onUploadSuccess={() => {
-                                        // Muat ulang hanya props 'documents' agar tabel kanan otomatis ter-update
                                         router.reload({ only: ['documents'] });
                                     }}
                                     onRemove={() => {}}

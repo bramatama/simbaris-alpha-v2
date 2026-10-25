@@ -17,7 +17,7 @@ export function PdfViewerDialog({ document, onClose }: PdfViewerDialogProps) {
             open={!!document}
             onOpenChange={(open) => !open && onClose()}
         >
-            <DialogContent className="flex h-[85vh] max-w-4xl flex-col gap-0 overflow-hidden p-0">
+            <DialogContent className="flex h-[85vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
                 <DialogHeader className="border-b border-border/50 bg-muted/30 p-4">
                     <DialogTitle className="flex items-center gap-2 truncate pr-6 text-base">
                         <FileText className="h-4 w-4 text-primary shrink-0" />

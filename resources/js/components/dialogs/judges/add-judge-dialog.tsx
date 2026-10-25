@@ -151,7 +151,7 @@ export default function AddJudgeDialog({
                     </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
                     <form onSubmit={submitAdd}>
                         <DialogHeader>
                             <DialogTitle>Tugaskan Juri ke Acara</DialogTitle>

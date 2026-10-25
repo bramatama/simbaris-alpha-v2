@@ -27,7 +27,7 @@ class ParticipationController extends Controller
         $participations = Participation::where('event_id', $event->event_id)
             ->with([
                 'officialTeam', 
-                'eventLevel.level', // Mengambil data nama jenjang
+                'eventLevel.level',
             ])
             ->latest()
             ->get();
@@ -116,6 +116,7 @@ class ParticipationController extends Controller
 
     public function store(Request $request, $public_id)
     {
+
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
         $validated = $request->validate([
@@ -153,7 +154,7 @@ class ParticipationController extends Controller
                 $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
                 $paymentProofPath = 'payment_proofs/' . Str::random(20) . '.' . $extension;
 
-                Storage::disk('public')->move($tempPath, $paymentProofPath);
+                Storage::disk('local')->move($tempPath, $paymentProofPath);
 
                 $levelCounts = collect($validated['teams'])->countBy('event_level_id');
                 
@@ -200,8 +201,8 @@ class ParticipationController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            if ($paymentProofPath && Storage::disk('public')->exists($paymentProofPath)) {
-                Storage::disk('public')->delete($paymentProofPath);
+            if ($paymentProofPath && Storage::disk('local')->exists($paymentProofPath)) {
+                Storage::disk('local')->delete($paymentProofPath);
             }
             throw $e;
         }
@@ -276,11 +277,11 @@ class ParticipationController extends Controller
         if ($participation->status !== 'approved' && $request->filled('temp_payment_proof_path')) {
             $tempPayment = $request->input('temp_payment_proof_path');
             if (Storage::disk('public')->exists($tempPayment)){
-                if ($participation->payment_proof_path && Storage::disk('public')->exists($participation->payment_proof_path)) {
-                    Storage::disk('public')->delete($participation->payment_proof_path);
+                if ($participation->payment_proof_path && Storage::disk('local')->exists($participation->payment_proof_path)) {
+                    Storage::disk('local')->delete($participation->payment_proof_path);
                 }
                 $newPaymentPath = 'payment_proofs/' . Str::random(20) . '.' . pathinfo($tempPayment, PATHINFO_EXTENSION);   
-                Storage::disk('public')->move($tempPayment, $newPaymentPath);
+                Storage::disk('local')->move($tempPayment, $newPaymentPath);
                 
                 $validated['payment_proof_path'] = $newPaymentPath;
             }
@@ -391,7 +392,7 @@ class ParticipationController extends Controller
                 if ($request->hasFile('file')) {
                     $uploadedFile = $request->file('file');
 
-                    $path = $uploadedFile->store('participation_documents', 'public');
+                    $path = $uploadedFile->store('participation_documents', 'local');
 
                     ParticipationDocument::create([
                         'participation_id' => $participation->participation_id,
@@ -424,7 +425,6 @@ class ParticipationController extends Controller
 
         $role = auth()->user()->role;
         
-        // Keamanan: Hanya official team pemilik atau panitia yang boleh menghapus
         if ($role === 'official_team') {
             $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
             if ($participation->official_team_id !== $officialTeamId) {
@@ -440,9 +440,8 @@ class ParticipationController extends Controller
             $document->delete();
         });
 
-        // Hapus file fisik dari storage setelah data di database berhasil dihapus
-        if ($documentPath && Storage::disk('public')->exists($documentPath)) {
-            Storage::disk('public')->delete($documentPath);
+        if ($documentPath && Storage::disk('local')->exists($documentPath)) {
+            Storage::disk('local')->delete($documentPath);
         }
 
         return redirect()->back()->with('success', 'Dokumen berhasil dihapus.');
@@ -455,22 +454,27 @@ class ParticipationController extends Controller
     {
         $participation = Participation::with('participationDocuments')->where('public_id',$public_id)->firstOrFail();
 
+        $teamLogoPath = $participation->team_logo_path;
         $paymentProofPath = $participation->payment_proof_path;
         $documentPaths = $participation->participationDocuments->pluck('document_path')->toArray();
 
         DB::transaction(function () use ($participation) {
-            $participation->delete(); // Ini otomatis menghapus row participation_documents karena onDelete('cascade') di DB
+            $participation->delete();
         });
 
+        if ($teamLogoPath && Storage::disk('public')->exists($teamLogoPath)){
+            Storage::disk('public')->delete($teamLogoPath);
+        }
+
         // Hapus fisik bukti bayar
-        if ($paymentProofPath && Storage::disk('public')->exists($paymentProofPath)) {
-            Storage::disk('public')->delete($paymentProofPath);
+        if ($paymentProofPath && Storage::disk('local')->exists($paymentProofPath)) {
+            Storage::disk('local')->delete($paymentProofPath);
         }
 
         // Hapus fisik dokumen persyaratan
         foreach ($documentPaths as $docPath) {
-            if (Storage::disk('public')->exists($docPath)) {
-                Storage::disk('public')->delete($docPath);
+            if (Storage::disk('local')->exists($docPath)) {
+                Storage::disk('local')->delete($docPath);
             }
         }
 

@@ -12,6 +12,7 @@ import {
     ClipboardList,
     FileCode2,
     LayoutList,
+    SearchCode,
 } from 'lucide-react';
 
 interface MasterCategory {
@@ -68,37 +69,54 @@ export default function ScoringCategoryIndex({
         >
             <Head title={`Kategori Penilaian - ${event.event_name}`} />
 
-            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 {/* HEADER */}
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <Link
                             href={`/${userRole}/events/${event.public_id}/information`}
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Kembalike
+                            <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke
                             Dasbor
                         </Link>
-                        <h1 className="text-3xl font-bold tracking-tight">
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
                             Format Penilaian Juri
                         </h1>
-                        <p className="mt-1 text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground md:text-base">
                             Daftar kategori penilaian
                         </p>
                     </div>
 
-                    {isCommittee && activeLevel && (
-                        <div className="px-4 py-2 text-sm font-normal">
-                            <Link
-                                href={`/${userRole}/events/${event.public_id}/scoring-categories/create`}
-                            >
-                                <Button
-                                    size="sm"
-                                    className="h-9 w-full gap-1.5 shadow-sm sm:w-auto"
+                    {activeLevel && (
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            {scoringCategories.length > 0 && (
+                                <Link
+                                    href={`/${userRole}/events/${event.public_id}/scoring-categories/levels/${activeLevel.event_level_id}/preview`}
                                 >
-                                    <Plus className="h-4 w-4" /> Tambah Kategori
-                                </Button>
-                            </Link>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 w-full gap-2 border-primary/50 text-primary shadow-sm hover:bg-primary/10 sm:w-auto"
+                                    >
+                                        <SearchCode className="h-4 w-4" />{' '}
+                                        Preview Keseluruhan
+                                    </Button>
+                                </Link>
+                            )}
+                            {isCommittee && (
+                                <Link
+                                    href={`/${userRole}/events/${event.public_id}/scoring-categories/create`}
+                                >
+                                    <Button
+                                        size="sm"
+                                        className="h-9 w-full gap-1.5 shadow-sm sm:w-auto"
+                                    >
+                                        <Plus className="h-4 w-4" /> Tambah
+                                        Kategori
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>
@@ -106,11 +124,11 @@ export default function ScoringCategoryIndex({
                 {/* FILTER JENJANG */}
                 {eventLevels.length > 0 ? (
                     <div className="space-y-4">
-                        <div className="flex w-full flex-col gap-1.5 overflow-hidden">
-                            <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                        <div className="flex w-full flex-col gap-2 overflow-hidden">
+                            <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                 Filter Jenjang:
                             </span>
-                            <div className=" flex w-full items-center gap-2 overflow-x-auto pb-2">
+                            <div className="hide-scrollbar flex w-full items-center gap-2 overflow-x-auto pb-2">
                                 {eventLevels.map((level) => (
                                     <Badge
                                         key={level.event_level_id}
@@ -120,11 +138,11 @@ export default function ScoringCategoryIndex({
                                                 ? 'default'
                                                 : 'outline'
                                         }
-                                        className={`shrink-0 cursor-pointer rounded-md px-3 py-1 text-xs whitespace-nowrap transition-colors ${
+                                        className={`shrink-0 cursor-pointer rounded-md px-3 py-1.5 text-xs whitespace-nowrap transition-colors ${
                                             activeLevel?.event_level_id ===
                                             level.event_level_id
                                                 ? 'pointer-events-none shadow-sm'
-                                                : 'hover:bg-primary/10 hover:text-primary'
+                                                : 'border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                                         }`}
                                         onClick={() =>
                                             handleLevelChange(
@@ -139,9 +157,9 @@ export default function ScoringCategoryIndex({
                         </div>
 
                         {activeLevel && (
-                            <div className="animate-in space-y-3 duration-300 fade-in">
+                            <div className="animate-in space-y-4 duration-300 fade-in">
                                 <div className="flex min-w-0 items-start gap-2 sm:items-center">
-                                    <LayoutList className="h-4 w-4 text-primary" />
+                                    <LayoutList className="h-4 w-4 shrink-0 text-primary" />
                                     <h2 className="text-sm font-bold sm:text-base">
                                         Kategori Penilaian (
                                         {activeLevel.level.level_name})
@@ -176,8 +194,7 @@ export default function ScoringCategoryIndex({
                                         )}
                                     </Card>
                                 ) : (
-                                    // CARD VIEW (COMPACT, MINIMAL WHITESPACE)
-                                    <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                         {scoringCategories.map((category) => (
                                             <Card
                                                 key={
@@ -185,29 +202,29 @@ export default function ScoringCategoryIndex({
                                                 }
                                                 className="group flex flex-col overflow-hidden border-border/70 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
                                             >
-                                                <div className="sm:items-center.5 flex min-w-0 items-start gap-2 border-b border-border/50 bg-muted/20 p-3">
+                                                <div className="flex min-w-0 items-start gap-2 border-b border-border/50 bg-muted/20 p-3 sm:items-center">
                                                     <div className="shrink-0 rounded-md bg-primary/10 p-1.5 text-primary">
                                                         <ClipboardList className="h-4 w-4" />
                                                     </div>
                                                     <h3
-                                                        className="min-w-0 text-sm font-bold wrap-break-word"
+                                                        className="min-w-0 text-sm leading-snug font-bold wrap-break-word"
                                                         title={
                                                             category
                                                                 .master_category
-                                                                .category_name
+                                                                ?.category_name
                                                         }
                                                     >
                                                         {
                                                             category
                                                                 .master_category
-                                                                .category_name
+                                                                ?.category_name
                                                         }
                                                     </h3>
                                                 </div>
 
                                                 <div className="flex flex-1 items-center justify-between bg-background p-3">
                                                     <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                                        Parameter
+                                                        Materi Penilaian
                                                     </span>
                                                     <Badge
                                                         variant="secondary"
@@ -230,7 +247,7 @@ export default function ScoringCategoryIndex({
                                                             className="h-8 w-full gap-1.5 text-xs transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                                                         >
                                                             <Eye className="h-3.5 w-3.5" />{' '}
-                                                            Lihat Detail
+                                                            Lihat Form Kategori
                                                         </Button>
                                                     </Link>
                                                 </div>
@@ -242,7 +259,7 @@ export default function ScoringCategoryIndex({
                         )}
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                         Event ini belum memiliki jenjang perlombaan sama sekali.
                     </div>
                 )}

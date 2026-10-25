@@ -32,7 +32,6 @@ class EventScoringCategoryController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        // Tambahkan fallback jika event belum punya level sama sekali
         if (!$activeLevel) {
             abort(404, 'Event ini belum memiliki jenjang perlombaan.');
         }
@@ -54,17 +53,17 @@ class EventScoringCategoryController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
         
-        // Ambil semua level di event ini beserta data master_category yang sudah mereka gunakan.
-        // Ini berguna agar frontend bisa menonaktifkan checkbox level jika level tersebut sudah memiliki form PBB misalnya.
         $eventLevels = EventLevel::with(['level:level_id,level_name', 'scoringCategories:event_level_id,master_category_id'])
             ->where('event_id', $event->event_id)
             ->get();
 
-        $masterCategories = MasterScoringCategory::all();
+        $masterCategories = MasterScoringCategory::with(['masterAssessmentCriteria' => function($q) {
+            $q->orderBy('criteria_name', 'asc');
+        }])->get();
 
         return inertia('events/scorings/committee/Create', [
             'event' => $event,
-            'eventLevels' => $eventLevels, // Kirim semua level untuk dirender sebagai Checkbox
+            'eventLevels' => $eventLevels, 
             'masterCategories' => $masterCategories,
         ]);
     }
@@ -76,14 +75,11 @@ class EventScoringCategoryController extends Controller
         $validated = $this->validateScoringForm($request);
 
         DB::transaction(function () use ($validated, $event) {
-            // LOOPING BATCH CREATE: Buat form untuk setiap level yang dicentang
             foreach ($validated['event_level_ids'] as $levelId) {
                 
-                // Pastikan level tersebut benar-benar milik event ini (keamanan)
                 $isValidLevel = EventLevel::where('event_level_id', $levelId)->where('event_id', $event->event_id)->exists();
                 if (!$isValidLevel) continue;
 
-                // Cek apakah level ini sudah memiliki master kategori yang sama
                 $exists = ScoringCategory::where('event_level_id', $levelId)
                     ->where('master_category_id', $validated['master_category_id'])
                     ->exists();
@@ -115,6 +111,34 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    public function previewLevel($public_id, $event_level_id)
+    {
+        $event = Event::select('event_id', 'public_id', 'event_name', 'status')
+            ->where('public_id', $public_id)
+            ->firstOrFail();
+
+        $eventLevel = EventLevel::with('level:level_id,level_name')
+            ->where('event_level_id', $event_level_id)
+            ->where('event_id', $event->event_id)
+            ->firstOrFail();
+
+        $scoringCategories = ScoringCategory::where('event_level_id', $eventLevel->event_level_id)
+            ->with([
+                'masterCategory',
+                'assessmentCriteria' => fn($q) => $q->orderBy('order_index', 'asc'),
+                'assessmentCriteria.masterCriteria', // Tambahkan eager loading ke master agar nama kriteria muncul
+                'assessmentCriteria.rubricCategories' => fn($q) => $q->orderBy('category_order', 'asc'),
+                'assessmentCriteria.rubricCategories.rubricScores' => fn($q) => $q->orderBy('display_order', 'asc'),
+            ])
+            ->get();
+
+        return inertia('events/scorings/PreviewLevel', [
+            'event' => $event,
+            'eventLevel' => $eventLevel,
+            'scoringCategories' => $scoringCategories,
+        ]);
+    }
+
     public function edit($public_id, $scoring_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
@@ -123,10 +147,15 @@ class EventScoringCategoryController extends Controller
 
         $scoringCategory = $this->getFullyLoadedCategory($event->event_id, $scoring_category_id);
         
+        $masterCategories = MasterScoringCategory::with(['masterAssessmentCriteria' => function($q) {
+            $q->orderBy('criteria_name', 'asc');
+        }])->get();
+
         return inertia('events/scorings/committee/Edit', [
             'event' => $event,
-            'eventLevel' => $scoringCategory->eventLevel, // Data level diambil dari relasi
+            'eventLevel' => $scoringCategory->eventLevel, 
             'scoringCategory' => $scoringCategory,
+            'masterCategories' => $masterCategories,
         ]);
     }
 
@@ -134,7 +163,6 @@ class EventScoringCategoryController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
         
-        // Pengecekan keamanan ganda melalui whereHas
         $scoringCategory = ScoringCategory::where('scoring_category_id', $scoring_category_id)
             ->whereHas('eventLevel', function($query) use ($event) {
                 $query->where('event_id', $event->event_id);
@@ -148,7 +176,6 @@ class EventScoringCategoryController extends Controller
             $this->syncCriteria($scoringCategory->scoring_category_id, $validated['criteria'] ?? []);
         });
 
-        // Redirect kembali ke index dengan parameter query string level_id agar panitia tidak tersasar
         return redirect()->route('committee.events.scoring-categories.index', [
             'public_id' => $public_id,
             'level_id' => $scoringCategory->event_level_id
@@ -187,15 +214,15 @@ class EventScoringCategoryController extends Controller
 
    private function getFullyLoadedCategory($eventId, $scoringCategoryId)
     {
-        // Mencari kategori penilaian dengan memastikan ia milik event yang dituju melalui eventLevel
         return ScoringCategory::where('scoring_category_id', $scoringCategoryId)
             ->whereHas('eventLevel', function($query) use ($eventId) {
                 $query->where('event_id', $eventId);
             })
             ->with([
                 'masterCategory',
-                'eventLevel.level', // Mengambil data level sekaligus
+                'eventLevel.level', 
                 'assessmentCriteria' => fn($q) => $q->orderBy('order_index', 'asc'),
+                'assessmentCriteria.masterCriteria',
                 'assessmentCriteria.rubricCategories' => fn($q) => $q->orderBy('category_order', 'asc'),
                 'assessmentCriteria.rubricCategories.rubricScores' => fn($q) => $q->orderBy('display_order', 'asc'),
             ])->firstOrFail();
@@ -211,7 +238,8 @@ class EventScoringCategoryController extends Controller
         $rules = [
             'criteria' => 'present|array',
             'criteria.*.criteria_id' => 'nullable|exists:assessment_criteria,criteria_id',
-            'criteria.*.criteria_name' => 'required|string|max:255',
+            // Ubah criteria_name menjadi master_criteria_id sesuai desain baru
+            'criteria.*.master_criteria_id' => 'required|exists:master_assessment_criteria,master_criteria_id', 
             'criteria.*.order_index' => 'required|integer',
 
             'criteria.*.rubrics' => 'present|array',
@@ -227,13 +255,12 @@ class EventScoringCategoryController extends Controller
 
         if (!$isUpdate) {
             $rules['master_category_id'] = 'required|exists:master_scoring_categories,master_category_id';
-            $rules['event_level_ids'] = 'required|array|min:1'; // Array checkbox jenjang
+            $rules['event_level_ids'] = 'required|array|min:1'; 
             $rules['event_level_ids.*'] = 'required|exists:event_levels,event_level_id';
         }
 
         $validated = $request->validate($rules);
 
-        // ... (Validasi mitigasi distinct untuk order_index, category_order, display_order tetap sama seperti sebelumnya) ...
         $criteriaOrders = [];
         foreach ($validated['criteria'] as $cIndex => $criteria) {
             if (in_array($criteria['order_index'], $criteriaOrders)) {
@@ -276,7 +303,7 @@ class EventScoringCategoryController extends Controller
                 ['criteria_id' => $criteriaData['criteria_id'] ?? null],
                 [
                     'scoring_category_id' => $scoringCategoryId,
-                    'criteria_name' => $criteriaData['criteria_name'],
+                    'master_criteria_id' => $criteriaData['master_criteria_id'],
                     'order_index' => $criteriaData['order_index'],
                 ]
             );

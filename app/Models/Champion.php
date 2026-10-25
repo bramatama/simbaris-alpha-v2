@@ -12,7 +12,6 @@ class Champion extends Model
     protected $fillable = [
         'champion_category_id',
         'champion_name',
-        'rank_position',
     ];
 
     /**

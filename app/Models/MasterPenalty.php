@@ -11,7 +11,6 @@ class MasterPenalty extends Model
 
     protected $fillable = [
         'penalty_name',
-        'description',
     ];
 
     public function eventPenalties(): HasMany

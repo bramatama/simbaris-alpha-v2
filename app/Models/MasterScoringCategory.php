@@ -20,4 +20,9 @@ class MasterScoringCategory extends Model
     {
         return $this->hasMany(ScoringCategory::class, 'master_category_id', 'master_category_id');
     }
+
+    public function masterAssessmentCriteria(): HasMany
+    {
+        return $this->hasMany(MasterAssessmentCriteria::class, 'master_category_id', 'master_category_id');
+    }
 }

@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Controllers\Files\ViewDocumentController;
 use App\Http\Controllers\Participations\ParticipationController;
 use App\Http\Controllers\Participations\TeamMemberController;
-use Dom\Document;
+
+Route::middleware(['auth', 'verified'])->group(function (){
+    Route::get('/participations/{participation}/payment-proof',[ViewDocumentController::class,'showPaymentProof'])->name('participation-payment-proof.file');
+    Route::get('/participations/{document}/file',[ViewDocumentController::class,'showRegistrationDocs'])->name('participation-document.file');
+    Route::get('/participations/{member}/member-photo', [ViewDocumentController::class, 'showMemberPhoto'])->name('participation-member-photo.file');
+});
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventPenalty extends Model
@@ -13,9 +14,10 @@ class EventPenalty extends Model
     protected $fillable = [
         'event_id',
         'master_penalty_id',
-        'scoring_category_id',
+        'description',
         'penalty_value',
         'calculation_type',
+        'calculation_action',
         'is_active',
     ];
 
@@ -41,13 +43,26 @@ class EventPenalty extends Model
         );
     }
 
-    public function scoringCategory(): BelongsTo
+    public function championCategories(): BelongsToMany
     {
-        return $this->belongsTo(
-            ScoringCategory::class,
-            'scoring_category_id',
-            'scoring_category_id'
+        return $this->belongsToMany(
+            EventChampionCategory::class,
+            'event_penalty_champion_categories',
+            'event_penalty_id',
+            'event_champion_category_id'
         );
+    }
+
+    public function eventChampionCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            EventChampionCategory::class,
+            'event_penalty_champion_categories',
+            'event_penalty_id',
+            'event_champion_category_id',
+            'event_penalty_id',
+            'event_champion_category_id'
+        )->withTimestamps();
     }
 
     public function teamPenalties(): HasMany

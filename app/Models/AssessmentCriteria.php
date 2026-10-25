@@ -13,7 +13,7 @@ class AssessmentCriteria extends Model
 
     protected $fillable = [
         'scoring_category_id',
-        'criteria_name',
+        'master_criteria_id',
         'order_index',
     ];
 
@@ -40,6 +40,11 @@ class AssessmentCriteria extends Model
             'criteria_id',
             'criteria_id'
         );
+    }
+
+    public function masterCriteria(): BelongsTo
+    {
+        return $this->belongsTo(MasterAssessmentCriteria::class, 'master_criteria_id', 'master_criteria_id');
     }
 
     public function teamScoreDetails(): HasMany

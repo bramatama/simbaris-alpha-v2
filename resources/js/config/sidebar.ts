@@ -18,21 +18,23 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
     ];
 
     if (userRole === 'admin') {
-        items.push({
-            title: 'User Management',
-            href: '/admin/users',
-            icon: FolderGit2,
-        });
-        items.push({
-            title: 'Event Management',
-            href: '/events',
-            icon: CalendarCheckIcon,
-        });
-        items.push({
-            title: 'Profile',
-            href: '/profile',
-            icon: User
-        })
+        items.push(
+            {
+                title: 'User Management',
+                href: '/admin/users',
+                icon: FolderGit2,
+            },
+            {
+                title: 'Event Management',
+                href: '/events',
+                icon: CalendarCheckIcon,
+            },
+            {
+                title: 'Profile',
+                href: '/profile',
+                icon: User,
+            },
+        );
     }
 
     if (userRole == 'committee') {

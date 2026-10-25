@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { PageProps } from '@inertiajs/core';
 import { ArrowLeft, ShieldAlert, Users, UserCheck, User } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 export default function CommitteeParticipationMembers({
     participation,
@@ -41,7 +42,7 @@ export default function CommitteeParticipationMembers({
                         <div className="flex aspect-3/4 w-28 flex-col items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-muted/30">
                             {member.member_photo_path ? (
                                 <img
-                                    src={`/storage/${member.member_photo_path}`}
+                                    src={route('participation-member-photo.file', member)}
                                     alt={member.member_name}
                                     className="h-full w-full object-cover"
                                 />
