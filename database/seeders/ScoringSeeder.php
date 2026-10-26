@@ -12,7 +12,6 @@ class ScoringSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Struktur data: 'Nama Kategori Master' => ['Kriteria 1', 'Kriteria 2', ...]
         $scoringData = [
             'PBB' => [
                 'Berkumpul',
@@ -43,7 +42,6 @@ class ScoringSeeder extends Seeder
         ];
 
         foreach ($scoringData as $categoryName => $criteriaList) {
-            // 1. Simpan atau perbarui Kategori Master
             DB::table('master_scoring_categories')->updateOrInsert(
                 ['category_name' => $categoryName],
                 [
@@ -52,12 +50,10 @@ class ScoringSeeder extends Seeder
                 ]
             );
 
-            // Ambil ID dari Kategori Master yang baru saja diproses
             $masterCategory = DB::table('master_scoring_categories')
                 ->where('category_name', $categoryName)
                 ->first();
 
-            // 2. Simpan atau perbarui Kriteria Penilaian yang berelasi dengan Kategori tersebut
             foreach ($criteriaList as $criteriaName) {
                 DB::table('master_assessment_criteria')->updateOrInsert(
                     [
@@ -70,6 +66,29 @@ class ScoringSeeder extends Seeder
                     ]
                 );
             }
+        }
+
+        $penalties = [
+            'Mengganti Personil Di Luar Formulir Peserta',
+            'Barisan Tidak Lengkap',
+            'Menginjak/Melewati Garis Batas Lapangan',
+            'Melebihi Batas Waktu Penampilan',
+            'Personil Pingsan Saat Penampilan',
+            'Terlambat Daftar Ulang',
+            'Administrasi Tidak Lengkap',
+            'Administrasi Tidak Sesuai',
+        ];
+
+        foreach ($penalties as $penalty) {
+            DB::table('master_penalties')->updateOrInsert(
+                [
+                    'penalty_name' => $penalty,
+                ],
+                [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 }

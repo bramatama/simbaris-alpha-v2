@@ -38,7 +38,6 @@ export default function UserTableHeaders({
 
                     <TableHead>Name & Email</TableHead>
                     <TableHead>Institution</TableHead>
-                    <TableHead>Level</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Contact</TableHead>
 

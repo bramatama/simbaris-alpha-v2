@@ -16,12 +16,13 @@ import {
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 
 import { Button } from '@/components/ui/button';
-
 import { Users, Filter, Trash2 } from 'lucide-react';
 
 import UserTableHeaders from '../../components/tables/user_table/UserTableHeaders';
-import UserTableRow, {
+import {
+    UserTableRow,
     User,
+    UserMobileCard,
 } from '../../components/tables/user_table/UserTableRow';
 
 interface UsersResponse {
@@ -32,31 +33,28 @@ interface UsersResponse {
     };
 }
 
-type UserManagementPageProps = {
+interface UserManagementPageProps {
     users?: UsersResponse;
     filters?: {
         role?: string;
     };
-};
+}
 
 export default function UserManagementIndex({
     users,
     filters,
 }: UserManagementPageProps) {
     const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
-
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
-
     const [isDeleting, setIsDeleting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const [currentRole, setCurrentRole] = useState(filters?.role || 'all');
-
-    const tableLayoutRole = filters?.role || 'all';
+    const currentRole = filters?.role || 'all';
+    const tableLayoutRole = currentRole;
+    const userList = users?.data ?? [];
 
     const handleRoleChange = (value: string) => {
-        setCurrentRole(value);
         setIsLoading(true);
         setSelectedUserIds([]);
 
@@ -70,41 +68,36 @@ export default function UserManagementIndex({
     const handleSelectUser = (userId: number, checked: boolean) => {
         setSelectedUserIds((current) => {
             const next = new Set(current);
+
             if (checked) {
                 next.add(userId);
             } else {
                 next.delete(userId);
             }
+
             return [...next];
         });
     };
 
     const handleSelectAll = (checked: boolean) => {
-        if (!users?.data) return;
         if (checked) {
-            setSelectedUserIds(users.data.map((user) => user.user_id));
+            setSelectedUserIds(userList.map((user) => user.user_id));
         } else {
             setSelectedUserIds([]);
         }
     };
 
     const isAllSelected =
-        Boolean(
-            users?.data &&
-            users.data.length > 0 &&
-            selectedUserIds.length === users.data.length,
-        ) || false;
+        userList.length > 0 &&
+        userList.every((user) => selectedUserIds.includes(user.user_id));
 
     const isIndeterminate =
-        Boolean(
-            users?.data &&
-            users.data.length > 0 &&
-            selectedUserIds.length > 0 &&
-            selectedUserIds.length < users.data.length,
-        ) || false;
+        userList.some((user) => selectedUserIds.includes(user.user_id)) &&
+        !isAllSelected;
 
     const handleDelete = () => {
-        if (!deleteUserId) return;
+        if (deleteUserId === null) return;
+
         setIsDeleting(true);
 
         router.delete(`/admin/users/${deleteUserId}`, {
@@ -117,6 +110,7 @@ export default function UserManagementIndex({
 
     const handleBulkDelete = () => {
         if (selectedUserIds.length === 0) return;
+
         setIsDeleting(true);
 
         router.delete('/admin/users/bulk-delete', {
@@ -131,12 +125,20 @@ export default function UserManagementIndex({
         });
     };
 
+    const emptyState = (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+            <Users className="h-9 w-9 opacity-30" />
+
+            <p className="text-sm">No users found for this filter.</p>
+        </div>
+    );
+
     return (
         <AppLayout>
             <Head title="User Management" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 overflow-hidden p-4 md:p-6 lg:p-8">
-                {/* Header & Filter */}
+                {/* Header dan filter */}
                 <div className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
@@ -150,7 +152,7 @@ export default function UserManagementIndex({
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                         {selectedUserIds.length > 0 && (
                             <Button
                                 variant="destructive"
@@ -164,7 +166,7 @@ export default function UserManagementIndex({
                         )}
 
                         <div className="flex w-full items-center gap-2 rounded-lg border bg-muted/40 p-1.5 sm:w-auto">
-                            <Filter className="ml-2 h-4 w-4 text-muted-foreground" />
+                            <Filter className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
 
                             <Select
                                 value={currentRole}
@@ -178,13 +180,17 @@ export default function UserManagementIndex({
                                     <SelectItem value="all">
                                         All Roles
                                     </SelectItem>
+
                                     <SelectItem value="official_team">
                                         Official Team
                                     </SelectItem>
+
                                     <SelectItem value="committee">
                                         Committee
                                     </SelectItem>
+
                                     <SelectItem value="judge">Judge</SelectItem>
+
                                     <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -192,29 +198,22 @@ export default function UserManagementIndex({
                     </div>
                 </div>
 
-                {/* Users Table / List */}
-                <div className="overflow-hidden rounded-md border bg-card shadow-sm">
-                    <Table>
-                        {/* Header Tabel hanya muncul di layar desktop (md+) */}
-                        <div className="hidden md:table-header-group">
-                            <UserTableHeaders
-                                role={tableLayoutRole}
-                                selectAllChecked={isAllSelected}
-                                isIndeterminate={isIndeterminate}
-                                onSelectAll={handleSelectAll}
-                            />
-                        </div>
-
-                        <TableBody
-                            className={`block transition-opacity duration-200 md:table-row-group ${
-                                isLoading
-                                    ? 'pointer-events-none opacity-40'
-                                    : 'opacity-100'
-                            }`}
-                        >
-                            {users?.data && users.data.length > 0 ? (
-                                users.data.map((user) => (
-                                    <UserTableRow
+                {/* Daftar pengguna */}
+                <div
+                    className={`min-w-0 transition-opacity duration-200 ${
+                        isLoading
+                            ? 'pointer-events-none opacity-40'
+                            : 'opacity-100'
+                    }`}
+                >
+                    {userList.length > 0 ? (
+                        <>
+                            {/* ====================================== */}
+                            {/* MOBILE: CARD, DI LUAR ELEMEN TABLE     */}
+                            {/* ====================================== */}
+                            <div className="overflow-hidden rounded-md border bg-card md:hidden">
+                                {userList.map((user) => (
+                                    <UserMobileCard
                                         key={user.user_id}
                                         user={user}
                                         role={tableLayoutRole}
@@ -224,24 +223,45 @@ export default function UserManagementIndex({
                                         )}
                                         onSelect={handleSelectUser}
                                     />
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                        className="h-32 text-center"
-                                    >
-                                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                                            <Users className="mb-2 h-8 w-8 text-muted-foreground/30" />
-                                            <p className="text-sm">
-                                                No users found for this filter.
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                ))}
+                            </div>
+
+                            {/* ====================================== */}
+                            {/* DESKTOP: TABLE                        */}
+                            {/* ====================================== */}
+                            <div className="hidden min-w-0 overflow-hidden rounded-md border bg-card shadow-sm md:block">
+                                <div className="w-full overflow-x-auto">
+                                    <Table>
+                                        <UserTableHeaders
+                                            role={tableLayoutRole}
+                                            selectAllChecked={isAllSelected}
+                                            isIndeterminate={isIndeterminate}
+                                            onSelectAll={handleSelectAll}
+                                        />
+
+                                        <TableBody>
+                                            {userList.map((user) => (
+                                                <UserTableRow
+                                                    key={user.user_id}
+                                                    user={user}
+                                                    role={tableLayoutRole}
+                                                    onDelete={setDeleteUserId}
+                                                    isSelected={selectedUserIds.includes(
+                                                        user.user_id,
+                                                    )}
+                                                    onSelect={handleSelectUser}
+                                                />
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="overflow-hidden rounded-md border bg-card">
+                            {emptyState}
+                        </div>
+                    )}
                 </div>
 
                 {/* Pagination */}
@@ -251,7 +271,7 @@ export default function UserManagementIndex({
                 />
             </div>
 
-            {/* Dialog konfirmasi hapus */}
+            {/* Dialog konfirmasi hapus pengguna */}
             <ConfirmationDialog
                 open={deleteUserId !== null}
                 onOpenChange={(open) => {
@@ -267,6 +287,7 @@ export default function UserManagementIndex({
                 variant="destructive"
             />
 
+            {/* Dialog konfirmasi hapus massal */}
             <ConfirmationDialog
                 open={isBulkDeleteOpen}
                 onOpenChange={setIsBulkDeleteOpen}

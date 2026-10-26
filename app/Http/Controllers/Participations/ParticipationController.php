@@ -33,9 +33,9 @@ class ParticipationController extends Controller
             ->get();
 
         return  inertia('events/participations/participation_lists/committee/Index', [
-                                'event' => $event,
-                                'participations' => $participations,
-                            ]);
+            'event' => $event,
+            'participations' => $participations,
+        ]);
     }
 
     /**

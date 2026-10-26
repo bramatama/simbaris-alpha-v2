@@ -15,12 +15,13 @@ class EventChampionFormula extends Model
         'component_type',
         'scoring_category_id',
         'weight_multiplier',
+        'calculation_method'
     ];
 
     protected function casts(): array
     {
         return [
-            'weight_multiplier' => 'decimal:2',
+            'weight_multiplier' => 'decimal:4',
         ];
     }
 

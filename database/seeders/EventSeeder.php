@@ -193,28 +193,5 @@ class EventSeeder extends Seeder
                 'updated_at' => $now,
             ]);
         }
-
-        // =========================================================
-        // 6. SETUP HADIAH EVENT (OPSIONAL)
-        // =========================================================
-
-        /*
-        $championUtama1 = DB::table('champions')
-            ->where('champion_name', 'Juara Utama 1')
-            ->first();
-
-        if ($championUtama1) {
-            DB::table('event_champions')->insert([
-                'event_level_id' => $eventLevelSmaId,
-                'champion_id' => $championUtama1->champion_id,
-                'prize_money' => 2000000,
-                'certificate' => true,
-                'prize_descriptions' =>
-                    'Trophy Tetap + Uang pembinaan + Piagam',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
-        */
     }
 }

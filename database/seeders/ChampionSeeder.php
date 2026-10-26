@@ -10,6 +10,12 @@ class ChampionSeeder extends Seeder
     public function run(): void
     {
         $champions = [
+            'Juara Umum' => [
+                'Juara Umum',
+                'Juara Umum 1',
+                'Juara Umum 2',
+                'Juara Umum 3'
+            ],
             'Peringkat' => [
                 'Juara Utama 1',
                 'Juara Utama 2',

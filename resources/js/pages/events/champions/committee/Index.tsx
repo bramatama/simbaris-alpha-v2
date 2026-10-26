@@ -166,10 +166,7 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                                 ) : (
                                     <Accordion
                                         type="multiple"
-                                        defaultValue={activeGroup.categories.map(
-                                            (c: any) =>
-                                                `cat-${c.champion_category_id}`,
-                                        )}
+                                        defaultValue={[]}
                                         className="w-full space-y-4"
                                     >
                                         {activeGroup.categories.map(

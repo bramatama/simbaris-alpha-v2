@@ -134,7 +134,7 @@ class EventChampionController extends Controller
             }
         });
 
-        return redirect()->route('committee.events.champions.index', [
+        return redirect()->route('committee.champions.index', [
             'public_id' => $public_id,
             'level_id' => $validated['event_level_ids'][0] 
         ])->with('success', 'Daftar penghargaan berhasil disusun!');
@@ -192,7 +192,7 @@ class EventChampionController extends Controller
             $this->syncChampions($eventLevel->event_level_id, $champion_category_id, $validated['champions'], true);
         });
 
-        return redirect()->route('committee.events.champions.index', [
+        return redirect()->route('committee.champions.index', [
             'public_id' => $public_id,
             'level_id' => $eventLevel->event_level_id
         ])->with('success', 'Daftar penghargaan berhasil diperbarui!');

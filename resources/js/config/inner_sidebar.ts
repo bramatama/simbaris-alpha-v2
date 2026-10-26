@@ -11,6 +11,8 @@ import {
     TriangleAlert,
     Trophy,
     CalendarCheck2,
+    Medal,
+    ListOrdered,
 } from 'lucide-react';
 
 export const getMasterDataInnerNav = (): NavItem[] => {
@@ -109,9 +111,19 @@ export const getEventInnerNav = (
                 icon: TriangleAlert,
             },
             {
+                title: 'Ketentuan Juara',
+                href: `/${role}/events/${eventPublicId}/formulas`,
+                icon: Medal,
+            },
+            {
                 title: 'Peserta Lomba',
                 href: `/${role}/events/${eventPublicId}/participations`,
                 icon: UserGroup,
+            },
+            {
+                title: 'Urutan Tampil',
+                href: `/${role}/events/${eventPublicId}/participation-orders`,
+                icon: ListOrdered,
             },
         );
     }

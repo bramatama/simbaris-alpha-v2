@@ -43,6 +43,7 @@ class Participation extends Model
         'status_message',
         'payment_proof_path',
         'billed_amount',
+        'appearance_order',
         'performance_duration_seconds'
     ];
 

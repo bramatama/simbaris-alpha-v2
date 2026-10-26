@@ -2,6 +2,7 @@
 use App\Http\Controllers\Champions\EventChampionController;
 use App\Http\Controllers\Champions\MasterChampionCategoryController;
 use App\Http\Controllers\Champions\MasterChampionController;
+use App\Http\Controllers\Champions\EventChampionFormulaController;
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     
@@ -27,13 +28,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     
-    Route::get('/events/{public_id}/champions', [EventChampionController::class, 'index'])
-        ->name('events.champions.index');
-
-    Route::get('/events/{public_id}/champions/create', [EventChampionController::class, 'create'])
-        ->name('events.champions.create');
-    Route::post('/events/{public_id}/champions', [EventChampionController::class, 'store'])
-        ->name('events.champions.store');
+    Route::resource('/events/{public_id}/champions',EventChampionController::class)->only(['index', 'create', 'store']);
 
     Route::get('/events/{public_id}/levels/{event_level_id}/champions/categories/{champion_category_id}/edit', [EventChampionController::class, 'edit'])
         ->name('events.champions.edit');
@@ -42,4 +37,6 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
 
     Route::delete('/events/{public_id}/levels/{event_level_id}/champions/categories/{champion_category_id}', [EventChampionController::class, 'destroy'])
         ->name('events.champions.destroy');
+
+    Route::resource('/events/{public_id}/formulas', EventChampionFormulaController::class)->only('index','store');
 });

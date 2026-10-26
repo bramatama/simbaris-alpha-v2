@@ -81,7 +81,7 @@ return new class extends Migration
             $table->foreignId('event_level_id')->constrained('event_levels', 'event_level_id')->cascadeOnDelete();
             $table->foreignId('event_champion_category_id')->constrained('event_champion_categories','event_champion_category_id')->cascadeOnDelete();
             $table->foreignId('scoring_category_id')->constrained('scoring_categories', 'scoring_category_id')->restrictOnDelete();
-            $table->decimal('weight_multiplier', 5, 2)->default(1.00);
+            $table->decimal('weight_multiplier', 8,4)->default(1.00);
             $table->timestamps();
             $table->unique(
                 [

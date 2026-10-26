@@ -28,6 +28,9 @@ return new class extends Migration
 
         Schema::table('participations', function(Blueprint $table){
             $table->foreignId('event_level_id')->index()->constrained('event_levels','event_level_id')->onDelete('restrict');
+            $table->unique(
+                ['event_level_id', 'appearance_order'],'participations_level_order_unique'
+            );
         });
     }
 

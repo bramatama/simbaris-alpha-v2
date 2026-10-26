@@ -3,6 +3,8 @@
 use App\Http\Controllers\Files\ViewDocumentController;
 use App\Http\Controllers\Participations\ParticipationController;
 use App\Http\Controllers\Participations\TeamMemberController;
+use App\Http\Controllers\Participations\ParticipationOrderController;
+
 
 Route::middleware(['auth', 'verified'])->group(function (){
     Route::get('/participations/{participation}/payment-proof',[ViewDocumentController::class,'showPaymentProof'])->name('participation-payment-proof.file');
@@ -11,6 +13,11 @@ Route::middleware(['auth', 'verified'])->group(function (){
 });
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
+    Route::get('/events/{public_id}/participation-orders', [ParticipationOrderController::class, 'index'])->name('events.participations.orders.index');
+    Route::get('/events/{public_id}/participation-orders/levels/{event_level_id}/edit', [ParticipationOrderController::class, 'edit'])->name('events.participations.orders.edit');
+    Route::put('/events/{public_id}/participation-orders/levels/{event_level_id}', [ParticipationOrderController::class, 'update'])->name('events.participations.orders.update');
+    Route::delete('/events/{public_id}/participation-orders/levels/{event_level_id}', [ParticipationOrderController::class, 'destroy'])->name('events.participations.orders.destroy');
+
     Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');
     Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participation.edit');
     Route::patch('/participations/{participation:public_id}/status', [ParticipationController::class, 'updateStatus'])->name('participations.status.update');
