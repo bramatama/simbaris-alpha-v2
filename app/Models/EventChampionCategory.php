@@ -45,4 +45,9 @@ class EventChampionCategory extends Model
             'event_penalty_id'
         )->withTimestamps();
     }
+
+    public function eventChampionFormulas(): HasMany
+    {
+        return $this->hasMany(EventChampionFormula::class, 'event_champion_category_id', 'event_champion_category_id');
+    }
 }

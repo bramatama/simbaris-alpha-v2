@@ -130,7 +130,73 @@ export default function ChampionsEdit({
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12"
                 >
-                    <div className="order-1 space-y-4 lg:order-2 lg:col-span-8">
+                    <div className="block md:sticky top-4 order-1 space-y-2 lg:col-span-4">
+                        <h3 className="text-lg font-bold">Konfigurasi Umum</h3>
+
+                        <Card className="border-border/60 shadow-sm">
+                            <CardContent className="space-y-5 p-5">
+                                <div>
+                                    <p className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                        Kategori Juara
+                                    </p>
+                                    <p className="font-bold text-foreground">
+                                        {
+                                            championCategory.champion_category_name
+                                        }
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                        Untuk Jenjang
+                                    </p>
+                                    <Badge
+                                        variant="outline"
+                                        className="border-primary/50 text-primary"
+                                    >
+                                        {eventLevel.level.level_name}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="flex items-start gap-3 rounded-md border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <p>
+                                <strong>Peringatan Sinkronisasi:</strong>{' '}
+                                Menghapus baris piala dari form ini dan
+                                menyimpannya akan{' '}
+                                <strong>
+                                    menghapus piala tersebut dari database
+                                </strong>{' '}
+                                pada jenjang ini secara permanen
+                            </p>
+                        </div>
+
+                        {/* DESKTOP ACTION BUTTONS */}
+                        <div className="hidden flex-col gap-3 lg:flex">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="w-full gap-2"
+                            >
+                                <Save className="h-4 w-4" /> Simpan Perubahan
+                            </Button>
+                            <Link
+                                href={`/committee/events/${event.public_id}/champions?level_id=${eventLevel.event_level_id}`}
+                                className="w-full"
+                            >
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    Batal
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="order-2 space-y-4 lg:col-span-8">
                         <div className="mb-2 flex items-center justify-between">
                             <h3 className="text-lg font-bold">Rincian Piala</h3>
 
@@ -226,45 +292,46 @@ export default function ChampionsEdit({
                                                 />
                                                 <ComboboxContent>
                                                     <ComboboxList>
-                                                        {getFilteredChampions(index).length ===
-                                                            0 && (
+                                                        {getFilteredChampions(
+                                                            index,
+                                                        ).length === 0 && (
                                                             <ComboboxEmpty>
                                                                 Belum ada master
                                                                 piala.
                                                             </ComboboxEmpty>
                                                         )}
                                                         <ComboboxGroup>
-                                                            {getFilteredChampions(index).map(
-                                                                (c: any) => {
-                                                                    const champIdStr =
-                                                                        c.champion_id.toString();
-                                                                    const disabled =
-                                                                        isChampionSelected(
-                                                                            champIdStr,
-                                                                            index,
-                                                                        );
-                                                                    return (
-                                                                        <ComboboxItem
-                                                                            key={
-                                                                                c.champion_id
-                                                                            }
-                                                                            value={
-                                                                                c.champion_name
-                                                                            }
-                                                                            disabled={
-                                                                                disabled
-                                                                            }
-                                                                            className="rounded-none px-4 py-2 text-xs"
-                                                                        >
-                                                                            {
-                                                                                c.champion_name
-                                                                            }{' '}
-                                                                            {disabled &&
-                                                                                '(Sudah Dipilih)'}
-                                                                        </ComboboxItem>
+                                                            {getFilteredChampions(
+                                                                index,
+                                                            ).map((c: any) => {
+                                                                const champIdStr =
+                                                                    c.champion_id.toString();
+                                                                const disabled =
+                                                                    isChampionSelected(
+                                                                        champIdStr,
+                                                                        index,
                                                                     );
-                                                                },
-                                                            )}
+                                                                return (
+                                                                    <ComboboxItem
+                                                                        key={
+                                                                            c.champion_id
+                                                                        }
+                                                                        value={
+                                                                            c.champion_name
+                                                                        }
+                                                                        disabled={
+                                                                            disabled
+                                                                        }
+                                                                        className="rounded-none px-4 py-2 text-xs"
+                                                                    >
+                                                                        {
+                                                                            c.champion_name
+                                                                        }{' '}
+                                                                        {disabled &&
+                                                                            '(Sudah Dipilih)'}
+                                                                    </ComboboxItem>
+                                                                );
+                                                            })}
                                                         </ComboboxGroup>
                                                     </ComboboxList>
                                                 </ComboboxContent>
@@ -392,72 +459,6 @@ export default function ChampionsEdit({
 
                         {/* MOBILE ACTION BUTTONS */}
                         <div className="mt-6 flex flex-col gap-3 border-t border-border/50 pt-6 lg:hidden">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full gap-2"
-                            >
-                                <Save className="h-4 w-4" /> Simpan Perubahan
-                            </Button>
-                            <Link
-                                href={`/committee/events/${event.public_id}/champions?level_id=${eventLevel.event_level_id}`}
-                                className="w-full"
-                            >
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                >
-                                    Batal
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="sticky top-4 order-2 space-y-2 lg:order-1 lg:col-span-4">
-                        <h3 className="text-lg font-bold">Konfigurasi Umum</h3>
-
-                        <Card className="border-border/60 shadow-sm">
-                            <CardContent className="space-y-5 p-5">
-                                <div>
-                                    <p className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                        Kategori Juara
-                                    </p>
-                                    <p className="font-bold text-foreground">
-                                        {
-                                            championCategory.champion_category_name
-                                        }
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                        Untuk Jenjang
-                                    </p>
-                                    <Badge
-                                        variant="outline"
-                                        className="border-primary/50 text-primary"
-                                    >
-                                        {eventLevel.level.level_name}
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <div className="flex items-start gap-3 rounded-md border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700">
-                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                            <p>
-                                <strong>Peringatan Sinkronisasi:</strong>{' '}
-                                Menghapus baris piala dari form ini dan
-                                menyimpannya akan{' '}
-                                <strong>
-                                    menghapus piala tersebut dari database
-                                </strong>{' '}
-                                pada jenjang ini secara permanen
-                            </p>
-                        </div>
-
-                        {/* DESKTOP ACTION BUTTONS */}
-                        <div className="hidden flex-col gap-3 lg:flex">
                             <Button
                                 type="submit"
                                 disabled={processing}

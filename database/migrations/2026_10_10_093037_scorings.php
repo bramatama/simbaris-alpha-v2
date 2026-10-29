@@ -41,7 +41,7 @@ return new class extends Migration
             $table->foreignId('event_id')->index()->constrained('events', 'event_id')->cascadeOnDelete();
             $table->foreignId('master_penalty_id')->constrained('master_penalties', 'master_penalty_id')->restrictOnDelete();
             $table->text('description')->nullable();
-            $table->decimal('penalty_value', 8, 2);
+            $table->decimal('penalty_value', 8, 2)->nullable();
             $table->enum('calculation_type', ['fixed','per_occurrence','per_second',])->default('fixed');
             $table->enum('penalty_action', ['deduction','disqualification',])->default('deduction');
             $table->boolean('is_active')->default(true);
@@ -191,6 +191,7 @@ return new class extends Migration
             $table->foreignId('participation_id')->index()->constrained('participations', 'participation_id')->cascadeOnDelete();
             $table->foreignId('scoring_category_id')->index()->constrained('scoring_categories', 'scoring_category_id')->restrictOnDelete();
             $table->foreignId('judge_id')->nullable()->index()->constrained('judges', 'judge_id')->nullOnDelete();
+            $table->enum('evaluation_status', ['locked','draft','ready','needs_review'])->default('ready');
             $table->decimal('total_score', 8, 2);
             $table->timestamps();
         });

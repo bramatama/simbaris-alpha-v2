@@ -154,7 +154,178 @@ export default function ChampionsCreate({
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12"
                 >
-                    <div className="order-1 space-y-4 lg:order-2 lg:col-span-8">
+                    <div className="top-6 flex flex-col space-y-4 lg:sticky order-1 lg:col-span-4">
+                        <h3 className="text-lg font-bold">Konfigurasi Umum</h3>
+                        <Card className="border-border/60 shadow-sm">
+                            <CardContent className="space-y-5 p-5">
+                                {/* Kategori Master Combobox */}
+                                <div className="space-y-2">
+                                    <Label requirement="required">
+                                        Kategori Juara
+                                    </Label>
+                                    <Combobox
+                                        value={data.champion_category_name_ui}
+                                        onValueChange={(val: any) => {
+                                            const selectedCat =
+                                                masterChampionCategories.find(
+                                                    (mc: any) =>
+                                                        mc.champion_category_name ===
+                                                        val,
+                                                );
+                                            setData((prevData) => ({
+                                                ...prevData,
+                                                champion_category_name_ui:
+                                                    val ?? '',
+                                                champion_category_id:
+                                                    selectedCat
+                                                        ? selectedCat.champion_category_id.toString()
+                                                        : '',
+                                                event_level_ids: [],
+                                                champions: [
+                                                    {
+                                                        champion_id: '',
+                                                        champion_name_ui: '',
+                                                        rank_position: 1,
+                                                        prize_money: '',
+                                                        certificate: false,
+                                                        prize_descriptions: '',
+                                                    },
+                                                ],
+                                            }));
+                                        }}
+                                        inputValue={categorySearch}
+                                        onInputValueChange={(val: string) =>
+                                            setCategorySearch(val)
+                                        }
+                                    >
+                                        <ComboboxInput
+                                            placeholder="Cari kategori piala..."
+                                            showClear={
+                                                !!data.champion_category_name_ui
+                                            }
+                                        />
+                                        <ComboboxContent>
+                                            <ComboboxList>
+                                                {filteredCategories.length ===
+                                                    0 && (
+                                                    <ComboboxEmpty>
+                                                        Kategori tidak
+                                                        ditemukan.
+                                                    </ComboboxEmpty>
+                                                )}
+                                                <ComboboxGroup>
+                                                    {filteredCategories.map(
+                                                        (mc: any) => (
+                                                            <ComboboxItem
+                                                                key={
+                                                                    mc.champion_category_id
+                                                                }
+                                                                value={
+                                                                    mc.champion_category_name
+                                                                }
+                                                                className="rounded-none px-4 py-2 text-xs"
+                                                            >
+                                                                {
+                                                                    mc.champion_category_name
+                                                                }
+                                                            </ComboboxItem>
+                                                        ),
+                                                    )}
+                                                </ComboboxGroup>
+                                            </ComboboxList>
+                                        </ComboboxContent>
+                                    </Combobox>
+                                    <InputError
+                                        message={errors.champion_category_id}
+                                    />
+                                </div>
+
+                                {/* Checkbox Jenjang */}
+                                <div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-4">
+                                    <Label requirement="required">
+                                        Terapkan Pada Jenjang
+                                    </Label>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {!data.champion_category_id && (
+                                            <p className="w-full py-2 text-center text-xs text-muted-foreground italic">
+                                                Pilih kategori induk terlebih
+                                                dahulu.
+                                            </p>
+                                        )}
+                                        {eventLevels.map((level: any) => {
+                                            const disabled =
+                                                isLevelDisabled(level);
+                                            return (
+                                                <div
+                                                    key={level.event_level_id}
+                                                    className="flex items-center justify-between"
+                                                >
+                                                    <div className="flex items-center space-x-3">
+                                                        <Checkbox
+                                                            id={`level-${level.event_level_id}`}
+                                                            checked={data.event_level_ids.includes(
+                                                                level.event_level_id,
+                                                            )}
+                                                            disabled={disabled}
+                                                            onCheckedChange={() =>
+                                                                handleLevelToggle(
+                                                                    level.event_level_id,
+                                                                )
+                                                            }
+                                                        />
+                                                        <label
+                                                            htmlFor={`level-${level.event_level_id}`}
+                                                            className={`text-sm font-medium ${disabled ? 'cursor-not-allowed text-muted-foreground line-through' : 'cursor-pointer'}`}
+                                                        >
+                                                            {
+                                                                level.level
+                                                                    ?.level_name
+                                                            }
+                                                        </label>
+                                                    </div>
+                                                    {disabled &&
+                                                        data.champion_category_id && (
+                                                            <span className="text-[10px] font-bold text-destructive italic">
+                                                                (Sudah Ada)
+                                                            </span>
+                                                        )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <InputError
+                                        message={errors.event_level_ids}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* DESKTOP ACTION BUTTONS */}
+                        <div className="hidden flex-col gap-3 lg:flex">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="w-full gap-2"
+                            >
+                                <Save className="h-4 w-4" /> Simpan Semua
+                                Penghargaan
+                            </Button>
+                            <Link
+                                href={`/committee/events/${event.public_id}/champions`}
+                                className="w-full"
+                            >
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    Batal
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className=" space-y-4 order-2 lg:col-span-8">
                         <div className="mb-2 flex items-center justify-between">
                             <h3 className="text-lg font-bold">Rincian Piala</h3>
                             {data.champions.length === 0 && (
@@ -457,177 +628,6 @@ export default function ChampionsCreate({
                         )}
 
                         <div className="mt-6 flex flex-col gap-3 border-t border-border/50 pt-6 lg:hidden">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full gap-2"
-                            >
-                                <Save className="h-4 w-4" /> Simpan Semua
-                                Penghargaan
-                            </Button>
-                            <Link
-                                href={`/committee/events/${event.public_id}/champions`}
-                                className="w-full"
-                            >
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                >
-                                    Batal
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="top-6 order-2 flex flex-col space-y-4 lg:sticky lg:order-1 lg:col-span-4">
-                        <h3 className="text-lg font-bold">Konfigurasi Umum</h3>
-                        <Card className="border-border/60 shadow-sm">
-                            <CardContent className="space-y-5 p-5">
-                                {/* Kategori Master Combobox */}
-                                <div className="space-y-2">
-                                    <Label requirement="required">
-                                        Kategori Juara
-                                    </Label>
-                                    <Combobox
-                                        value={data.champion_category_name_ui}
-                                        onValueChange={(val: any) => {
-                                            const selectedCat =
-                                                masterChampionCategories.find(
-                                                    (mc: any) =>
-                                                        mc.champion_category_name ===
-                                                        val,
-                                                );
-                                            setData((prevData) => ({
-                                                ...prevData,
-                                                champion_category_name_ui:
-                                                    val ?? '',
-                                                champion_category_id:
-                                                    selectedCat
-                                                        ? selectedCat.champion_category_id.toString()
-                                                        : '',
-                                                event_level_ids: [],
-                                                champions: [
-                                                    {
-                                                        champion_id: '',
-                                                        champion_name_ui: '',
-                                                        rank_position: 1,
-                                                        prize_money: '',
-                                                        certificate: false,
-                                                        prize_descriptions: '',
-                                                    },
-                                                ],
-                                            }));
-                                        }}
-                                        inputValue={categorySearch}
-                                        onInputValueChange={(val: string) =>
-                                            setCategorySearch(val)
-                                        }
-                                    >
-                                        <ComboboxInput
-                                            placeholder="Cari kategori piala..."
-                                            showClear={
-                                                !!data.champion_category_name_ui
-                                            }
-                                        />
-                                        <ComboboxContent>
-                                            <ComboboxList>
-                                                {filteredCategories.length ===
-                                                    0 && (
-                                                    <ComboboxEmpty>
-                                                        Kategori tidak
-                                                        ditemukan.
-                                                    </ComboboxEmpty>
-                                                )}
-                                                <ComboboxGroup>
-                                                    {filteredCategories.map(
-                                                        (mc: any) => (
-                                                            <ComboboxItem
-                                                                key={
-                                                                    mc.champion_category_id
-                                                                }
-                                                                value={
-                                                                    mc.champion_category_name
-                                                                }
-                                                                className="rounded-none px-4 py-2 text-xs"
-                                                            >
-                                                                {
-                                                                    mc.champion_category_name
-                                                                }
-                                                            </ComboboxItem>
-                                                        ),
-                                                    )}
-                                                </ComboboxGroup>
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
-                                    <InputError
-                                        message={errors.champion_category_id}
-                                    />
-                                </div>
-
-                                {/* Checkbox Jenjang */}
-                                <div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-4">
-                                    <Label requirement="required">
-                                        Terapkan Pada Jenjang
-                                    </Label>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {!data.champion_category_id && (
-                                            <p className="w-full py-2 text-center text-xs text-muted-foreground italic">
-                                                Pilih kategori induk terlebih
-                                                dahulu.
-                                            </p>
-                                        )}
-                                        {eventLevels.map((level: any) => {
-                                            const disabled =
-                                                isLevelDisabled(level);
-                                            return (
-                                                <div
-                                                    key={level.event_level_id}
-                                                    className="flex items-center justify-between"
-                                                >
-                                                    <div className="flex items-center space-x-3">
-                                                        <Checkbox
-                                                            id={`level-${level.event_level_id}`}
-                                                            checked={data.event_level_ids.includes(
-                                                                level.event_level_id,
-                                                            )}
-                                                            disabled={disabled}
-                                                            onCheckedChange={() =>
-                                                                handleLevelToggle(
-                                                                    level.event_level_id,
-                                                                )
-                                                            }
-                                                        />
-                                                        <label
-                                                            htmlFor={`level-${level.event_level_id}`}
-                                                            className={`text-sm font-medium ${disabled ? 'cursor-not-allowed text-muted-foreground line-through' : 'cursor-pointer'}`}
-                                                        >
-                                                            {
-                                                                level.level
-                                                                    ?.level_name
-                                                            }
-                                                        </label>
-                                                    </div>
-                                                    {disabled &&
-                                                        data.champion_category_id && (
-                                                            <span className="text-[10px] font-bold text-destructive italic">
-                                                                (Sudah Ada)
-                                                            </span>
-                                                        )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <InputError
-                                        message={errors.event_level_ids}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* DESKTOP ACTION BUTTONS */}
-                        <div className="hidden flex-col gap-3 lg:flex">
                             <Button
                                 type="submit"
                                 disabled={processing}

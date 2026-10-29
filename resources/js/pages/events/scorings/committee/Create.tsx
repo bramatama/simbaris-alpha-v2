@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +61,11 @@ export default function DynamicScoringBuilderCreate({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
 
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const { data, setData, post, processing, errors, clearErrors, transform } =
         useForm({
             master_category_id: '',
@@ -73,6 +78,15 @@ export default function DynamicScoringBuilderCreate({
     const [newRubricName, setNewRubricName] = useState('');
     const [newRubricCount, setNewRubricCount] = useState<number | ''>('');
     const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+
+    const clearLocalError = (key: string) => {
+        setLocalErrors((prev) => {
+            if (!prev[key]) return prev;
+            const newErrors = { ...prev };
+            delete newErrors[key];
+            return newErrors;
+        });
+    };
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -165,6 +179,9 @@ export default function DynamicScoringBuilderCreate({
         }
     };
 
+    const generateNewId = () =>
+        `new_${Math.random().toString(36).substring(2, 9)}`;
+
     const addGlobalRubric = () => {
         if (!newRubricName.trim() || !newRubricCount) return;
         setGlobalRubrics([
@@ -177,27 +194,41 @@ export default function DynamicScoringBuilderCreate({
         ]);
         setNewRubricName('');
         setNewRubricCount('');
+        clearLocalError('global');
     };
     const removeGlobalRubric = (id: string) =>
         setGlobalRubrics((prev) => prev.filter((gr) => gr.id !== id));
 
-    const addCriteriaRow = () =>
-        setUiCriteria([
-            ...uiCriteria,
+    const addCriteriaRow = () => {
+        const newCritId = generateNewId();
+        setUiCriteria((prev) => [
+            ...prev,
             {
-                id: Math.random().toString(36).substring(7),
+                id: newCritId,
                 name: '',
+                dbRubricIds: {},
                 rubricData: {},
             },
         ]);
+        clearLocalError('global');
+
+        setTimeout(() => {
+            const el = document.getElementById(`crit-row-${newCritId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+    };
     const removeCriteriaRow = (id: string) =>
         setUiCriteria((prev) => prev.filter((c) => c.id !== id));
-    const updateCriteriaName = (id: string, name: string) =>
+    const updateCriteriaName = (id: string, name: string) => {
         setUiCriteria((prev) =>
             prev.map((c) => (c.id === id ? { ...c, name } : c)),
         );
+        clearLocalError(`crit_${id}`);
+    };
 
     const duplicateCriteria = (cIndex: number) => {
+        const newCritId = generateNewId();
+
         setUiCriteria((prev) => {
             const critToCopy = prev[cIndex];
             const newRubricData: Record<string, ScoreItem[]> = {};
@@ -208,17 +239,22 @@ export default function DynamicScoringBuilderCreate({
                 }));
             });
             const newCrit: UICriteria = {
-                id: Math.random().toString(36).substring(7),
-                name: `${critToCopy.name} (Copy)`,
+                id: newCritId,
+                name: critToCopy.name,
+                dbRubricIds: {},
                 rubricData: newRubricData,
             };
             const newArray = [...prev];
             newArray.splice(cIndex + 1, 0, newCrit);
             return newArray;
         });
+        setTimeout(() => {
+            const el = document.getElementById(`crit-row-${newCritId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
     };
 
-    const addScore = (critId: string, rubricId: string) =>
+    const addScore = (critId: string, rubricId: string) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -229,9 +265,7 @@ export default function DynamicScoringBuilderCreate({
                               [rubricId]: [
                                   ...(c.rubricData[rubricId] || []),
                                   {
-                                      id: Math.random()
-                                          .toString(36)
-                                          .substring(7),
+                                      id: generateNewId(),
                                       value: '',
                                   },
                               ],
@@ -240,7 +274,10 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
-    const removeScore = (critId: string, rubricId: string, scoreId: string) =>
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
+
+    const removeScore = (critId: string, rubricId: string, scoreId: string) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -256,12 +293,15 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
+
     const updateScoreValue = (
         critId: string,
         rubricId: string,
         scoreId: string,
         value: string,
-    ) =>
+    ) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -278,6 +318,19 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
+
+    const scrollToError = () => {
+        setTimeout(() => {
+            const firstError = document.querySelector('.is-error-msg');
+            if (firstError)
+                firstError.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+        }, 100);
+    };
 
     const handleCustomSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -335,6 +388,18 @@ export default function DynamicScoringBuilderCreate({
             preserveScroll: true,
         });
     };
+
+    if (!isMounted) {
+        return (
+            <InnerAppLayout
+                sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            >
+                <div className="flex min-h-screen items-center justify-center">
+                    <Spinner className="h-8 w-8 text-primary" />
+                </div>
+            </InnerAppLayout>
+        );
+    }
 
     return (
         <InnerAppLayout
@@ -580,17 +645,19 @@ export default function DynamicScoringBuilderCreate({
                         <div className="space-y-5 pt-4">
                             <div className="flex flex-col justify-between gap-4 border-b border-border/50 pb-3 sm:flex-row sm:items-center">
                                 <CardTitle className="flex items-center gap-2 text-base font-bold tracking-wider text-muted-foreground uppercase">
-                                    Baris Komponen Materi Gerakan
+                                    Baris Komponen Materi
                                 </CardTitle>
-                                <Button
-                                    type="button"
-                                    onClick={addCriteriaRow}
-                                    variant="default"
-                                    className="gap-2 rounded-md px-5 shadow-sm"
-                                >
-                                    <Plus className="h-4 w-4" /> Tambah Baris
-                                    Baru
-                                </Button>
+                                {uiCriteria.length === 0 && (
+                                    <Button
+                                        type="button"
+                                        onClick={addCriteriaRow}
+                                        variant="default"
+                                        className="gap-2 rounded-md px-5 shadow-sm"
+                                    >
+                                        <Plus className="h-4 w-4" /> Tambah
+                                        Baris Baru
+                                    </Button>
+                                )}
                             </div>
                             <SortableContext
                                 items={uiCriteria.map((c) => c.id)}
@@ -625,6 +692,19 @@ export default function DynamicScoringBuilderCreate({
                                         </div>
                                     )}
                                 </div>
+                                {uiCriteria.length > 0 && (
+                                    <div className="pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={addCriteriaRow}
+                                            variant="outline"
+                                            className="w-full border-2 border-dashed py-6 text-muted-foreground shadow-sm hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                                        >
+                                            <Plus className="mr-2 h-5 w-5" />{' '}
+                                            Tambah Baris Kriteria Baru
+                                        </Button>
+                                    </div>
+                                )}
                             </SortableContext>
                         </div>
 

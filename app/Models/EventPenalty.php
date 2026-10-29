@@ -18,6 +18,7 @@ class EventPenalty extends Model
         'penalty_value',
         'calculation_type',
         'calculation_action',
+        'penalty_action',
         'is_active',
     ];
 

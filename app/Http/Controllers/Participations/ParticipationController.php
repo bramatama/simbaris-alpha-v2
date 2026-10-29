@@ -314,12 +314,17 @@ class ParticipationController extends Controller
 
     /**
      * Memperbarui status pendaftaran (Khusus Committee / Admin).
-     */
+     */    
     public function updateStatus(Request $request, $public_id)
     {
-        $participation = Participation::where('public_id', $public_id)->firstOrFail();;
+        $participation = Participation::with('event:event_id,public_id')
+            ->where('public_id', $public_id)
+            ->firstOrFail();
+
+        $event = $participation->event;
 
         $role = auth()->user()->role;
+
         if (!in_array($role, ['committee', 'admin'])) {
             abort(403, 'Hanya panitia yang dapat mengubah status pendaftaran.');
         }
@@ -333,8 +338,13 @@ class ParticipationController extends Controller
             $validated['status_message'] = null;
         }
 
-        if ($validated['status'] === 'rejected' && empty($validated['status_message'])) {
-            return back()->withErrors(['status_message' => 'Alasan penolakan (status message) wajib diisi.']);
+        if (
+            $validated['status'] === 'rejected' &&
+            empty($validated['status_message'])
+        ) {
+            return back()->withErrors([
+                'status_message' => 'Alasan penolakan wajib diisi.',
+            ]);
         }
 
         $participation->update([
@@ -342,8 +352,13 @@ class ParticipationController extends Controller
             'status_message' => $validated['status_message'] ?? null,
         ]);
 
-        return redirect()->back()->with('success', 'Status pendaftaran berhasil diperbarui.');
+        return redirect()
+            ->route('committee.participations.index', [
+                'event' => $event->public_id,
+            ])
+            ->with('success', 'Status pendaftaran berhasil diperbarui.');
     }
+
 
     /**
      * Menampilkan halaman khusus manajemen dokumen pendaftaran.

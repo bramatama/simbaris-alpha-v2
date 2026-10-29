@@ -15,7 +15,6 @@ class EventChampionFormula extends Model
         'component_type',
         'scoring_category_id',
         'weight_multiplier',
-        'calculation_method'
     ];
 
     protected function casts(): array

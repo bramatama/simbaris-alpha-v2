@@ -27,11 +27,7 @@ import {
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
 import type { Auth, NavItem } from '@/types';
-
-type PageProps = {
-    auth: Auth;
-    isMobileDevice: boolean;
-};
+import { PageProps } from '@inertiajs/core';
 
 const mainNavItems: NavItem[] = [
     {

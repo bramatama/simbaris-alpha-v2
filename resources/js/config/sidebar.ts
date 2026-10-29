@@ -46,14 +46,24 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
     }
 
     if (userRole == 'official_team') {
+        items.push(
+            {
+                title: 'Events',
+                href: '/events',
+                icon: CalendarCheckIcon,
+            },
+            {
+                title: 'My Participations',
+                href: '/official_team/my-participations',
+                icon: CalendarClockIcon,
+            },
+        );
+    }
+
+    if (userRole == 'judge') {
         items.push({
-            title: 'Events',
-            href: '/events',
-            icon: CalendarCheckIcon,
-        });
-        items.push({
-            title: 'My Participations',
-            href: '/official_team/my-participations',
+            title: 'Assigned Events',
+            href: '/judge/assigned-events',
             icon: CalendarClockIcon,
         });
     }

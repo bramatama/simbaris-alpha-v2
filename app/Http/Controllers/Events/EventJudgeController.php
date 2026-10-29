@@ -13,56 +13,35 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Events\Registered;
+
 class EventJudgeController extends Controller
 {
-public function index($public_id)
-{
-    $event = Event::where('public_id', $public_id)
-        ->with([
-            'eventJudges.judge.user',
-            'eventJudges.judgeExpertises.scoringCategory.masterCategory',
-            'eventJudges.judgeExpertises.scoringCategory.eventLevel.level',
-            'eventLevels.level',
-            'eventLevels.scoringCategories.masterCategory',
-        ])
-        ->firstOrFail();
+    public function index($public_id)
+    {
+        $event = Event::where('public_id', $public_id)
+            ->with([
+                'eventJudges.judge.user',
+                'eventJudges.judgeExpertises.scoringCategory.masterCategory',
+                'eventJudges.judgeExpertises.scoringCategory.eventLevel.level',
+                'eventLevels.level',
+                'eventLevels.scoringCategories.masterCategory',
+            ])
+            ->firstOrFail();
 
-    $assignedJudgeIds = $event->eventJudges->pluck('judge_id');
+        $assignedJudgeIds = $event->eventJudges->pluck('judge_id');
 
-    $existingJudges = Judge::with('user:user_id,name,email')
-        ->whereNotIn('judge_id', $assignedJudgeIds)
-        ->get();
+        $existingJudges = Judge::with('user:user_id,name,email')
+            ->whereNotIn('judge_id', $assignedJudgeIds)
+            ->get();
 
-    $expertises = $event->eventLevels
-        ->flatMap(function ($eventLevel) {
-            return $eventLevel->scoringCategories->map(
-                function ($category) use ($eventLevel) {
-                    return [
-                        'scoring_category_id' =>
-                            $category->scoring_category_id,
+        $expertises = $this->getMappedExpertises($event);
 
-                        'event_level_id' =>
-                            $eventLevel->event_level_id,
-
-                        'level_name' =>
-                            $eventLevel->level?->level_name
-                            ?? 'Jenjang lainnya',
-
-                        'category_name' =>
-                            $category->masterCategory?->category_name
-                            ?? 'Kategori tidak diketahui',
-                    ];
-                }
-            );
-        })
-        ->values();
-
-    return inertia('events/judges/Index', [
-        'event' => $event,
-        'existingJudges' => $existingJudges,
-        'expertises' => $expertises,
-    ]);
-}
+        return inertia('events/judges/Index', [
+            'event' => $event,
+            'existingJudges' => $existingJudges,
+            'expertises' => $expertises,
+        ]);
+    }
 
     public function store(Request $request, $public_id)
     {
@@ -196,7 +175,6 @@ public function index($public_id)
             ])
             ->firstOrFail();
 
-        // Ambil data EventJudge beserta User dan Expertises (Kategori) saat ini
         $eventJudge = EventJudge::where('event_id', $event->event_id)
             ->where('event_judge_id', $event_judge_id)
             ->with([
@@ -205,21 +183,7 @@ public function index($public_id)
             ])
             ->firstOrFail();
 
-        // Menyediakan daftar opsi expertise yang sama seperti di fungsi index
-        $expertises = $event->eventLevels
-            ->flatMap(function ($eventLevel) {
-                return $eventLevel->scoringCategories->map(
-                    function ($category) use ($eventLevel) {
-                        return [
-                            'scoring_category_id' => $category->scoring_category_id,
-                            'event_level_id' => $eventLevel->event_level_id,
-                            'level_name' => $eventLevel->level?->level_name ?? 'Jenjang lainnya',
-                            'category_name' => $category->masterCategory?->category_name ?? 'Kategori tidak diketahui',
-                        ];
-                    }
-                );
-            })
-            ->values();
+        $expertises = $this->getMappedExpertises($event);
 
         return inertia('events/judges/Edit', [
             'event' => $event,
@@ -237,9 +201,7 @@ public function index($public_id)
             ->with('judge.user')
             ->firstOrFail();
 
-        // Validasi: Hanya menerima name dan expertise_ids (tidak ada validasi email)
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
             'expertise_ids' => 'required|array|min:1',
             'expertise_ids.*' => [
                 'required',
@@ -249,7 +211,6 @@ public function index($public_id)
             ],
         ]);
 
-        // Keamanan: Pastikan expertise_ids yang dikirim memang milik event ini
         $validCategoryIds = DB::table('scoring_categories')
             ->join(
                 'event_levels',
@@ -276,17 +237,10 @@ public function index($public_id)
         }
 
         DB::transaction(function () use ($validated, $eventJudge) {
-            // 1. Update nama juri pada tabel Users
-            $eventJudge->judge->user->update([
-                'name' => $validated['name'],
-            ]);
-
-            // 2. Hapus expertise/kategori penilaian yang lama
             DB::table('judge_expertises')
                 ->where('event_judge_id', $eventJudge->event_judge_id)
                 ->delete();
 
-            // 3. Masukkan expertise/kategori penilaian yang baru dari request
             $now = now();
             $judgeExpertises = collect($validated['expertise_ids'])
                 ->map(fn ($expertiseId) => [
@@ -322,5 +276,27 @@ public function index($public_id)
             'success',
             'Juri berhasil diberhentikan dari acara ini.'
         );
+    }
+
+    // =========================================================================
+    // PRIVATE HELPER METHODS
+    // =========================================================================
+
+    private function getMappedExpertises(Event $event)
+    {
+        return $event->eventLevels
+            ->flatMap(function ($eventLevel) {
+                return $eventLevel->scoringCategories->map(
+                    function ($category) use ($eventLevel) {
+                        return [
+                            'scoring_category_id' => $category->scoring_category_id,
+                            'event_level_id' => $eventLevel->event_level_id,
+                            'level_name' => $eventLevel->level?->level_name ?? 'Jenjang lainnya',
+                            'category_name' => $category->masterCategory?->category_name ?? 'Kategori tidak diketahui',
+                        ];
+                    }
+                );
+            })
+            ->values();
     }
 }

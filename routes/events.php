@@ -6,12 +6,14 @@ use App\Http\Controllers\Events\EventDocumentController;
 use App\Http\Controllers\Events\EventJudgeController;
 use App\Http\Controllers\Events\EventLevelController;
 use App\Http\Controllers\Participations\ParticipationController;
+use App\Http\Controllers\Evaluations\JudgeEvaluationController;
 
 Route::get('/events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::post('/api/judge/participations/{participation:public_id}/autosave', [JudgeEvaluationController::class, 'autosave'])->name('api.judge.autosave');
 });
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -46,7 +48,7 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
     Route::delete('events/{event:public_id}/documents/{event_document:document_id}',[EventDocumentController::class, 'destroy'])->name('events.documents.destroy');
     Route::resource('events/{event:public_id}/documents', EventDocumentController::class)->only(['index', 'store']);
 
-    Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index', 'destroy');
+    Route::resource('events/{event:public_id}/participations', ParticipationController::class)->only('index', 'destroy');
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
@@ -55,4 +57,14 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
     Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index','store', 'destroy');
     Route::get('events/{event:public_id}/enroll', [ParticipationController::class, 'create'])->name('events.official_team.create');
     Route::post('events/{event:public_id}/check-quota', [ParticipationController::class, 'checkQuota'])->name('event.official_team.checkQuota');
+});
+
+Route::middleware(['auth', 'verified', 'role:judge'])->prefix('judge')->name('judge.')->group(function (){
+    Route::get('/assigned-events', [EventController::class, 'my_events'])->name('events.assigned-events');
+    Route::get('events/{event:public_id}/participants', [JudgeEvaluationController::class, 'participants'])->name('participants');
+    Route::get('events/{event:public_id}/participants/{participation:public_id}', [JudgeEvaluationController::class, 'show'])->name('events.participants.show');
+    Route::get('events/{event:public_id}/participants/{participation:public_id}/evaluate/{scoringCategory}', [JudgeEvaluationController::class, 'evaluate'])->name('events.participants.evaluate');
+
+    Route::post('events/{event:public_id}/participants/{participation:public_id}/evaluate/{scoringCategory}/submit', [JudgeEvaluationController::class, 'submitCategory'])->name('events.participants.submit_category');
+    Route::post('events/{event:public_id}/participants/{participation:public_id}/lock/{scoringCategory}', [JudgeEvaluationController::class, 'lockCategory'])->name('events.participants.lock_category');
 });

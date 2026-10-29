@@ -53,7 +53,7 @@ class EventPenaltyController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        $validated = $this->validatePenaltyForm($request);
+        $validated = $this->validatePenaltyForm($request,null,$event->event_id);
 
         DB::transaction(function () use ($validated, $event) {
             
@@ -71,10 +71,14 @@ class EventPenaltyController extends Controller
 
             $eventPenalty = EventPenalty::create([
                 'event_id' => $event->event_id,
-                'master_penalty_id' => $validated['master_penalty_id'], // Langsung pakai ID dari Master
+                'master_penalty_id' => $validated['master_penalty_id'],
                 'description' => $validated['description'] ?? null, 
-                'penalty_value' => round((float) $validated['penalty_value'], 2),
-                'calculation_type' => $validated['calculation_type'],
+                'penalty_value' => $validated['penalty_action'] === 'disqualification'
+                                ? null
+                                : round((float) $validated['penalty_value'], 2),
+                'calculation_type' => $validated['penalty_action'] === 'disqualification'
+                                ? 'fixed'
+                                : $validated['calculation_type'],
                 'penalty_action' => $validated['penalty_action'],
                 'is_active' => $validated['is_active'] ?? true,
             ]);
@@ -97,15 +101,19 @@ class EventPenaltyController extends Controller
             ->firstOrFail();
 
         // Validasi ekstra saat update: pastikan master_penalty_id tidak bentrok dengan data lain
-        $validated = $this->validatePenaltyForm($request, $eventPenalty->event_penalty_id);
+        $validated = $this->validatePenaltyForm($request, $eventPenalty->event_penalty_id, $event->event_id);
 
         DB::transaction(function () use ($validated, $eventPenalty) {
             
             $eventPenalty->update([
                 'master_penalty_id' => $validated['master_penalty_id'], // Update ID Master
                 'description' => $validated['description'] ?? null, 
-                'penalty_value' => round((float) $validated['penalty_value'], 2),
-                'calculation_type' => $validated['calculation_type'],
+                'penalty_value' => $validated['penalty_action'] === 'disqualification'
+                                ? null
+                                : round((float) $validated['penalty_value'], 2),
+                'calculation_type' => $validated['penalty_action'] === 'disqualification'
+                                ? 'fixed'
+                                : $validated['calculation_type'],
                 'penalty_action' => $validated['penalty_action'],
             ]);
 
@@ -158,14 +166,14 @@ class EventPenaltyController extends Controller
     // PRIVATE HELPER METHODS
     // =========================================================================
 
-    private function validatePenaltyForm(Request $request, $ignoreEventPenaltyId = null)
+    private function validatePenaltyForm(Request $request, $ignoreEventPenaltyId = null, $eventId = null)
     {
         $rules = [
             'master_penalty_id' => 'required|exists:master_penalties,master_penalty_id', // Berubah jadi ID
             'description' => 'nullable|string', 
-            'penalty_value' => 'required|numeric|min:0',
-            'calculation_type' => ['required', Rule::in(['fixed', 'per_occurrence', 'per_second'])],
             'penalty_action' => ['required', Rule::in(['deduction', 'disqualification'])],
+            'penalty_value' => ['nullable','required_if:penalty_action,deduction','numeric','min:0'],
+            'calculation_type' => ['required','required_if:penalty_action,deduction', Rule::in(['fixed', 'per_occurrence', 'per_second'])],
             'is_active' => 'boolean',
             'event_champion_category_ids' => 'required|array|min:1',
             'event_champion_category_ids.*' => 'exists:event_champion_categories,event_champion_category_id',
@@ -177,8 +185,8 @@ class EventPenaltyController extends Controller
             $rules['master_penalty_id'] = [
                 'required',
                 'exists:master_penalties,master_penalty_id',
-                Rule::unique('event_penalties')->where(function ($query) use ($request) {
-                    return $query->where('event_id', $request->route('event_id')); // Sesuaikan parameter route-mu
+                Rule::unique('event_penalties')->where(function ($query) use ($eventId) {
+                    return $query->where('event_id', $eventId); 
                 })->ignore($ignoreEventPenaltyId, 'event_penalty_id')
             ];
         }

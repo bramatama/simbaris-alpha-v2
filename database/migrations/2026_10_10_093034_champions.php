@@ -39,10 +39,6 @@ return new class extends Migration
             $table->foreignId('champion_category_id')
                 ->constrained('champion_categories', 'champion_category_id')
                 ->restrictOnDelete();
-            $table->enum('calculation_method', [
-                'percentage',
-                'accumulation',
-            ])->default('accumulation');
 
             $table->timestamps();
 

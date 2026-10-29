@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,10 +49,15 @@ export default function DynamicScoringBuilderEdit({
     event,
     eventLevel,
     scoringCategory,
-    masterCategories
+    masterCategories,
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const { put, processing, errors, transform } = useForm({
         criteria: [] as any[],
@@ -95,6 +100,16 @@ export default function DynamicScoringBuilderEdit({
     const [newRubricName, setNewRubricName] = useState('');
     const [newRubricCount, setNewRubricCount] = useState<number | ''>('');
     const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+
+    const clearLocalError = (key: string) => {
+        setLocalErrors((prev) => {
+            if (!prev[key]) return prev;
+            const newErrors = { ...prev };
+            delete newErrors[key];
+            return newErrors;
+        });
+    };
+
     const selectedMasterCategory = masterCategories?.find(
         (mc: any) =>
             mc.master_category_id === scoringCategory.master_category_id,
@@ -179,23 +194,41 @@ export default function DynamicScoringBuilderEdit({
         ]);
         setNewRubricName('');
         setNewRubricCount('');
+        clearLocalError('global'); // Bersihkan error
     };
+
     const removeGlobalRubric = (id: string) =>
         setGlobalRubrics((prev) => prev.filter((gr) => gr.id !== id));
 
-    const addCriteriaRow = () =>
-        setUiCriteria([
-            ...uiCriteria,
-            { id: generateNewId(), name: '', dbRubricIds: {}, rubricData: {} },
+    const addCriteriaRow = () => {
+        const newCritId = generateNewId(); // Simpan ID baru
+
+        setUiCriteria((prev) => [
+            ...prev,
+            { id: newCritId, name: '', dbRubricIds: {}, rubricData: {} },
         ]);
+        clearLocalError('global');
+
+        // Tunggu 150ms agar React selesai merender, lalu scroll ke elemen baru
+        setTimeout(() => {
+            const el = document.getElementById(`crit-row-${newCritId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+    };
+
     const removeCriteriaRow = (id: string) =>
         setUiCriteria((prev) => prev.filter((c) => c.id !== id));
-    const updateCriteriaName = (id: string, name: string) =>
+
+    const updateCriteriaName = (id: string, name: string) => {
         setUiCriteria((prev) =>
             prev.map((c) => (c.id === id ? { ...c, name } : c)),
         );
+        clearLocalError(`crit_${id}`);
+    };
 
     const duplicateCriteria = (cIndex: number) => {
+        const newCritId = generateNewId(); // Simpan ID baru
+
         setUiCriteria((prev) => {
             const critToCopy = prev[cIndex];
             const newRubricData: Record<string, ScoreItem[]> = {};
@@ -206,8 +239,8 @@ export default function DynamicScoringBuilderEdit({
                 }));
             });
             const newCrit: UICriteria = {
-                id: generateNewId(),
-                name: `${critToCopy.name} (Copy)`,
+                id: newCritId,
+                name: critToCopy.name,
                 dbRubricIds: {},
                 rubricData: newRubricData,
             };
@@ -215,9 +248,15 @@ export default function DynamicScoringBuilderEdit({
             newArray.splice(cIndex + 1, 0, newCrit);
             return newArray;
         });
+
+        // Tunggu 150ms agar React selesai merender, lalu scroll ke elemen baru
+        setTimeout(() => {
+            const el = document.getElementById(`crit-row-${newCritId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
     };
 
-    const addScore = (critId: string, rubricId: string) =>
+    const addScore = (critId: string, rubricId: string) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -234,7 +273,10 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
-    const removeScore = (critId: string, rubricId: string, scoreId: string) =>
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
+
+    const removeScore = (critId: string, rubricId: string, scoreId: string) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -250,12 +292,15 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
+
     const updateScoreValue = (
         critId: string,
         rubricId: string,
         scoreId: string,
         value: string,
-    ) =>
+    ) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
                 c.id === critId
@@ -272,6 +317,8 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
+        clearLocalError(`crit_${critId}`); // Bersihkan error
+    };
 
     const scrollToError = () => {
         setTimeout(() => {
@@ -279,7 +326,7 @@ export default function DynamicScoringBuilderEdit({
             if (firstError)
                 firstError.scrollIntoView({
                     behavior: 'smooth',
-                    block: 'center',
+                    block: 'start',
                 });
         }, 100);
     };
@@ -366,6 +413,18 @@ export default function DynamicScoringBuilderEdit({
         );
     };
 
+    if (!isMounted) {
+        return (
+            <InnerAppLayout
+                sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            >
+                <div className="flex min-h-screen items-center justify-center">
+                    <Spinner className="h-8 w-8 text-primary" />
+                </div>
+            </InnerAppLayout>
+        );
+    }
+
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
@@ -374,6 +433,7 @@ export default function DynamicScoringBuilderEdit({
                 title={`Edit Form: ${scoringCategory.master_category?.category_name}`}
             />
             <DndContext
+                id="dnd-scoring-builder"
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
@@ -541,15 +601,17 @@ export default function DynamicScoringBuilderEdit({
                                 <CardTitle className="flex items-center gap-2 text-base font-bold tracking-wider text-muted-foreground uppercase">
                                     Baris Komponen Materi Gerakan
                                 </CardTitle>
-                                <Button
-                                    type="button"
-                                    onClick={addCriteriaRow}
-                                    variant="default"
-                                    className="gap-2 rounded-md px-5 shadow-sm"
-                                >
-                                    <Plus className="h-4 w-4" /> Tambah Baris
-                                    Baru
-                                </Button>
+                                {uiCriteria.length === 0 && (
+                                    <Button
+                                        type="button"
+                                        onClick={addCriteriaRow}
+                                        variant="default"
+                                        className="gap-2 rounded-md px-5 shadow-sm"
+                                    >
+                                        <Plus className="h-4 w-4" /> Tambah
+                                        Baris Baru
+                                    </Button>
+                                )}
                             </div>
                             <SortableContext
                                 items={uiCriteria.map((c) => c.id)}
@@ -585,6 +647,19 @@ export default function DynamicScoringBuilderEdit({
                                     )}
                                 </div>
                             </SortableContext>
+                            {uiCriteria.length > 0 && (
+                                <div className="pt-2">
+                                    <Button
+                                        type="button"
+                                        onClick={addCriteriaRow}
+                                        variant="outline"
+                                        className="w-full border-2 border-dashed py-6 text-muted-foreground shadow-sm hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                                    >
+                                        <Plus className="mr-2 h-5 w-5" /> Tambah
+                                        Baris Kriteria Baru
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="sticky bottom-6 z-20 flex justify-end gap-4 rounded-xl border border-border/40 bg-background/90 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] backdrop-blur-md">

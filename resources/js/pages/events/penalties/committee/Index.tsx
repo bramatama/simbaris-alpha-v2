@@ -77,7 +77,8 @@ export default function EventPenaltiesIndex({
     // HANDLERS
     // ==========================================
     const handleCategoryToggle = (id: number) => {
-        const current = data.event_champion_category_ids;
+        const current = data.event_champion_category_ids ?? [];
+
         setData(
             'event_champion_category_ids',
             current.includes(id)
@@ -91,11 +92,11 @@ export default function EventPenaltiesIndex({
         setEditId(penalty.event_penalty_id);
 
         setData({
-            master_penalty_id: penalty.master_penalty_id.toString(),
+            master_penalty_id: penalty.master_penalty_id.toString() ?? '',
             penalty_name_ui: penalty.master_penalty?.penalty_name || '',
             description: penalty.description || '',
-            penalty_value: penalty.penalty_value.toString(),
-            calculation_type: penalty.calculation_type,
+            penalty_value: penalty.penalty_value?.toString() ?? '',
+            calculation_type: penalty.calculation_type ?? 'fixed',
             penalty_action: penalty.penalty_action,
             event_champion_category_ids: penalty.champion_categories.map(
                 (c: any) => c.event_champion_category_id,
@@ -114,6 +115,7 @@ export default function EventPenaltiesIndex({
         setEditId(null);
         reset();
         clearErrors();
+        setSearchPenalty('');
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -122,12 +124,21 @@ export default function EventPenaltiesIndex({
         if (isEditing && editId) {
             put(`/committee/events/${event.public_id}/penalties/${editId}`, {
                 preserveScroll: true,
-                onSuccess: () => handleCancelEdit(),
+                onSuccess: () => {
+                    handleCancelEdit();
+                    setSearchPenalty('');
+                },
             });
         } else {
             post(`/committee/events/${event.public_id}/penalties`, {
                 preserveScroll: true,
-                onSuccess: () => reset(),
+                onSuccess: () => {
+                    reset();
+                    clearErrors();
+                    setSearchPenalty('');
+                    setIsEditing(false);
+                    setEditId(null);
+                },
             });
         }
     };
@@ -257,7 +268,7 @@ export default function EventPenaltiesIndex({
                                             Pilih Jenis Penalti (Master)
                                         </Label>
                                         <Combobox
-                                            value={data.penalty_name_ui}
+                                            value={data.penalty_name_ui ?? ''}
                                             onValueChange={(val: any) => {
                                                 const selectedPenalty =
                                                     masterPenalties.find(
@@ -330,9 +341,25 @@ export default function EventPenaltiesIndex({
                                         </Label>
                                         <Select
                                             value={data.penalty_action}
-                                            onValueChange={(val) =>
-                                                setData('penalty_action', val)
-                                            }
+                                            onValueChange={(val) => {
+                                                setData({
+                                                    ...data,
+                                                    penalty_action: val,
+                                                    penalty_value:
+                                                        val ===
+                                                        'disqualification'
+                                                            ? ''
+                                                            : data.penalty_value,
+                                                    calculation_type:
+                                                        val ===
+                                                        'disqualification'
+                                                            ? 'fixed'
+                                                            : data.calculation_type,
+                                                });
+
+                                                clearErrors('penalty_value');
+                                                clearErrors('calculation_type');
+                                            }}
                                         >
                                             <SelectTrigger className="w-full">
                                                 <SelectValue />
@@ -352,8 +379,8 @@ export default function EventPenaltiesIndex({
                                     </div>
 
                                     {/* Jika Disqualifikasi, tidak perlu input angka */}
-                                    {data.penalty_action === 'deduction' && (
-                                        <div className="grid grid-cols-2 gap-4">
+                                    {data.penalty_action === 'deduction' ? (
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
                                                 <Label requirement="required">
                                                     Nilai Potongan
@@ -416,6 +443,23 @@ export default function EventPenaltiesIndex({
                                                 />
                                             </div>
                                         </div>
+                                    ) : (
+                                        <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-semibold text-destructive">
+                                                    Tindakan Diskualifikasi
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Peserta yang terkena aturan
+                                                    ini akan didiskualifikasi.
+                                                    Nilai potongan tidak
+                                                    diperlukan dan tipe
+                                                    kalkulasi otomatis
+                                                    menggunakan Tetap.
+                                                </p>
+                                            </div>
+                                        </div>
                                     )}
 
                                     <div className="space-y-2">
@@ -459,7 +503,10 @@ export default function EventPenaltiesIndex({
                                                         >
                                                             <Checkbox
                                                                 id={`cat-${cat.event_champion_category_id}`}
-                                                                checked={data.event_champion_category_ids.includes(
+                                                                checked={(
+                                                                    data.event_champion_category_ids ??
+                                                                    []
+                                                                ).includes(
                                                                     cat.event_champion_category_id,
                                                                 )}
                                                                 onCheckedChange={() =>

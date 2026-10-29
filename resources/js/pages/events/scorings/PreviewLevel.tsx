@@ -135,7 +135,7 @@ export default function PreviewLevel({
                                                                     }
                                                                 </CardTitle>
                                                             </CardHeader>
-                                                            <CardContent className="space-y-5 p-3 sm:p-4">
+                                                            <CardContent className="space-y-2 p-4">
                                                                 {criteria.rubric_categories?.map(
                                                                     (
                                                                         rubric: any,

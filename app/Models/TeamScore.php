@@ -12,6 +12,7 @@ class TeamScore extends Model
     protected $fillable = [
         'participation_id',
         'scoring_category_id',
+        'evaluation_status',
         'judge_id',
         'total_score',
     ];

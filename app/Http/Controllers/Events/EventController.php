@@ -43,18 +43,31 @@ class EventController extends Controller
      */
     public function my_events()
     {
-        $role = auth()->user()?->role;
-        $events = Event::whereHas('eventCommittees.committee', function ($query) {
-                $query->where('user_id', auth()->id());
+        $user = auth()->user();
+        $role = $user?->role;
+
+        if ($role === 'committee') {
+            $events = Event::whereHas('eventCommittees.committee', function ($query) use ($user) {
+                $query->where('user_id', $user->user_id); 
             })->latest()->get();
 
-        if ($role !== 'committee'){
-            abort(403, 'Unauthorized access');
-        };
+            return inertia('events/event_lists/committee/HostedEvents', [
+                'events' => $events,
+            ]);
+        }
 
-        return inertia('events/event_lists/committee/HostedEvents', [
-            'events' => $events,
-        ]);
+        if ($role === 'judge') {
+            $events = Event::whereHas('eventJudges.judge', function ($query) use ($user) {
+                $query->where('user_id', $user->user_id);
+            })->latest()->get();
+
+            return inertia('events/event_lists/judge/AssignedEvents', [
+                'events' => $events,
+            ]);
+        }
+
+        // 3. Blokir selain panitia dan juri
+        abort(403, 'Unauthorized access');
     }
 
     /**

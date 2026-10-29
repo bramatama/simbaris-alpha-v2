@@ -146,13 +146,24 @@ export const getParticipationInnerNav = (
             icon: Edit,
         },
         {
-            title: 'Dokumen Peserta',
+            title: 'Dokumen Pendaftaran',
             href: `/official_team/participations/${participationId}/documents`,
             icon: FileText,
         },
         {
             title: 'Manajemen Pasukan',
             href: `/official_team/participations/${participationId}/members`,
+            icon: UserGroup,
+        },
+    ];
+    return items;
+};
+
+export const getEvaluationInnerNav = (eventPublicId: string): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Daftar Peserta',
+            href: `/judge/events/${eventPublicId}/participants`,
             icon: UserGroup,
         },
     ];

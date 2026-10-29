@@ -33,7 +33,7 @@ export default function EventShow({ event }: { event: any }) {
     const { props } = usePage<PageProps>();
     const userRole = props.auth.user.role;
 
-    const isAuthorized = userRole === 'committee' || userRole === 'admin';
+    const isAuthorized = userRole === 'committee';
 
     const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
     const [viewDocument, setViewDocument] = useState<{

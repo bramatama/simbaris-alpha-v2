@@ -17,7 +17,7 @@ import {
     horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // =========================================================================
 // INTERFACE & TYPES
@@ -36,7 +36,7 @@ export interface GlobalRubric {
 export interface UICriteria {
     id: string;
     name: string;
-    dbRubricIds?: Record<string, string>; // Opsional untuk Create, digunakan di Edit
+    dbRubricIds?: Record<string, string>;
     rubricData: Record<string, ScoreItem[]>;
 }
 
@@ -133,7 +133,7 @@ export function SortableScoreBox({
             <div
                 {...attributes}
                 {...listeners}
-                className="flex cursor-grab items-center justify-center border-r border-input bg-muted/60 py-1.5 pr-2 pl-1.5 font-mono text-xs text-muted-foreground transition-colors outline-none hover:bg-muted/90 active:cursor-grabbing"
+                className="flex cursor-grab items-center justify-center border-r border-input bg-muted/60 py-2 pr-2 pl-1.5 font-mono text-xs text-muted-foreground transition-colors outline-none hover:bg-muted/90 active:cursor-grabbing"
             >
                 <GripVertical className="mr-0.5 h-3 w-3 opacity-40" />{' '}
                 {index + 1}
@@ -183,15 +183,30 @@ export function SortableCriteriaRow({
         id: crit.id,
         data: { type: 'criteria' },
     });
+
     const initialMatchedCriteria = availableMasterCriteria?.find(
         (mc: any) => mc.master_criteria_id.toString() === crit.name,
     );
-    const [uiName, setUiName] = useState(
-        initialMatchedCriteria ? initialMatchedCriteria.criteria_name : '',
-    );
-    const [searchValue, setSearchValue] = useState('');
+    const initialDisplayName = initialMatchedCriteria
+        ? initialMatchedCriteria.criteria_name
+        : '';
 
-    const filteredMasterCriteria =
+    const [uiName, setUiName] = useState(initialDisplayName);
+    const [searchValue, setSearchValue] = useState(initialDisplayName);
+
+    useEffect(() => {
+        if (crit.name && availableMasterCriteria?.length > 0) {
+            const matchedCriteria = availableMasterCriteria.find(
+                (mc: any) => mc.master_criteria_id.toString() === crit.name,
+            );
+            if (matchedCriteria && matchedCriteria.criteria_name !== uiName) {
+                setUiName(matchedCriteria.criteria_name);
+                setSearchValue(matchedCriteria.criteria_name);
+            }
+        }
+    }, [crit.name, availableMasterCriteria]);
+
+    const filteredMasterCriteria = 
         availableMasterCriteria?.filter((mc: any) =>
             mc.criteria_name.toLowerCase().includes(searchValue.toLowerCase()),
         ) || [];
@@ -204,7 +219,12 @@ export function SortableCriteriaRow({
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="relative transition-all">
+        <div
+            id={`crit-row-${crit.id}`}
+            ref={setNodeRef}
+            style={style}
+            className="relative transition-all"
+        >
             <Card
                 className={`overflow-hidden border border-border/80 bg-background shadow-sm transition-shadow ${isDragging ? 'border-primary/60 shadow-lg ring-2 ring-primary/60' : 'hover:border-primary/30'}`}
             >
@@ -231,8 +251,8 @@ export function SortableCriteriaRow({
                                         );
 
                                     setUiName(val ?? '');
+                                    setSearchValue(val ?? '');
 
-                                    // Kirim ID ke parent melalui onUpdateName
                                     onUpdateName(
                                         crit.id,
                                         selectedCriteria
@@ -247,7 +267,6 @@ export function SortableCriteriaRow({
                             >
                                 <ComboboxInput
                                     placeholder="Pilih Kriteria/Materi Gerakan..."
-                                    showClear={!!uiName}
                                     className="h-9 w-full rounded-none border-0 border-b-2 border-dashed border-border bg-transparent px-1 text-base font-bold shadow-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-primary/50 focus:border-solid focus-visible:border-primary focus-visible:ring-0"
                                 />
                                 <ComboboxContent>

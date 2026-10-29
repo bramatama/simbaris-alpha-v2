@@ -162,13 +162,5 @@ class ParticipationSeeder extends Seeder
                 $totalMembers += count($members);
             }
         }
-
-        $this->command->info(
-            "Berhasil membuat {$totalParticipations} participation."
-        );
-
-        $this->command->info(
-            "Berhasil membuat {$totalMembers} anggota tim."
-        );
     }
 }
