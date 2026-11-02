@@ -29,11 +29,6 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
                 href: '/events',
                 icon: CalendarCheckIcon,
             },
-            {
-                title: 'Profile',
-                href: '/profile',
-                icon: User,
-            },
         );
     }
 

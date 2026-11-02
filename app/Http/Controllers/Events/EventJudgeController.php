@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Models\Judge;
 use App\Models\EventJudge;
+use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,9 @@ use Illuminate\Auth\Events\Registered;
 
 class EventJudgeController extends Controller
 {
+    use HasEventAccess;
+
+    /** Menampilkan daftar juri, keahlian, dan kategori penilaian event. */
     public function index($public_id)
     {
         $event = Event::where('public_id', $public_id)
@@ -27,6 +31,9 @@ class EventJudgeController extends Controller
                 'eventLevels.scoringCategories.masterCategory',
             ])
             ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
 
         $assignedJudgeIds = $event->eventJudges->pluck('judge_id');
 
@@ -43,10 +50,13 @@ class EventJudgeController extends Controller
         ]);
     }
 
+    /** Menugaskan juri ke event beserta kategori penilaiannya. */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)
             ->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -166,6 +176,7 @@ class EventJudgeController extends Controller
         );
     }
 
+    /** Menampilkan pengaturan penugasan dan keahlian seorang juri. */
     public function edit($public_id, $event_judge_id)
     {
         $event = Event::where('public_id', $public_id)
@@ -174,6 +185,8 @@ class EventJudgeController extends Controller
                 'eventLevels.scoringCategories.masterCategory',
             ])
             ->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventJudge = EventJudge::where('event_id', $event->event_id)
             ->where('event_judge_id', $event_judge_id)
@@ -192,9 +205,12 @@ class EventJudgeController extends Controller
         ]);
     }
 
+    /** Memperbarui kategori penilaian yang ditangani seorang juri. */
     public function update(Request $request, $public_id, $event_judge_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventJudge = EventJudge::where('event_id', $event->event_id)
             ->where('event_judge_id', $event_judge_id)
@@ -258,11 +274,14 @@ class EventJudgeController extends Controller
             ->with('success', 'Data penugasan juri berhasil diperbarui!');
     }
 
+    /** Menghapus penugasan juri dari event. */
     public function destroy($public_id, $event_judge_id)
     {
         $event = Event::where('public_id', $public_id)
             ->firstOrFail();
 
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+        
         $eventJudge = EventJudge::where(
             'event_id',
             $event->event_id
@@ -278,10 +297,7 @@ class EventJudgeController extends Controller
         );
     }
 
-    // =========================================================================
-    // PRIVATE HELPER METHODS
-    // =========================================================================
-
+    /** Menyusun daftar kategori penilaian per jenjang untuk pemilihan keahlian. */
     private function getMappedExpertises(Event $event)
     {
         return $event->eventLevels

@@ -92,9 +92,8 @@ const CategoryAccordion = ({
         }
     };
 
-    const isLocked =
-        category.category_status === 'locked' ||
-        category.category_status === 'needs_review';
+    // Hapus 'needs_review' dari isLocked agar tombol bisa muncul kembali
+    const isLocked = category.category_status === 'locked';
 
     return (
         <Card className="overflow-hidden border-border/70 shadow-sm">
@@ -122,7 +121,7 @@ const CategoryAccordion = ({
                     className="flex items-center gap-2"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {category.category_status === 'draft' && (
+                    {(category.category_status === 'draft' || category.category_status === 'needs_review') && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -141,7 +140,9 @@ const CategoryAccordion = ({
                             className="gap-1.5 shadow-sm"
                         >
                             <Play className="h-4 w-4" />
-                            {category.category_status === 'draft'
+                            {category.category_status === 'needs_review'
+                                ? 'Revisi Nilai'
+                                : category.category_status === 'draft'
                                 ? 'Lanjutkan'
                                 : 'Mulai Menilai'}
                         </Button>
@@ -205,7 +206,7 @@ const CategoryAccordion = ({
                                                         }
                                                         className="p-4"
                                                     >
-                                                        <div className="flex flex-wrap gap-2">
+                                                        <div className="flex flex-wra   p gap-2">
                                                             {rubricCol.rubric_scores.map(
                                                                 (
                                                                     score: any,

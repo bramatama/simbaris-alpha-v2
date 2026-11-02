@@ -11,6 +11,15 @@ use Illuminate\Validation\Rule;
 class MasterPenaltyController extends Controller
 {
     /**
+     * Kunci seluruh endpoint di controller ini khusus untuk Super Admin
+     */
+    public function __construct()
+    {
+        // Jika user belum login atau role-nya bukan admin, langsung banting 403 Forbidden
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Akses ditolak: Fitur ini khusus untuk Super Admin.');
+    }
+    
+    /**
      * Menampilkan daftar Master Penalti.
      */
     public function index()

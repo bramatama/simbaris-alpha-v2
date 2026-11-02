@@ -4,7 +4,7 @@ import type { PageProps } from '@inertiajs/core';
 
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
-
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -28,13 +28,12 @@ import {
     Calculator,
     Info,
     LayoutList,
-    Filter,
+    Layers,
 } from 'lucide-react';
 
 /* =========================================================
-   TYPES
+   TYPES & HELPERS SAMA SEPERTI SEBELUMNYA
 ========================================================= */
-
 interface SimbarisEvent {
     public_id: string;
     event_name: string;
@@ -98,10 +97,6 @@ interface IndexProps {
     existingFormulas?: ExistingFormulasData;
 }
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
 const getCategoryRows = (
     formulas: ExistingFormulasData,
     categoryId: number,
@@ -114,10 +109,6 @@ const getCategoryRows = (
     return formulas[String(categoryId)] ?? [];
 };
 
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function ChampionFormulaIndex({
     event,
     eventLevels = [],
@@ -128,20 +119,17 @@ export default function ChampionFormulaIndex({
 }: IndexProps) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
     const isCommittee = ['committee', 'admin'].includes(userRole);
 
-    /* =====================================================
-       INITIAL DATA STATE
-    ===================================================== */
     const { data, setData, post, processing, errors, transform } =
         useForm<FormulaFormData>({
             event_level_id: activeLevel?.event_level_id || null,
-            formulas: [], // Akan langsung diisi oleh useEffect di bawah
+            formulas: [],
         });
 
     const formErrors = errors as Record<string, string | undefined>;
 
-    // Sinkronisasi data ketika props berubah (saat pindah jenjang atau setelah berhasil simpan)
     useEffect(() => {
         setData({
             event_level_id: activeLevel?.event_level_id || null,
@@ -166,15 +154,19 @@ export default function ChampionFormulaIndex({
         });
     }, [activeLevel, existingFormulas, championCategories]);
 
-    /* =====================================================
-       HANDLERS
-    ===================================================== */
-    const handleLevelChange = (levelId: number) => {
+    const handleLevelChange = (levelIdStr: string) => {
+        const levelId = Number(levelIdStr);
+
+        if (!levelId) return;
+
         router.get(
             `/${userRole}/events/${event.public_id}/formulas`,
             { level_id: levelId },
-            // UBAH: preserveState menjadi false agar state form lama dibuang saat ganti jenjang
-            { preserveState: false, preserveScroll: true, replace: true },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                replace: true,
+            },
         );
     };
 
@@ -230,9 +222,6 @@ export default function ChampionFormulaIndex({
         setData('formulas', updatedFormulas);
     };
 
-    /* =====================================================
-       VALIDATION LOGIC
-    ===================================================== */
     const isFormulaComplete = (formula: Formula): boolean => {
         if (formula.components.length === 0) return true;
         return formula.components.every(
@@ -259,9 +248,6 @@ export default function ChampionFormulaIndex({
                 isFormulaComplete(formula) && !hasDuplicateCategories(formula),
         );
 
-    /* =====================================================
-       SUBMIT PAYLOAD
-    ===================================================== */
     const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
         if (!canSubmit) return;
@@ -282,12 +268,9 @@ export default function ChampionFormulaIndex({
         });
     };
 
-    /* =====================================================
-       RENDER
-    ===================================================== */
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Formula Bobot - ${event.event_name}`} />
             <div className="grid w-full min-w-0 grid-cols-1">
@@ -315,38 +298,6 @@ export default function ChampionFormulaIndex({
                                 dipertandingkan.
                             </p>
                         </div>
-
-                        {/* FILTER JENJANG CONTAINER */}
-                        <div className="flex w-full shrink-0 items-center md:mt-0 md:w-auto">
-                            {eventLevels.length > 0 && (
-                                <div className="flex w-full items-center gap-2 rounded-lg border bg-muted/40 p-1.5 sm:w-auto">
-                                    <Filter className="mr-2 h-4 w-4 shrink-0 text-muted-foreground md:mr-0 md:ml-1" />
-                                    <Select
-                                        value={
-                                            activeLevel?.event_level_id?.toString() ||
-                                            ''
-                                        }
-                                        onValueChange={(val) =>
-                                            handleLevelChange(Number(val))
-                                        }
-                                    >
-                                        <SelectTrigger className="w-full border-none bg-background shadow-sm sm:w-45">
-                                            <SelectValue placeholder="Pilih jenjang..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {eventLevels.map((level: any) => (
-                                                <SelectItem
-                                                    key={level.event_level_id}
-                                                    value={level.event_level_id.toString()}
-                                                >
-                                                    {level.level.level_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* KONTEN UTAMA */}
@@ -354,12 +305,30 @@ export default function ChampionFormulaIndex({
                         <div className="space-y-5">
                             {activeLevel && (
                                 <div className="animate-in space-y-4 duration-300 fade-in">
-                                    <div className="flex min-w-0 items-start gap-2 sm:items-center">
-                                        <LayoutList className="h-4 w-4 shrink-0 text-primary" />
-                                        <h2 className="text-sm font-bold sm:text-base">
-                                            Konfigurasi Jenjang (
-                                            {activeLevel.level.level_name})
-                                        </h2>
+                                    <div className="flex min-w-0 items-start justify-between gap-2 sm:items-center">
+                                        <div className="flex items-center gap-2">
+                                            <LayoutList className="h-4 w-4 shrink-0 text-primary" />
+                                            <h2 className="text-sm font-bold sm:text-base">
+                                                Konfigurasi Jenjang (
+                                                {activeLevel.level.level_name})
+                                            </h2>
+                                        </div>
+                                        <div className="w-full shrink-0 md:w-auto">
+                                            {eventLevels.length > 0 && (
+                                                <LevelDropdownFilter
+                                                    eventLevels={eventLevels}
+                                                    activeLevelId={
+                                                        activeLevel?.event_level_id ??
+                                                        null
+                                                    }
+                                                    onLevelChange={
+                                                        handleLevelChange
+                                                    }
+                                                    placeholder="Pilih jenjang..."
+                                                    className="w-full md:w-56"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
 
                                     {championCategories.length === 0 ? (
@@ -676,10 +645,31 @@ export default function ChampionFormulaIndex({
                             )}
                         </div>
                     ) : (
-                        <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                            Event ini belum memiliki jenjang perlombaan sama
-                            sekali.
-                        </div>
+                        /* BLANK STATE EVENT LEVELS KOSONG */
+                        <Card className="flex flex-col items-center justify-center border-2 border-dashed border-border/60 bg-muted/10 p-8 text-center shadow-none sm:p-12">
+                            <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
+                                <Layers className="h-8 w-8" />
+                            </div>
+                            <h3 className="mb-1.5 text-base font-bold text-foreground sm:text-lg">
+                                Belum Ada Jenjang Perlombaan
+                            </h3>
+                            <p className="max-w-md text-xs text-muted-foreground sm:text-sm">
+                                Event ini belum memiliki jenjang perlombaan
+                                terdaftar. Tambahkan jenjang perlombaan terlebih
+                                dahulu untuk menyusun formula bobot piala/juara.
+                            </p>
+                            {isCommittee && (
+                                <Link
+                                    href={`/${userRole}/events/${event.public_id}/levels`}
+                                    className="mt-5"
+                                >
+                                    <Button size="sm" className="gap-2">
+                                        <Plus className="h-4 w-4" /> Kelola
+                                        Jenjang Perlombaan
+                                    </Button>
+                                </Link>
+                            )}
+                        </Card>
                     )}
 
                     {/* ACTION FOOTER (STICKY) */}

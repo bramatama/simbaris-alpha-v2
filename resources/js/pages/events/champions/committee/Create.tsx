@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,12 +20,17 @@ import {
 import InputError from '@/components/input-error';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { PageProps } from '@inertiajs/core';
 
 export default function ChampionsCreate({
     event,
     eventLevels,
     masterChampionCategories,
 }: any) {
+
+    const {auth}= usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
+    const committeePosition = auth?.user?.committee_position;
     const { data, setData, post, processing, errors } = useForm({
         champion_category_id: '',
         champion_category_name_ui: '', // Menyimpan teks UI kategori
@@ -127,7 +132,7 @@ export default function ChampionsCreate({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, 'committee')}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Tambah Penghargaan - ${event.event_name}`} />
 

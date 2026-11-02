@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import { getEventInnerNav } from '@/config/inner_sidebar';
 import {
     Card,
     CardContent,
@@ -14,12 +14,15 @@ import { ArrowLeft, ShieldAlert, Users, UserCheck, User } from 'lucide-react';
 import { route } from 'ziggy-js';
 
 export default function CommitteeParticipationMembers({
+    event,
     participation,
 }: {
+    event: any;
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     const members = participation.team_members || [];
 
@@ -29,6 +32,10 @@ export default function CommitteeParticipationMembers({
     );
     const troops = members.filter((m: any) => m.member_role === 'member');
     const reserves = members.filter((m: any) => m.member_role === 'reserve');
+
+    const handleBack = () => {
+        window.history.back();
+    };
 
     // Komponen kartu read-only untuk panitia
     const renderMemberCard = (member: any, fallbackPosition: string) => {
@@ -42,7 +49,10 @@ export default function CommitteeParticipationMembers({
                         <div className="flex aspect-3/4 w-28 flex-col items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-muted/30">
                             {member.member_photo_path ? (
                                 <img
-                                    src={route('participation-member-photo.file', member)}
+                                    src={route(
+                                        'participation-member-photo.file',
+                                        member,
+                                    )}
                                     alt={member.member_name}
                                     className="h-full w-full object-cover"
                                 />
@@ -77,7 +87,7 @@ export default function CommitteeParticipationMembers({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getParticipationInnerNav(participation.public_id)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Data Anggota - ${participation.team_name}`} />
 
@@ -85,7 +95,7 @@ export default function CommitteeParticipationMembers({
                 <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
-                            href={`/${userRole}/participations/${participation.public_id}/information`}
+                            onClick={handleBack}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke

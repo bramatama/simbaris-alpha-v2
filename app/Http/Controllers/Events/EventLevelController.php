@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Level;
 use App\Models\EventLevel;
+use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class EventLevelController extends Controller
 {
+    use HasEventAccess;
     /**
      * Menampilkan halaman konfigurasi level & biaya untuk event tertentu.
      */
@@ -21,6 +23,8 @@ class EventLevelController extends Controller
                 ->where('public_id', $public_id)
                 ->with('eventLevels.level') 
                 ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'],['committee']);
 
         // Ambil semua master data jenjang (SD, SMP, SMA, dll)
         $levels = Level::all();
@@ -37,6 +41,7 @@ class EventLevelController extends Controller
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         // Validasi diperbarui untuk menerima level_name baru
         $validated = $request->validate([

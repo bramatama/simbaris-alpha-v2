@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import InputError from '@/components/input-error';
-import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import FileUploader
+import { FileUploader } from '@/components/ui/file-uploader';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -26,13 +26,14 @@ import {
 } from 'lucide-react';
 
 export default function OfficialTeamParticipationEdit({
+    event,
     participation,
 }: {
+    event: any;
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
-
     const isApproved = participation.status === 'approved';
 
     const { data, setData, post, processing, errors, clearErrors } = useForm({
@@ -47,7 +48,7 @@ export default function OfficialTeamParticipationEdit({
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(
-            `/${userRole}/participations/${participation.public_id}/registration`,
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/registration`,
             {
                 preserveScroll: true,
             },
@@ -56,7 +57,10 @@ export default function OfficialTeamParticipationEdit({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getParticipationInnerNav(participation.public_id)}
+            sidebarNavItems={getParticipationInnerNav(
+                participation.public_id,
+                event.public_id,
+            )}
         >
             <Head title={`Edit Pendaftaran - ${participation.team_name}`} />
 
@@ -64,7 +68,7 @@ export default function OfficialTeamParticipationEdit({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
-                            href={`/${userRole}/participations/${participation.public_id}/information`}
+                            href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke
@@ -80,11 +84,11 @@ export default function OfficialTeamParticipationEdit({
                     </div>
                     <div className="flex items-center gap-3">
                         <Link
-                            href={`/${userRole}/participations/${participation.public_id}/documents`}
+                            href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/documents`}
                         >
                             <Button variant="outline" className="gap-2">
-                                <FileText className="h-4 w-4" />
-                                Kelola Dokumen Juknis
+                                <FileText className="h-4 w-4" /> Kelola Dokumen
+                                Juknis
                             </Button>
                         </Link>
                     </div>
@@ -101,8 +105,6 @@ export default function OfficialTeamParticipationEdit({
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col items-center space-y-6">
-                                    {/* Area Upload Logo */}
-                                    {/* Tampilkan logo saat ini jika tidak ada unggahan baru */}
                                     {participation.team_logo_path ? (
                                         <div className="flex aspect-square w-full shrink-0 overflow-hidden rounded-full border-4 border-muted bg-background shadow-sm">
                                             <img
@@ -169,7 +171,6 @@ export default function OfficialTeamParticipationEdit({
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    {/* Input Teks */}
                                     <div className="grid grid-cols-1 gap-4">
                                         <div className="space-y-2">
                                             <Label
@@ -192,7 +193,6 @@ export default function OfficialTeamParticipationEdit({
                                                 message={errors.team_name}
                                             />
                                         </div>
-
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
                                                 <Label
@@ -254,7 +254,6 @@ export default function OfficialTeamParticipationEdit({
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    {/* Tampilkan bukti saat ini jika belum diubah */}
                                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                         {participation.payment_proof_path && (
                                             <div className="col-span-1">
@@ -284,7 +283,6 @@ export default function OfficialTeamParticipationEdit({
                                                 </p>
                                             </div>
                                         )}
-
                                         {participation.status ===
                                             'rejected' && (
                                             <div className="col-span-1 mt-6 h-fit rounded-md border border-orange-500/20 bg-orange-500/10 p-3 text-sm leading-tight text-orange-700">
@@ -296,8 +294,6 @@ export default function OfficialTeamParticipationEdit({
                                                 verifikasi.
                                             </div>
                                         )}
-
-                                        {/* Uploader Bukti Bayar */}
                                         {!isApproved && (
                                             <div className="col-span-1 space-y-2">
                                                 <Label requirement="optional">

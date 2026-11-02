@@ -4,6 +4,7 @@ export type User = {
     email:string;
     role:string;
     profile_picture_path:string;
+    committee_position:string | null;
 };
 
 export type Auth = {

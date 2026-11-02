@@ -4,7 +4,7 @@ type AppLogoIconProps = {
 export default function AppLogoIcon({ className }: AppLogoIconProps) {
     return (
         <img
-            src="/assets/img/logo_simbaris_icon.png"
+            src="/favicon.ico"
             alt="Logo"
             className={className}
         />

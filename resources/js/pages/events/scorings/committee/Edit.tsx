@@ -53,6 +53,7 @@ export default function DynamicScoringBuilderEdit({
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
@@ -416,7 +417,7 @@ export default function DynamicScoringBuilderEdit({
     if (!isMounted) {
         return (
             <InnerAppLayout
-                sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+                sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
             >
                 <div className="flex min-h-screen items-center justify-center">
                     <Spinner className="h-8 w-8 text-primary" />
@@ -427,7 +428,7 @@ export default function DynamicScoringBuilderEdit({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head
                 title={`Edit Form: ${scoringCategory.master_category?.category_name}`}

@@ -13,7 +13,7 @@ class TeamPenalty extends Model
     protected $fillable = [
         'participation_id',
         'event_penalty_id',
-        'judge_id',
+        'committee_id',
         'penalty_value',
         'calculation_type',
         'penalty_action',
@@ -43,9 +43,9 @@ class TeamPenalty extends Model
         );
     }
 
-    public function judge(): BelongsTo
+    public function committee(): BelongsTo
     {
-        return $this->belongsTo(Judge::class, 'judge_id', 'judge_id');
+        return $this->belongsTo(Judge::class, 'comiittee_id', 'comiittee_id');
     }
 
     public function getTotalPenaltyAttribute(): float

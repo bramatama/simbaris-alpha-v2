@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Participation extends Model
 {
@@ -67,8 +68,23 @@ class Participation extends Model
         return $this->hasMany(ParticipationDocument::class, 'participation_id');
     }
 
+    public function teamScores(): HasMany
+    {
+        return $this->hasMany(TeamScore::class, 'participation_id');
+    }
+
     public function teamMembers(): HasMany
     {
         return $this->hasMany(TeamMember::class, 'participation_id');
+    }
+
+    public function teamPenalties(): HasMany
+    {
+        return $this->hasMany(TeamPenalty::class, 'participation_id');
+    }
+
+    public function evaluationSession(): HasOne
+    {
+        return $this->hasOne(EvaluationSession::class, 'participation_id');
     }
 }

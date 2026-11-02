@@ -14,6 +14,7 @@ class ScoreRecap extends Model
         'event_champion_category_id',
         'final_score',
         'is_disqualified',
+        'rank_override',
         'raw_score',
         'total_penalty_deduction'
     ];
@@ -36,12 +37,8 @@ class ScoreRecap extends Model
         );
     }
 
-    public function eventChampionCategory(): BelongsTo
+    public function eventChampionCategory()
     {
-        return $this->belongsTo(
-            EventChampionCategory::class,
-            'champion_category_id',
-            'champion_category_id'
-        );
+        return $this->belongsTo(EventChampionCategory::class, 'event_champion_category_id', 'event_champion_category_id');
     }
 }

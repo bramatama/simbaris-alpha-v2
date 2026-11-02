@@ -59,6 +59,7 @@ export default function LevelManagement({
 }: LevelManagementProps) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     // 1. Inisialisasi data form dari database
     const initialLevels: FormLevelItem[] =
@@ -159,7 +160,7 @@ export default function LevelManagement({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Manajemen Jenjang - ${event.event_name}`} />
 
@@ -171,7 +172,7 @@ export default function LevelManagement({
                             href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             Manajemen Jenjang & Biaya

@@ -6,20 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventLevel;
 use App\Models\Participation;
+use App\Models\EventCommittee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Concerns\HasEventAccess;
 
 class ParticipationOrderController extends Controller
 {
+    use HasEventAccess;
     /**
-     * 1. INDEX: Menampilkan daftar urutan peserta (Read-only) difilter per jenjang.
+     * Menampilkan urutan tampil peserta menurut jenjang event.
      */
     public function index(Request $request, $public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration','auditor'], ['committee']);
+
+        $committee = EventCommittee::where('event_id', $event->event_id)
+            ->whereHas('committee', function($q) {
+                $q->where('user_id', Auth::id());
+            })->first();
+
+        $committeePosition = strtolower($committee?->position ?? '');
 
         $eventLevels = EventLevel::with('level:level_id,level_name')
             ->where('event_id', $event->event_id)
@@ -30,35 +43,34 @@ class ParticipationOrderController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        if (!$activeLevel) {
-            abort(404, 'Event ini belum memiliki jenjang perlombaan.');
-        }
-
         // Ambil peserta yang disetujui, urutkan berdasarkan appearance_order (null di bawah)
-        $participations = Participation::select('participation_id', 'team_name', 'pic_name', 'appearance_order', 'status')
+        $participations = $activeLevel? Participation::select('participation_id','public_id', 'team_name', 'pic_name','pic_phone_number', 'appearance_order', 'status')
             ->where('event_id', $event->event_id)
             ->where('event_level_id', $activeLevel->event_level_id)
             ->where('status', 'approved')
             ->orderByRaw('ISNULL(appearance_order), appearance_order ASC')
             ->orderBy('created_at', 'ASC')
-            ->get();
+            ->get():collect();
 
         return inertia('events/participations/orders/committee/Index', [
             'event' => $event,
             'eventLevels' => $eventLevels,
             'activeLevel' => $activeLevel,
             'participations' => $participations,
+            'committeePosition' => $committeePosition,
         ]);
     }
 
     /**
-     * 2. EDIT: Halaman Form untuk menyusun nomor urut di satu jenjang spesifik.
+     * Menampilkan formulir pengaturan urutan tampil peserta.
      */
     public function edit($public_id, $event_level_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventLevel = EventLevel::with('level:level_id,level_name')
             ->where('event_level_id', $event_level_id)
@@ -81,11 +93,13 @@ class ParticipationOrderController extends Controller
     }
 
     /**
-     * 3. UPDATE: Menyimpan perubahan massal nomor urut untuk jenjang tersebut.
+     * Memperbarui urutan tampil peserta pada suatu jenjang.
      */
     public function update(Request $request, $public_id, $event_level_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventLevel = EventLevel::where('event_level_id', $event_level_id)
             ->where('event_id', $event->event_id)
@@ -131,11 +145,12 @@ class ParticipationOrderController extends Controller
     }
 
     /**
-     * 4. DESTROY: Reset (kosongkan) seluruh nomor urut pada jenjang ini.
+     * Mengosongkan urutan tampil peserta pada suatu jenjang.
      */
     public function destroy($public_id, $event_level_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventLevel = EventLevel::where('event_level_id', $event_level_id)
             ->where('event_id', $event->event_id)

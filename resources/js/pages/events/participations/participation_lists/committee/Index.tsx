@@ -30,6 +30,7 @@ export default function CommitteeParticipationIndex({
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -53,7 +54,7 @@ export default function CommitteeParticipationIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Daftar Pendaftar - ${event.event_name}`} />
 
@@ -176,6 +177,7 @@ export default function CommitteeParticipationIndex({
                     {/* Konten Tabel Pendaftar */}
                     <CardContent className="p-4 md:p-0">
                         <ParticipationTable
+                            event={event}
                             participations={filteredData}
                             userRole={userRole}
                         />

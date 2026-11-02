@@ -13,19 +13,23 @@ use App\Models\AuditTrail;
 use App\Models\TeamScore;
 use App\Models\ScoringCategory;
 use App\Models\AssessmentCriteria;
+use App\Concerns\HasEventAccess;
+use App\Services\ScoreRecapService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
-
 
 class JudgeEvaluationController extends Controller
 {
+    use HasEventAccess;
+
     /**
-     * Menampilkan daftar antrean peserta beserta status penilaiannya.
+     * Menampilkan peserta dan status penilaian yang menjadi tugas juri.
      */
     public function participants(Request $request, Event $event)
     {
         $user = auth()->user();
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
 
         $judge = Judge::where('user_id', $user->user_id)->firstOrFail();
 
@@ -113,19 +117,25 @@ class JudgeEvaluationController extends Controller
     }
 
     /**
-     * HALAMAN 1: Pratinjau (Team Preview Induk)
+     * Menampilkan ringkasan penilaian untuk satu tim.
      */
     public function show(Event $event, Participation $participation)
     {
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
+
         $data = $this->getEvaluationData($event, $participation);
         return inertia('events/evaluations/judge/TeamPreview', $data);
     }
 
     /**
-     * HALAMAN 2: Form Penilaian (Spesifik 1 Kategori)
+     * Menampilkan formulir penilaian untuk satu kategori.
      */
     public function evaluate(Event $event, Participation $participation, ScoringCategory $scoringCategory)
     {
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
+
         $data = $this->getEvaluationData($event, $participation);
 
         // Pastikan kategori yang diakses wewenang juri
@@ -151,10 +161,13 @@ class JudgeEvaluationController extends Controller
     }
 
     /**
-     * API: Autosave senyap di latar belakang
+     * Menyimpan sementara perubahan nilai dari formulir juri.
      */
     public function autosave(Request $request, Event $event, Participation $participation)
     {
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
+
         $validated = $request->validate([
             'category_id' => 'required|exists:scoring_categories,scoring_category_id',
             'scores' => 'present|array',
@@ -170,7 +183,7 @@ class JudgeEvaluationController extends Controller
             
             $incomingCriteriaIds = collect($validated['scores'])->pluck('criteria_id')->toArray();
 
-            $categoryCriteriaIds = \App\Models\AssessmentCriteria::where('scoring_category_id', $validated['category_id'])
+            $categoryCriteriaIds = AssessmentCriteria::where('scoring_category_id', $validated['category_id'])
                 ->pluck('criteria_id')
                 ->toArray();
 
@@ -199,7 +212,7 @@ class JudgeEvaluationController extends Controller
                     'criteria_id' => $score['criteria_id'],
                     'rubric_score_id' => $score['rubric_score_id'],
                     'score_value' => $score['score_value'],
-                    'clicked_at' => Carbon::parse($score['clicked_at'])->setTimezone('Asia/Makassar'), // Sesuaikan dengan zona waktu lokal
+                    'clicked_at' => $score['clicked_at'],
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ]);
@@ -210,28 +223,37 @@ class JudgeEvaluationController extends Controller
     }
 
     /**
-     * Submit nilai dari 1 Kategori dan pindah ke Kategori 'Ready' selanjutnya
+     * Menyimpan nilai akhir kategori dari juri.
      */
-    public function submitCategory(Request $request, Event $event, Participation $participation, ScoringCategory $scoringCategory)
+    public function submitCategory(Request $request, 
+        Event $event, 
+        Participation $participation, 
+        ScoringCategory $scoringCategory,
+        ScoreRecapService $recapService)
     {
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
+
         $validated = $request->validate([
             'scores' => 'present|array',
             'scores.*.criteria_id' => 'required|exists:assessment_criteria,criteria_id',
             'scores.*.rubric_score_id' => 'required|exists:rubric_scores,rubric_score_id',
             'scores.*.score_value' => 'required|numeric',
+            'scores.*.clicked_at' => 'required|date', // 1. Tambahkan validasi clicked_at
         ]);
 
         $judgeId = auth()->user()->judge->judge_id;
 
         DB::transaction(function () use ($validated, $participation, $scoringCategory, $judgeId, $request) {
             
-            // 1. Ambil semua kriteria dasar yang ada di kategori ini
+            // Ambil semua kriteria dasar yang ada di kategori ini
             $categoryCriteriaIds = AssessmentCriteria::where('scoring_category_id', $scoringCategory->scoring_category_id)
                 ->pluck('criteria_id')
                 ->toArray();
 
             $incomingCriteriaIds = collect($validated['scores'])->pluck('criteria_id')->toArray();
 
+            // Hapus detail kriteria yang dikosongkan secara sengaja oleh juri saat submit
             TeamScoreDetail::where('participation_id', $participation->participation_id)
                 ->where('judge_id', $judgeId)
                 ->whereIn('criteria_id', $categoryCriteriaIds)
@@ -244,6 +266,19 @@ class JudgeEvaluationController extends Controller
                     ['participation_id' => $participation->participation_id, 'judge_id' => $judgeId, 'criteria_id' => $score['criteria_id']],
                     ['rubric_score_id' => $score['rubric_score_id'], 'score_value' => $score['score_value']]
                 );
+
+                // 2. TAMBAHAN: Catat Audit Trail saat final submit dieksekusi
+                AuditTrail::create([
+                    'participation_id' => $participation->participation_id,
+                    'judge_id' => $judgeId,
+                    'criteria_id' => $score['criteria_id'],
+                    'rubric_score_id' => $score['rubric_score_id'],
+                    'score_value' => $score['score_value'],
+                    'clicked_at' => $score['clicked_at'], // Mutator di model otomatis mengubah ini dari UTC ke Makassar
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+
                 $totalScore += $score['score_value'];
             }
 
@@ -272,14 +307,20 @@ class JudgeEvaluationController extends Controller
             ])->with('success', 'Kategori disimpan! Melanjutkan ke kategori berikutnya.');
         }
 
+        $recapService->calculateForParticipation($participation);
+
         return redirect()->route('judge.events.participants.show', [
             'event' => $event->public_id,
             'participation' => $participation->public_id
         ])->with('success', 'Semua kategori telah dinilai! Silakan Kunci Penilaian.');
     }
 
+    /** Mengunci nilai juri untuk satu kategori penilaian. */
     public function lockCategory(Request $request, Event $event, Participation $participation, ScoringCategory $scoringCategory)
     {
+        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $this->validateEventAccess($event, [], ['judge']);
+
         $judgeId = auth()->user()->judge->judge_id;
 
         $totalScore = TeamScoreDetail::where('participation_id', $participation->participation_id)
@@ -311,8 +352,7 @@ class JudgeEvaluationController extends Controller
     // =========================================================================
 
     /**
-     * Menarik seluruh data relasi (Tim, Kriteria, Rubrik, dan Nilai) 
-     * sekaligus menghitung 4 status secara presisi.
+     * Menyiapkan data penilaian tim yang dapat diakses oleh juri.
      */
     private function getEvaluationData(Event $event, Participation $participation)
     {

@@ -27,6 +27,7 @@ export default function PreviewLevel({
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
     const isCommittee = ['committee', 'admin'].includes(userRole);
 
     const defaultValue = scoringCategories.map(
@@ -317,7 +318,7 @@ export default function PreviewLevel({
                 <InnerAppLayout
                     sidebarNavItems={getEventInnerNav(
                         event.public_id,
-                        userRole,
+                        userRole, committeePosition || undefined
                     )}
                 >
                     {pageContent}

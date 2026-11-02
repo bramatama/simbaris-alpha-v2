@@ -201,7 +201,7 @@ export default function AddCommitteeDialog({
                                 </Label>
                                 <Input
                                     id="department"
-                                    placeholder="e.g. Divisi Acara"
+                                    placeholder="e.g. Raja Management"
                                     value={data.department}
                                     onChange={(e) =>
                                         setData('department', e.target.value)

@@ -134,7 +134,7 @@ export default function ParticipantList({
                     <div className="flex flex-col gap-4 border-b border-border/50 pb-5 sm:flex-row sm:items-start sm:justify-between sm:pb-6">
                         <div className="flex flex-col">
                             <Link
-                                href={`/${userRole}/events/${event.public_id}/information`}
+                                href={`/${userRole}/assigned-events`}
                                 className="mb-2 inline-flex w-fit items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                             >
                                 <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" />{' '}

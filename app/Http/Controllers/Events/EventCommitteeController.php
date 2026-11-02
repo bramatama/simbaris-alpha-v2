@@ -9,39 +9,59 @@ use App\Models\Committee;
 use App\Models\EventCommittee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Events\Registered;
+use App\Concerns\HasEventAccess;
 
 class EventCommitteeController extends Controller
 {
+    use HasEventAccess;
+
+    /** Menampilkan panitia yang ditugaskan pada event. */
     public function index($public_id)
     {
         $event = Event::select('event_id', 'event_name', 'public_id')
-                ->where('public_id', $public_id)
-                ->with([
-                    'eventCommittees:event_committee_id,event_id,committee_id,position',
-                    'eventCommittees.committee:committee_id,user_id,department',
-                    'eventCommittees.committee.user:user_id,name,email',
-                ])
-                ->firstOrFail();
-        
+            ->where('public_id', $public_id)
+            ->with([
+                'eventCommittees:event_committee_id,event_id,committee_id,position',
+                'eventCommittees.committee:committee_id,user_id,department',
+                'eventCommittees.committee.user:user_id,name,email,contact_info',
+            ])
+            ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
+        $user = Auth::user();
+
+        $currentUserCommittee = $event->eventCommittees
+            ->first(function ($eventCommittee) use ($user) {
+                return $eventCommittee->committee?->user_id === $user->user_id;
+            });
+
         $assignedCommitteeIds = $event->eventCommittees->pluck('committee_id');
 
         $existingCommittees = Committee::with('user:user_id,name,email')
-                            ->whereNotIn('committee_id', $assignedCommitteeIds)
-                            ->get();
+            ->whereNotIn('committee_id', $assignedCommitteeIds)
+            ->get();
 
         return inertia('events/committees/Index', [
             'event' => $event,
-            'existingCommittees' => $existingCommittees
+            'existingCommittees' => $existingCommittees,
+            'currentUserCommittee' => $currentUserCommittee ? [
+                'committee_id' => $currentUserCommittee->committee_id,
+                'position' => $currentUserCommittee->position,
+            ] : null,
         ]);
     }
 
+    /** Menugaskan panitia yang sudah ada atau membuat akun panitia baru. */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -112,8 +132,12 @@ class EventCommitteeController extends Controller
         return back()->with('success', 'Panitia berhasil ditugaskan ke acara ini!');
     }
 
+    /** Menghapus penugasan panitia dari event. */
     public function destroy($public_id, $event_committee_id)
     {
+        $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         EventCommittee::where('event_committee_id', $event_committee_id)->delete();
 
         return back()->with('success', 'Panitia berhasil diberhentikan dari acara ini.');

@@ -242,6 +242,7 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                         </Label>
                                         <Input
                                             id="contact_info"
+                                            type='number'
                                             value={
                                                 profileForm.data.contact_info
                                             }

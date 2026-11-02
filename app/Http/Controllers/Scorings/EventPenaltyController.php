@@ -11,17 +11,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Concerns\HasEventAccess; // atau App\Traits\HasEventAccess
 
 class EventPenaltyController extends Controller
 {
+    use HasEventAccess;
+
     /**
-     * Menampilkan Halaman Manajemen Penalti (Form Tambah/Edit & Tabel Daftar).
+     * Menampilkan aturan penalti yang dikonfigurasi untuk event.
      */
     public function index($public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventPenalties = EventPenalty::where('event_id', $event->event_id)
             ->with([
@@ -47,13 +52,16 @@ class EventPenaltyController extends Controller
     }
 
     /**
-     * Menyimpan data penalti baru (Dipanggil dari form di halaman Index).
+     * Menyimpan data penalti baru.
      */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        $validated = $this->validatePenaltyForm($request,null,$event->event_id);
+        // Validasi Akses Panitia Administrasi / Admin
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
+        $validated = $this->validatePenaltyForm($request, null, $event->event_id);
 
         DB::transaction(function () use ($validated, $event) {
             
@@ -63,9 +71,8 @@ class EventPenaltyController extends Controller
                 ->exists();
 
             if ($exists) {
-            throw ValidationException::withMessages([
-                    'master_penalty_id' =>
-                        'Aturan penalti ini sudah ada di dalam event.',
+                throw ValidationException::withMessages([
+                    'master_penalty_id' => 'Aturan penalti ini sudah ada di dalam event.',
                 ]);            
             }
 
@@ -90,23 +97,25 @@ class EventPenaltyController extends Controller
     }
 
     /**
-     * Memperbarui data penalti (Dipanggil ketika mode form beralih ke Edit).
+     * Memperbarui data penalti.
      */
     public function update(Request $request, $public_id, $event_penalty_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        // Validasi Akses Panitia Administrasi / Admin
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
             ->where('event_penalty_id', $event_penalty_id)
             ->firstOrFail();
 
-        // Validasi ekstra saat update: pastikan master_penalty_id tidak bentrok dengan data lain
         $validated = $this->validatePenaltyForm($request, $eventPenalty->event_penalty_id, $event->event_id);
 
         DB::transaction(function () use ($validated, $eventPenalty) {
             
             $eventPenalty->update([
-                'master_penalty_id' => $validated['master_penalty_id'], // Update ID Master
+                'master_penalty_id' => $validated['master_penalty_id'],
                 'description' => $validated['description'] ?? null, 
                 'penalty_value' => $validated['penalty_action'] === 'disqualification'
                                 ? null
@@ -127,12 +136,13 @@ class EventPenaltyController extends Controller
         return redirect()->back()->with('success', 'Aturan penalti berhasil diperbarui.');
     }
 
-    /**
-     * Mengaktifkan/Menonaktifkan penalti langsung dari tabel.
-     */
+    /** Mengubah status aktif aturan penalti event. */
     public function toggleStatus($public_id, $event_penalty_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        // Validasi Akses Panitia Administrasi / Admin
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
             ->where('event_penalty_id', $event_penalty_id)
@@ -147,11 +157,14 @@ class EventPenaltyController extends Controller
     }
 
     /**
-     * Menghapus aturan penalti langsung dari tabel.
+     * Menghapus aturan penalti.
      */
     public function destroy($public_id, $event_penalty_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        // Validasi Akses Panitia Administrasi / Admin
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
             ->where('event_penalty_id', $event_penalty_id)
@@ -162,14 +175,11 @@ class EventPenaltyController extends Controller
         return redirect()->back()->with('success', 'Aturan penalti berhasil dihapus.');
     }
 
-    // =========================================================================
-    // PRIVATE HELPER METHODS
-    // =========================================================================
-
+    /** Memvalidasi data aturan penalti event. */
     private function validatePenaltyForm(Request $request, $ignoreEventPenaltyId = null, $eventId = null)
     {
         $rules = [
-            'master_penalty_id' => 'required|exists:master_penalties,master_penalty_id', // Berubah jadi ID
+            'master_penalty_id' => 'required|exists:master_penalties,master_penalty_id',
             'description' => 'nullable|string', 
             'penalty_action' => ['required', Rule::in(['deduction', 'disqualification'])],
             'penalty_value' => ['nullable','required_if:penalty_action,deduction','numeric','min:0'],
@@ -179,8 +189,6 @@ class EventPenaltyController extends Controller
             'event_champion_category_ids.*' => 'exists:event_champion_categories,event_champion_category_id',
         ];
 
-        // Validasi opsional untuk update: Mencegah admin memilih master_penalty_id yang sudah dipakai
-        // oleh record event_penalties lain di event yang sama.
         if ($ignoreEventPenaltyId) {
             $rules['master_penalty_id'] = [
                 'required',
@@ -194,6 +202,7 @@ class EventPenaltyController extends Controller
         return $request->validate($rules);
     }
 
+    /** Menyelaraskan kategori penghargaan yang menjadi sasaran penalti. */
     private function syncTargetCategories($eventPenaltyId, $categoryIds)
     {
         $pivotData = array_map(function ($categoryId) use ($eventPenaltyId) {

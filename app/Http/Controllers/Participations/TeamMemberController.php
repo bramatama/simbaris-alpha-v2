@@ -3,22 +3,22 @@
 namespace App\Http\Controllers\Participations;
 
 use App\Http\Controllers\Controller;
+use App\Models\Event;
 use App\Models\Participation;
 use App\Models\TeamMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
+use App\Concerns\HasEventAccess; 
 class TeamMemberController extends Controller
 {
+    use HasEventAccess;
+
     /**
-     * Menampilkan daftar anggota tim (Form Edit Batch).
+     * Menampilkan anggota yang terdaftar pada tim peserta.
      */
-    public function index($public_id)
+    public function index(Event $event, $public_id)
     {
-        $role = auth()->user()->role;
-        $myOfficialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-        
         $participation = Participation::with([
             'event:event_id,public_id,event_name',
             'teamMembers' => function($query) {
@@ -26,33 +26,29 @@ class TeamMemberController extends Controller
             }
         ])->where('public_id', $public_id)->firstOrFail();
 
-        if ($role === 'official_team') {
-            if ($participation->official_team_id !== $myOfficialTeamId) {
-                abort(403, 'Anda tidak memiliki akses untuk melihat anggota tim ini.');
-            }
-            $view = 'events/participations/members/official_team/Index';
-        } elseif ($role === 'committee') {
-            $view = 'events/participations/members/committee/Index';
-        } else {
-            abort(403, 'Unauthorized access');
-        }
+        $this->validateEventAccess($event, ['administration'], ['committee','official_team'], $participation);
+
+        $role = auth()->user()->role;
+        $view = match ($role) {
+            'official_team' => 'events/participations/members/official_team/Index',
+            'committee', 'admin' => 'events/participations/members/committee/Index',
+            default => abort(403, 'Unauthorized access'),
+        };
 
         return inertia($view, [
+            'event' => $event,
             'participation' => $participation,
         ]);
     }
 
     /**
-     * Sinkronisasi (Batch Update/Create/Delete) seluruh anggota tim sekaligus.
+     * Memperbarui daftar anggota tim peserta.
      */
-    public function sync(Request $request, $public_id)
+    public function sync(Request $request, Event $event, $public_id)
     {
         $participation = Participation::where('public_id', $public_id)->firstOrFail();
 
-        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-        if ($participation->official_team_id !== $officialTeamId) {
-            abort(403, 'Anda tidak memiliki akses untuk mengubah anggota tim pada pendaftaran ini.');
-        }
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         $validated = $request->validate([
             'members' => 'nullable|array',
@@ -65,7 +61,6 @@ class TeamMemberController extends Controller
 
         try {
             DB::transaction(function () use ($request, $validated, $participation) {
-                
                 $submittedMembers = $validated['members'] ?? [];
                 
                 // 1. Kumpulkan semua ID yang dikirim dari form (Abaikan yang null/baru)
@@ -80,7 +75,7 @@ class TeamMemberController extends Controller
                     ->get();
 
                 foreach ($membersToDelete as $member) {
-                    // Hapus fisik foto
+                    // Hapus fisik foto jika ada
                     if ($member->member_photo_path && Storage::disk('local')->exists($member->member_photo_path)) {
                         Storage::disk('local')->delete($member->member_photo_path);
                     }

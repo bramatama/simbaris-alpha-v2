@@ -11,7 +11,7 @@ use Inertia\Response;
 class PasswordController extends Controller
 {
     /**
-     * Update the user's password.
+     * Memperbarui kata sandi akun yang sedang digunakan.
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {

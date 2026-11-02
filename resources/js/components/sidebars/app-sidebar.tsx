@@ -43,6 +43,16 @@ export function AppSidebar() {
         },
     ];
 
+    const formatText = (text?: string) => {
+        if (!text) return '';
+        return text
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const formattedRole = formatText(userRole);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -60,7 +70,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavMain
                     items={mainNavItems}
-                    title={userRole?.toUpperCase() ?? ''}
+                    title={formattedRole}
                 />
             </SidebarContent>
 

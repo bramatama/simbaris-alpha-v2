@@ -1,54 +1,70 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login, register } from '@/routes';
 import LandingPageLayout from '@/layouts/landing-page-layout';
-import { Calendar, MapPin, Users } from 'lucide-react';
-import {PageProps} from '@inertiajs/core';
+import { PageProps } from '@inertiajs/core';
+import EventCard, { EventData } from '@/components/event-card';
+import { ArrowRight, CalendarX, Trophy, ShieldCheck, Zap } from 'lucide-react';
 
-export default function Welcome() {
+interface WelcomeProps {
+    events?: EventData[];
+}
+
+export default function Welcome({ events = [] }: WelcomeProps) {
     const { props } = usePage<PageProps>();
-    const appName = props.name;
+    const appName = props.name || 'SIMBARIS';
+    const user = props.auth?.user;
+    const userRole = user?.role ?? 'guest';
 
     return (
         <LandingPageLayout>
-            <Head title="Welcome" />
+            <Head title="Selamat Datang" />
 
-            {/* Pembungkus utama disederhanakan agar section bisa menyentuh ujung layar */}
             <main className="flex w-full flex-col">
-                {/* 1. HERO SECTION (Halaman 1) */}
+                {/* 1. HERO SECTION (HOME) */}
                 <section
                     id="home"
-                    className="flex min-h-screen w-full flex-col items-center justify-center px-6 pt-16"
+                    className="flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center px-6 py-16"
                 >
                     <div className="flex w-full max-w-4xl flex-col items-center text-center">
-                        <h1 className="mb-6 text-5xl font-extrabold tracking-tight lg:text-7xl">
-                            Welcome to <span>{appName}</span>
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur-md">
+                            <Trophy className="h-3.5 w-3.5" />
+                            Platform Kompetisi Marching Drill Terpadu
+                        </div>
+
+                        <h1 className="mb-6 text-4xl font-black tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+                            Kelola & Ikuti Kompetisi Baris-Berbaris Lebih
+                            Presisi
                         </h1>
-                        <p className="mb-10 max-w-2xl text-lg text-gray-600 md:text-xl dark:text-gray-400">
-                            A modern, fast, and secure platform to help you
-                            build and scale your ideas. Start your journey with
-                            us today and experience the difference.
+
+                        <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
+                            Platform digital terintegrasi untuk pendaftaran tim,
+                            rekapitulasi nilai digital secara real-time,
+                            transparansi hasil, dan papan peringkat kompetisi
+                            Paskibra se-Indonesia.
                         </p>
-                        <div className="flex flex-col justify-center gap-4 sm:flex-row">
-                            {props.auth.user ? (
+
+                        <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
+                            {user ? (
                                 <Link
                                     href={dashboard()}
-                                    className="rounded-lg bg-red-600 px-8 py-3 font-semibold text-white shadow transition-colors hover:bg-red-500"
+                                    className="inline-flex items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
                                 >
-                                    Go to Dashboard
+                                    Buka Dashboard
                                 </Link>
                             ) : (
                                 <>
                                     <Link
-                                        href={login()}
-                                        className="rounded-lg bg-red-600 px-8 py-3 font-semibold text-white shadow transition-colors hover:bg-red-500"
+                                        href="/events"
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
                                     >
-                                        Get Started
+                                        Jelajahi Event
+                                        <ArrowRight className="h-4 w-4" />
                                     </Link>
                                     <Link
                                         href={register()}
-                                        className="rounded-lg border-2 border-gray-200 bg-transparent px-8 py-3 font-semibold transition-colors hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-[#1a1a1a]"
+                                        className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-8 py-3.5 text-sm font-bold text-foreground transition-all hover:bg-muted active:scale-95"
                                     >
-                                        Create an Account
+                                        Daftar Tim Resmi
                                     </Link>
                                 </>
                             )}
@@ -56,184 +72,131 @@ export default function Welcome() {
                     </div>
                 </section>
 
-                {/* 2. ABOUT SECTION (Halaman 2) */}
+                {/* 2. ABOUT SECTION */}
                 <section
                     id="about"
-                    className="flex min-h-screen w-full rounded-4xl flex-col items-center justify-center border bg-muted/30 px-6 py-16 dark:border-gray-800/50"
+                    className="flex min-h-screen w-full flex-col items-center justify-center rounded-4xl border border-border/60 bg-muted/30 px-6 py-20"
                 >
                     <div className="w-full max-w-6xl">
                         <div className="mb-16 text-center">
-                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                                About Us
+                            <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
+                                Mengapa Memilih {appName}?
                             </h2>
-                            <p className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-400">
-                                We provide the best tools to streamline your
-                                workflow. Here is what makes our platform stand
-                                out from the rest.
+                            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                                Dirancang khusus untuk menjawab kebutuhan
+                                panitia, dewan juri, dan official team dalam
+                                menyelenggarakan ajang perlombaan Paskibra yang
+                                profesional, akuntabel, dan transparan.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                             {/* Feature Card 1 */}
-                            <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-transform duration-300 hover:-translate-y-1 dark:bg-[#111111] dark:ring-gray-800">
-                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-                                    <svg
-                                        className="h-6 w-6 text-red-600 dark:text-red-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                                        ></path>
-                                    </svg>
+                            <div className="rounded-2xl border border-border/70 bg-card p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Zap className="h-6 w-6" />
                                 </div>
-                                <h3 className="mb-3 text-xl font-bold">
-                                    Lightning Fast
+                                <h3 className="mb-3 text-xl font-bold text-foreground">
+                                    Penilaian Real-Time
                                 </h3>
-                                <p className="leading-relaxed text-gray-600 dark:text-gray-400">
-                                    Built on modern architecture with Inertia.js
-                                    and React, delivering a single-page app
-                                    experience without the complexity.
+                                <p className="text-sm leading-relaxed text-muted-foreground">
+                                    Proses input skor nilai oleh dewan juri
+                                    dilakukan secara digital, memangkas waktu
+                                    rekapitulasi, serta meminimalisir risiko
+                                    kesalahan rekap manual.
                                 </p>
                             </div>
 
                             {/* Feature Card 2 */}
-                            <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-transform duration-300 hover:-translate-y-1 dark:bg-[#111111] dark:ring-gray-800">
-                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
-                                    <svg
-                                        className="h-6 w-6 text-green-600 dark:text-green-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                                        ></path>
-                                    </svg>
+                            <div className="rounded-2xl border border-border/70 bg-card p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                                    <ShieldCheck className="h-6 w-6" />
                                 </div>
-                                <h3 className="mb-3 text-xl font-bold">
-                                    Highly Secure
+                                <h3 className="mb-3 text-xl font-bold text-foreground">
+                                    Transparansi & Audit Log
                                 </h3>
-                                <p className="leading-relaxed text-gray-600 dark:text-gray-400">
-                                    Your data is protected with
-                                    industry-standard encryption and robust
-                                    authentication mechanisms out of the box.
+                                <p className="text-sm leading-relaxed text-muted-foreground">
+                                    Dilengkapi dengan riwayat jejak audit (audit
+                                    trail) dan transparansi timer wamda untuk
+                                    menjamin keadilan bagi setiap tim peserta
+                                    yang bertanding.
                                 </p>
                             </div>
 
                             {/* Feature Card 3 */}
-                            <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-transform duration-300 hover:-translate-y-1 dark:bg-[#111111] dark:ring-gray-800">
-                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                                    <svg
-                                        className="h-6 w-6 text-purple-600 dark:text-purple-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                                        ></path>
-                                    </svg>
+                            <div className="rounded-2xl border border-border/70 bg-card p-8 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+                                    <Trophy className="h-6 w-6" />
                                 </div>
-                                <h3 className="mb-3 text-xl font-bold">
-                                    User Centric
+                                <h3 className="mb-3 text-xl font-bold text-foreground">
+                                    Papan Peringkat Otomatis
                                 </h3>
-                                <p className="leading-relaxed text-gray-600 dark:text-gray-400">
-                                    Designed with user experience in mind. Clean
-                                    interfaces, intuitive navigation, and
-                                    accessible components.
+                                <p className="text-sm leading-relaxed text-muted-foreground">
+                                    Kalkulasi bobot nilai murni, akumulasi
+                                    pengurangan penalti, hingga penentuan gelar
+                                    juara terformat secara presisi dan
+                                    sistematis.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* 3. EVENTS SECTION (Halaman 3) */}
+                {/* 3. EVENTS SECTION */}
                 <section
                     id="events"
-                    className="flex min-h-screen w-full flex-col items-center justify-center px-6 py-16 dark:border-gray-800/50"
+                    className="flex min-h-screen w-full flex-col items-center justify-center px-6 py-20"
                 >
-                    <div className="w-full max-w-6xl">
-                        <div className="mb-16 text-center">
-                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                                Upcoming Events
-                            </h2>
-                            <p className="mx-auto mt-4 max-w-2xl text-gray-600 dark:text-gray-400">
-                                Bergabunglah dan ikuti kompetisi marching drill
-                                terbaik yang sedang berlangsung maupun yang akan
-                                segera hadir.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
-                            {/* Dummy Event 1 */}
-                            <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-[#111111] dark:ring-gray-800">
-                                <div>
-                                    <h3 className="mb-2 text-2xl font-bold">
-                                        Grand Championship 2026
-                                    </h3>
-                                    <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" /> 15
-                                            - 20 November 2026
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4" />{' '}
-                                            Balikpapan Sport Center
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4" /> 50+
-                                            Tim Terdaftar
-                                        </div>
-                                    </div>
-                                </div>
-                                <Link
-                                    href={login()}
-                                    className="mt-6 inline-flex w-fit items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
-                                >
-                                    Daftar Sekarang
-                                </Link>
+                    <div className="w-full max-w-7xl">
+                        <div className="mb-12 flex flex-col items-start justify-between gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-end">
+                            <div>
+                                <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
+                                    Event Mendatang
+                                </h2>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Bergabunglah dan ikuti kompetisi marching
+                                    drill terbaik yang sedang berlangsung maupun
+                                    yang akan segera hadir.
+                                </p>
                             </div>
 
-                            {/* Dummy Event 2 */}
-                            <div className="flex flex-col justify-between rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-[#111111] dark:ring-gray-800">
-                                <div>
-                                    <h3 className="mb-2 text-2xl font-bold">
-                                        Regional Marching Drill Festival
-                                    </h3>
-                                    <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" /> 12
-                                            Desember 2026
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4" />{' '}
-                                            Kaltim Arena
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4" />{' '}
-                                            Registrasi Segera Dibuka
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    disabled
-                                    className="mt-6 inline-flex w-fit items-center justify-center rounded-md border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-400 dark:border-gray-800 dark:bg-[#1a1a1a]"
-                                >
-                                    Segera Hadir
-                                </button>
-                            </div>
+                            <Link
+                                href="/events"
+                                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-xs transition-colors hover:border-primary/50 hover:bg-muted"
+                            >
+                                Lihat Semua Event
+                                <ArrowRight className="h-4 w-4 text-primary" />
+                            </Link>
                         </div>
+
+                        {events.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16 text-center">
+                                <CalendarX className="mb-3 h-10 w-10 text-muted-foreground/50" />
+                                <h3 className="text-base font-bold text-foreground">
+                                    Belum Ada Event Tersedia
+                                </h3>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Event mendatang akan ditampilkan di sini
+                                    setelah dipublikasikan oleh panitia.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                                {events.map((event) => (
+                                    <Link
+                                        key={event.event_id}
+                                        href={
+                                            user
+                                                ? `/${userRole}/events/${event.public_id}/information`
+                                                : `/events/${event.public_id}/information`
+                                        }
+                                        className="block h-full w-full rounded-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <EventCard event={event} />
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </section>
             </main>

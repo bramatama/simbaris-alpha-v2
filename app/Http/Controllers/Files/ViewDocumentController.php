@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
 class ViewDocumentController extends Controller
 {
+    /** Menampilkan dokumen persyaratan pendaftaran yang diizinkan. */
     public function showRegistrationDocs(ParticipationDocument $document)
     {
         Gate::authorize('view', $document->participation);
@@ -16,6 +17,7 @@ class ViewDocumentController extends Controller
         return response()->file($registration_doc);
     }
 
+    /** Menampilkan bukti pembayaran pendaftaran yang diizinkan. */
     public function showPaymentProof(Participation $participation)
     {
         Gate::authorize('view', $participation);
@@ -28,6 +30,7 @@ class ViewDocumentController extends Controller
         return response()->file($document);
     }
 
+    /** Menampilkan foto anggota tim yang diizinkan. */
     public function showMemberPhoto(TeamMember $teamMember)
     {
         Gate::authorize('view', $teamMember->participation);

@@ -12,17 +12,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Concerns\HasEventAccess;
 
 class EventChampionFormulaController extends Controller
 {
+    use HasEventAccess;
     /**
-     * INDEX (Halaman Manajemen Formula Terpadu per Jenjang)
+     * Menampilkan pengaturan bobot penghargaan untuk jenjang event.
      */
     public function index(Request $request, $public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+            
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventLevels = EventLevel::with('level:level_id,level_name')
             ->where('event_id', $event->event_id)
@@ -33,27 +37,23 @@ class EventChampionFormulaController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        if (!$activeLevel) abort(404, 'Event ini belum memiliki jenjang perlombaan.');
-
         // AMBIL SEMUA kategori juara di event ini (termasuk yang baru ditambahkan)
         $championCategories = EventChampionCategory::where('event_id', $event->event_id)
             ->with('championCategory:champion_category_id,champion_category_name')
             ->get();
 
-        // Ambil kategori penilaian khusus jenjang ini
-        $scoringCategories = ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
+        $scoringCategories = $activeLevel?ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
             ->with('masterCategory:master_category_id,category_name')
-            ->get();
+            ->get():collect();
 
-        // Ambil formula yang sudah ada di jenjang ini untuk inisialisasi state awal di Frontend
-        $existingFormulas = EventChampionFormula::where('event_level_id', $activeLevel->event_level_id)
+        $existingFormulas = $activeLevel?EventChampionFormula::where('event_level_id', $activeLevel->event_level_id)
             ->get()
             ->map(function ($formula) use ($scoringCategories) {
                 $scoringCategory = $scoringCategories->firstWhere('scoring_category_id', $formula->scoring_category_id);
                 $formula->master_category_id = $scoringCategory?->master_category_id;
                 return $formula;
             })
-            ->groupBy('event_champion_category_id');
+            ->groupBy('event_champion_category_id'):collect();
 
         return inertia('events/champion_formulas/committee/Index', [
             'event' => $event,
@@ -66,11 +66,12 @@ class EventChampionFormulaController extends Controller
     }
 
     /**
-     * STORE / UPDATE (Menyimpan seluruh perubahan di jenjang tersebut)
+     * Menyimpan perubahan bobot penghargaan untuk jenjang event.
      */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'],['committee']);
 
         $validated = $request->validate([
             'event_level_id' => [
@@ -116,10 +117,7 @@ class EventChampionFormulaController extends Controller
         ])->with('success', 'Perumusan bobot juara berhasil disimpan!');
     }
 
-    // =========================================================================
-    // PRIVATE HELPER METHODS
-    // =========================================================================
-
+    /** Menyelaraskan komponen bobot dengan kategori penilaian event. */
     private function syncFormulaComponents($levelId, $championCategoryId, $components)
     {
         // Jika panitia menghapus semua komponen dari piala ini, hapus dari database

@@ -3,6 +3,7 @@ use App\Http\Controllers\Champions\EventChampionController;
 use App\Http\Controllers\Champions\MasterChampionCategoryController;
 use App\Http\Controllers\Champions\MasterChampionController;
 use App\Http\Controllers\Champions\EventChampionFormulaController;
+use App\Http\Controllers\Champions\LeaderboardController;
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     
@@ -39,4 +40,13 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
         ->name('events.champions.destroy');
 
     Route::resource('/events/{public_id}/formulas', EventChampionFormulaController::class)->only('index','store');
+
+    Route::get('/events/{event:public_id}/leaderboard', [LeaderboardController::class, 'index'])->name('events.leaderboard');
+    Route::put('/events/{event:public_id}/leaderboard/bulk-override', [LeaderboardController::class, 'bulkRankOverride'])->name('events.leaderboard.bulk-override');});
+
+Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
+    Route::get('/events/{event:public_id}/leaderboard', [LeaderboardController::class, 'index'])->name('events.leaderboard');
+    
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/my-recap', [LeaderboardController::class, 'myRecap'])
+        ->name('events.participations.my-recap');
 });

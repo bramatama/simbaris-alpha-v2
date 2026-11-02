@@ -43,14 +43,15 @@ interface MemberForm {
 }
 
 export default function OfficialTeamParticipationMembers({
+    event,
     participation,
 }: {
+    event: any;
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
 
-    // Mapping data awal dari database ke format form
     let initialMembers: MemberForm[] =
         participation.team_members?.length > 0
             ? participation.team_members.map((m: any) => ({
@@ -65,7 +66,6 @@ export default function OfficialTeamParticipationMembers({
               }))
             : [];
 
-    // AUTO-GENERATE: Jika anggota kosong (pertama kali buka), siapkan 1 Komandan dan 12 Pasukan
     if (initialMembers.length === 0) {
         initialMembers.push({
             team_member_id: null,
@@ -75,7 +75,6 @@ export default function OfficialTeamParticipationMembers({
             photo: null,
             preview_url: null,
         });
-
         for (let i = 0; i < 12; i++) {
             initialMembers.push({
                 team_member_id: null,
@@ -118,14 +117,11 @@ export default function OfficialTeamParticipationMembers({
 
     const removeMember = (absoluteIndex: number) => {
         const newMembers = [...data.members];
-
         if (
             newMembers[absoluteIndex].photo &&
             newMembers[absoluteIndex].preview_url
-        ) {
+        )
             URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
-        }
-
         newMembers.splice(absoluteIndex, 1);
         setData('members', newMembers);
     };
@@ -148,17 +144,13 @@ export default function OfficialTeamParticipationMembers({
         const file = e.target.files?.[0];
         if (file) {
             const newMembers = [...data.members];
-
             if (
                 newMembers[absoluteIndex].photo &&
                 newMembers[absoluteIndex].preview_url
-            ) {
+            )
                 URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
-            }
-
             newMembers[absoluteIndex].photo = file;
             newMembers[absoluteIndex].preview_url = URL.createObjectURL(file);
-
             setData('members', newMembers);
             clearErrors(`members.${absoluteIndex}.photo` as any);
         }
@@ -184,9 +176,7 @@ export default function OfficialTeamParticipationMembers({
                 >
                     <Trash2 className="h-3.5 w-3.5" />
                 </Button>
-
                 <div className="flex flex-col gap-4 p-4">
-                    {/* Foto anggota di bagian atas */}
                     <div className="flex justify-center">
                         <input
                             type="file"
@@ -197,7 +187,6 @@ export default function OfficialTeamParticipationMembers({
                                 handlePhotoChange(absoluteIndex, e)
                             }
                         />
-
                         <Label
                             htmlFor={`photo-${absoluteIndex}`}
                             className="group relative flex aspect-3/4 w-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border/70 bg-muted/30 transition-colors hover:border-primary/50 hover:bg-muted/50"
@@ -225,8 +214,6 @@ export default function OfficialTeamParticipationMembers({
                             )}
                         </Label>
                     </div>
-
-                    {/* Form memenuhi seluruh lebar card */}
                     <div className="w-full min-w-0 space-y-4">
                         <div className="space-y-1.5">
                             <Label
@@ -236,7 +223,6 @@ export default function OfficialTeamParticipationMembers({
                             >
                                 Nama Lengkap
                             </Label>
-
                             <Input
                                 id={`name-${absoluteIndex}`}
                                 className="h-9 w-full min-w-0 text-sm"
@@ -250,7 +236,6 @@ export default function OfficialTeamParticipationMembers({
                                     )
                                 }
                             />
-
                             <InputError
                                 message={
                                     (errors as any)[
@@ -260,13 +245,11 @@ export default function OfficialTeamParticipationMembers({
                                 className="text-[10px]"
                             />
                         </div>
-
                         {section === 'reserve' ? (
                             <div className="space-y-1.5">
                                 <Label className="text-xs">
                                     Jabatan / Posisi
                                 </Label>
-
                                 <Select
                                     value={member.member_position}
                                     onValueChange={(val) =>
@@ -280,7 +263,6 @@ export default function OfficialTeamParticipationMembers({
                                     <SelectTrigger className="h-9 w-full min-w-0 text-sm">
                                         <SelectValue placeholder="Pilih jabatan" />
                                     </SelectTrigger>
-
                                     <SelectContent>
                                         <SelectItem value="Pelatih">
                                             Pelatih (Coach)
@@ -302,7 +284,6 @@ export default function OfficialTeamParticipationMembers({
                                 >
                                     Keterangan Posisi
                                 </Label>
-
                                 <Input
                                     id={`pos-${absoluteIndex}`}
                                     className="h-9 w-full min-w-0 text-sm"
@@ -325,7 +306,6 @@ export default function OfficialTeamParticipationMembers({
                                 />
                             </div>
                         )}
-
                         <InputError
                             message={
                                 (errors as any)[
@@ -343,24 +323,24 @@ export default function OfficialTeamParticipationMembers({
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(
-            `/${userRole}/participations/${participation.public_id}/members`,
-            {
-                preserveScroll: true,
-            },
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/members`,
+            { preserveScroll: true },
         );
     };
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getParticipationInnerNav(participation.public_id)}
+            sidebarNavItems={getParticipationInnerNav(
+                participation.public_id,
+                event.public_id,
+            )}
         >
             <Head title={`Manajemen Anggota - ${participation.team_name}`} />
-
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
-                            href={`/${userRole}/participations/${participation.public_id}/information`}
+                            href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke
@@ -375,9 +355,7 @@ export default function OfficialTeamParticipationMembers({
                         </p>
                     </div>
                 </div>
-
                 <form onSubmit={submit} className="space-y-8">
-                    {/* BAGIAN 1: KOMANDAN PASUKAN */}
                     <Card className="border-t-4 border-border/50 border-t-emerald-500 shadow-sm">
                         <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                             <div className="flex items-center justify-between">
@@ -391,7 +369,6 @@ export default function OfficialTeamParticipationMembers({
                                         lomba.
                                     </CardDescription>
                                 </div>
-                                {/* Tombol Tambah Komandan hanya muncul jika belum ada Komandan */}
                                 {commanderCount === 0 && (
                                     <Button
                                         type="button"
@@ -425,8 +402,6 @@ export default function OfficialTeamParticipationMembers({
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* BAGIAN 2: PASUKAN INTI */}
                     <Card className="border-t-4 border-border/50 border-t-primary shadow-sm">
                         <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                             <div className="flex items-center justify-between">
@@ -471,8 +446,6 @@ export default function OfficialTeamParticipationMembers({
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* BAGIAN 3: PELATIH, OFFICIAL & CADANGAN */}
                     <Card className="border-t-4 border-border/50 border-t-orange-500 shadow-sm">
                         <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                             <div className="flex items-center justify-between">
@@ -516,8 +489,6 @@ export default function OfficialTeamParticipationMembers({
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* ERROR GLOBAL */}
                     {Object.keys(errors).length > 0 &&
                         !Object.keys(errors).some((k) =>
                             k.startsWith('members.'),
@@ -527,8 +498,6 @@ export default function OfficialTeamParticipationMembers({
                                 terisi dan format foto benar.
                             </div>
                         )}
-
-                    {/* TOMBOL SIMPAN */}
                     <div className="sticky bottom-6 z-20 flex justify-end rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-md">
                         <Button
                             type="submit"

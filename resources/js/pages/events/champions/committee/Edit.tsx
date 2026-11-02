@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import {
 import InputError from '@/components/input-error';
 import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { PageProps } from '@inertiajs/core';
 
 export default function ChampionsEdit({
     event,
@@ -27,6 +28,10 @@ export default function ChampionsEdit({
     championCategory,
     existingChampions,
 }: any) {
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
+    const committeePosition = auth?.user?.committee_position;
+
     const availableChampions = championCategory.champions || [];
 
     const initialChampions =
@@ -106,7 +111,7 @@ export default function ChampionsEdit({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, 'committee')}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Edit Penghargaan - ${event.event_name}`} />
 

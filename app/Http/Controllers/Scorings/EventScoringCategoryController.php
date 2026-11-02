@@ -11,17 +11,25 @@ use App\Models\AssessmentCriteria;
 use App\Models\RubricCategory;
 use App\Models\RubricScore;
 use App\Models\TeamScoreDetail;
+use App\Models\EventJudge;
+use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class EventScoringCategoryController extends Controller
 {   
+    use HasEventAccess;
+
+    /** Menampilkan kategori penilaian pada jenjang event. */
     public function index(Request $request, $public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $eventLevels = EventLevel::with('level:level_id,level_name')
             ->where('event_id', $event->event_id)
@@ -32,14 +40,10 @@ class EventScoringCategoryController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        if (!$activeLevel) {
-            abort(404, 'Event ini belum memiliki jenjang perlombaan.');
-        }
-
-        $scoringCategories = ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
+        $scoringCategories = $activeLevel?ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
             ->with('masterCategory:master_category_id,category_name')
             ->withCount('assessmentCriteria') 
-            ->get();
+            ->get():collect();
 
         return inertia('events/scorings/Index', [
             'event' => $event,
@@ -49,10 +53,17 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    /** Menampilkan formulir pembuatan kategori penilaian event. */
     public function create($public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
+        if ($redirect = $this->checkIfEventEditable($event)) {
+            return $redirect;
+        }
+
         $eventLevels = EventLevel::with(['level:level_id,level_name', 'scoringCategories:event_level_id,master_category_id'])
             ->where('event_id', $event->event_id)
             ->get();
@@ -68,9 +79,17 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    /** Membuat kategori penilaian untuk jenjang event yang dipilih. */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
+        // Proteksi jika event sedang berjalan
+        if ($redirect = $this->checkIfEventEditable($event)) {
+            return $redirect;
+        }
 
         $validated = $this->validateScoringForm($request);
 
@@ -99,9 +118,13 @@ class EventScoringCategoryController extends Controller
             ->with('success', 'Form kategori penilaian berhasil dibuat untuk jenjang yang dipilih!');
     }
 
+    /** Menampilkan detail kriteria dan rubrik suatu kategori penilaian. */
     public function show($public_id, $scoring_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         $scoringCategory = $this->getFullyLoadedCategory($event->event_id, $scoring_category_id);
 
         return inertia('events/scorings/Show', [
@@ -111,11 +134,14 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    /** Menampilkan pratinjau seluruh kategori penilaian pada suatu jenjang. */
     public function previewLevel($public_id, $event_level_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+        
+        $this->validateEventAccess($event, [], ['committee', 'official_team'] );
 
         $eventLevel = EventLevel::with('level:level_id,level_name')
             ->where('event_level_id', $event_level_id)
@@ -126,7 +152,7 @@ class EventScoringCategoryController extends Controller
             ->with([
                 'masterCategory',
                 'assessmentCriteria' => fn($q) => $q->orderBy('order_index', 'asc'),
-                'assessmentCriteria.masterCriteria', // Tambahkan eager loading ke master agar nama kriteria muncul
+                'assessmentCriteria.masterCriteria',
                 'assessmentCriteria.rubricCategories' => fn($q) => $q->orderBy('category_order', 'asc'),
                 'assessmentCriteria.rubricCategories.rubricScores' => fn($q) => $q->orderBy('display_order', 'asc'),
             ])
@@ -139,10 +165,78 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    public function judgePreview(Request $request, $public_id)
+    {
+        $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event,[], ['judge']);
+
+        $user = Auth::user();
+        $judgeId = $user->judge?->judge_id;
+
+        $assignedLevelIds = EventLevel::where('event_id', $event->event_id)
+            ->whereHas('scoringCategories', function ($query) use ($judgeId, $event) {
+                $query->whereHas('judgeExpertises', function ($q2) use ($judgeId, $event) {
+                     $q2->whereHas('eventJudge', function ($q3) use ($judgeId, $event) {
+                         $q3->where('judge_id', $judgeId)
+                            ->where('event_id', $event->event_id);
+                     });
+                });
+            })
+            ->pluck('event_level_id')
+            ->toArray();
+
+        $assignedLevels = EventLevel::where('event_id', $event->event_id)
+            ->whereIn('event_level_id', $assignedLevelIds)
+            ->with('level')
+            ->get();
+
+        $activeLevelId = $request->query('level_id', $assignedLevels->first()?->event_level_id);
+
+        $activeEventLevel = null;
+        $scoringCategories = [];
+
+        if ($activeLevelId && in_array($activeLevelId, $assignedLevelIds)) {
+            $activeEventLevel = EventLevel::with('level')->find($activeLevelId);
+            
+            $scoringCategories = ScoringCategory::with([
+                'masterCategory',
+                'assessmentCriteria' => function($q) {
+                    $q->orderBy('order_index')
+                      ->with(['masterCriteria', 'rubricCategories' => function($q2) {
+                          $q2->orderBy('category_order') // Sesuai kolom di db: category_order
+                             ->with(['rubricScores' => function($q3) {
+                                 $q3->orderBy('display_order'); // Sesuai kolom di db: display_order
+                             }]);
+                      }]);
+                }
+            ])
+            ->where('event_level_id', $activeLevelId)
+            // Filter tambahan: hanya tampilkan kategori yang memang ditugaskan ke juri ini
+            ->whereHas('judgeExpertises', function ($q) use ($judgeId, $event) {
+                 $q->whereHas('eventJudge', function ($q2) use ($judgeId, $event) {
+                     $q2->where('judge_id', $judgeId)
+                        ->where('event_id', $event->event_id);
+                 });
+            })
+            ->get();
+        }
+
+        return inertia('events/scorings/judge/JudgePreview', [
+            'event' => $event,
+            'assignedLevels' => $assignedLevels,
+            'activeEventLevel' => $activeEventLevel,
+            'scoringCategories' => $scoringCategories,
+        ]);
+    }
+
+    /** Menampilkan formulir perubahan kategori penilaian. */
     public function edit($public_id, $scoring_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         $this->checkIfEditable($scoring_category_id);
 
         $scoringCategory = $this->getFullyLoadedCategory($event->event_id, $scoring_category_id);
@@ -159,10 +253,17 @@ class EventScoringCategoryController extends Controller
         ]);
     }
 
+    /** Memperbarui kriteria dan rubrik pada kategori penilaian. */
     public function update(Request $request, $public_id, $scoring_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
+        if ($redirect = $this->checkIfEventEditable($event)) {
+            return $redirect;
+        }
+
         $scoringCategory = ScoringCategory::where('scoring_category_id', $scoring_category_id)
             ->whereHas('eventLevel', function($query) use ($event) {
                 $query->where('event_id', $event->event_id);
@@ -182,10 +283,17 @@ class EventScoringCategoryController extends Controller
         ])->with('success', 'Form kategori penilaian berhasil diperbarui!');
     }
 
+    /** Menghapus kategori penilaian yang belum digunakan juri. */
     public function destroy($public_id, $scoring_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
+        if ($redirect = $this->checkIfEventEditable($event)) {
+            return $redirect;
+        }
+
         $scoringCategory = ScoringCategory::where('scoring_category_id', $scoring_category_id)
             ->whereHas('eventLevel', function($query) use ($event) {
                 $query->where('event_id', $event->event_id);
@@ -212,7 +320,21 @@ class EventScoringCategoryController extends Controller
     // PRIVATE HELPER METHODS
     // =========================================================================
 
-   private function getFullyLoadedCategory($eventId, $scoringCategoryId)
+    /**
+     * Memastikan konfigurasi penilaian masih dapat diubah.
+     */
+    private function checkIfEventEditable($event)
+    {
+        if ($event->status === 'ongoing') {
+            return redirect()->route('committee.events.scoring-categories.index', ['public_id' => $event->public_id])
+                ->with('error', 'Form penilaian sudah dikunci dan tidak dapat diubah karena event sedang berlangsung.');
+        }
+
+        return null;
+    }
+
+    /** Mengambil kategori penilaian beserta kriteria dan rubriknya. */
+    private function getFullyLoadedCategory($eventId, $scoringCategoryId)
     {
         return ScoringCategory::where('scoring_category_id', $scoringCategoryId)
             ->whereHas('eventLevel', function($query) use ($eventId) {
@@ -228,6 +350,7 @@ class EventScoringCategoryController extends Controller
             ])->firstOrFail();
     }
 
+    /** Memvalidasi data kategori, kriteria, dan rubrik dari formulir. */
     private function validateScoringForm(Request $request, $isUpdate = false)
     {
         $data = $request->all();
@@ -238,7 +361,6 @@ class EventScoringCategoryController extends Controller
         $rules = [
             'criteria' => 'present|array',
             'criteria.*.criteria_id' => 'nullable|exists:assessment_criteria,criteria_id',
-            // Ubah criteria_name menjadi master_criteria_id sesuai desain baru
             'criteria.*.master_criteria_id' => 'required|exists:master_assessment_criteria,master_criteria_id', 
             'criteria.*.order_index' => 'required|integer',
 
@@ -288,6 +410,7 @@ class EventScoringCategoryController extends Controller
         return $validated;
     }
 
+    /** Menyelaraskan kriteria dan rubrik dengan konfigurasi kategori. */
     private function syncCriteria($scoringCategoryId, $criteriaDataArray)
     {
         $criteriaDataArray = $criteriaDataArray ?? [];
@@ -348,6 +471,7 @@ class EventScoringCategoryController extends Controller
         }
     }
 
+    /** Memastikan kategori belum memiliki nilai yang mulai diinput juri. */
     private function checkIfEditable($scoringCategoryId)
     {
         $hasScores = TeamScoreDetail::whereHas('criterion', function($q) use ($scoringCategoryId) {

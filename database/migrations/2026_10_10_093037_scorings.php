@@ -160,8 +160,8 @@ return new class extends Migration
             $table->id('team_penalty_id');
             $table->foreignId('participation_id')->index()->constrained('participations', 'participation_id')->cascadeOnDelete();
             $table->foreignId('event_penalty_id')->constrained('event_penalties', 'event_penalty_id')->restrictOnDelete();
-            $table->foreignId('judge_id')->nullable()->constrained('judges', 'judge_id')->nullOnDelete();// Snapshot aturan pada saat penalti diberikan.
-            $table->decimal('penalty_value', 8, 2);
+            $table->foreignId('committee_id')->nullable()->constrained('committees', 'committee_id')->nullOnDelete();
+            $table->decimal('penalty_value', 8, 2)->nullable();
             $table->enum('calculation_type', ['fixed','per_occurrence','per_second',])->default('fixed');
             $table->enum('penalty_action', ['deduction','disqualification',])->default('deduction');
             $table->unsignedInteger('occurrence_count')->default(1);
@@ -174,6 +174,16 @@ return new class extends Migration
             );
         });
 
+        Schema::create('evaluation_sessions', function (Blueprint $table) {
+            $table->id('session_id');
+            $table->foreignId('participation_id')->constrained('participations', 'participation_id')->cascadeOnDelete();
+            $table->enum('status', ['waiting', 'ongoing', 'finished'])->default('waiting');
+            $table->datetime('start_time')->nullable();
+            $table->datetime('end_time')->nullable();
+            $table->foreignId('recorded_by')->nullable()->constrained('event_committees','event_committee_id')->nullOnDelete();
+            $table->timestamps();
+        });
+
         Schema::create('audit_trails', function (Blueprint $table) {
             $table->id('audit_id');
             $table->foreignId('participation_id')->constrained('participations', 'participation_id')->cascadeOnDelete();
@@ -183,6 +193,7 @@ return new class extends Migration
             $table->decimal('score_value', 8, 2);
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
+            $table->datetime('clicked_at')->nullable();
             $table->timestamps();
         });
 
@@ -204,6 +215,7 @@ return new class extends Migration
             $table->decimal('raw_score', 10, 2);
             $table->decimal('total_penalty_deduction', 10,2);
             $table->boolean('is_disqualified')->default(false);
+            $table->unsignedInteger('rank_override')->nullable();
             $table->timestamps();
             $table->unique(
                 ['participation_id', 'event_champion_category_id'],
@@ -217,6 +229,7 @@ return new class extends Migration
         Schema::dropIfExists('score_recaps');
         Schema::dropIfExists('team_scores');
         Schema::dropIfExists('audit_trails');
+        Schema::dropIfExists('evaluation_sessions');
         Schema::dropIfExists('team_penalties');
         Schema::dropIfExists('team_score_details');
         Schema::dropIfExists('rubric_scores');

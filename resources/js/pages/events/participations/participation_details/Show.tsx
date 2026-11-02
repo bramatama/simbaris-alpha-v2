@@ -30,23 +30,25 @@ import {
     Clock,
     Eye,
     Edit3,
+    Save,
 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
-import { Save } from 'lucide-react';
 
 export default function ParticipationShow({
+    event,
     participation,
 }: {
+    event: any;
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
-    // State untuk PDF Viewer Dokumen Persyaratan
     const [viewDocument, setViewDocument] = useState<{
         name: string;
         url: string;
@@ -59,12 +61,14 @@ export default function ParticipationShow({
 
     const submitStatus = (e: React.FormEvent) => {
         e.preventDefault();
-        patch(`/${userRole}/participations/${participation.public_id}/status`, {
-            preserveScroll: true,
-        });
+        patch(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/status`,
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
-    // Helper untuk warna status
     const getStatusConfig = (status: string) => {
         switch (status) {
             case 'approved':
@@ -94,21 +98,23 @@ export default function ParticipationShow({
         <InnerAppLayout
             sidebarNavItems={
                 userRole === 'committee'
-                    ? getEventInnerNav(participation.event.public_id, userRole)
-                    : getParticipationInnerNav(participation.public_id)
+                    ? getEventInnerNav(event.public_id, userRole, committeePosition || undefined)
+                    : getParticipationInnerNav(
+                        participation.public_id,
+                          event.public_id,
+                      )
             }
         >
             <Head title={`Detail Tim - ${participation.team_name}`} />
 
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
-                {/* Header Navigasi */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
                             href={
                                 userRole === 'official_team'
                                     ? `/${userRole}/my-participations`
-                                    : `/${userRole}/events/${participation.event.public_id}/participations`
+                                    : `/${userRole}/events/${event.public_id}/participations`
                             }
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
@@ -121,7 +127,7 @@ export default function ParticipationShow({
                             {participation.team_name}
                         </h1>
                         <p className="mt-1 flex items-center gap-2 text-muted-foreground">
-                            {participation.event.event_name} • Jenjang{' '}
+                            {event.event_name} • Jenjang{' '}
                             {participation.event_level?.level?.level_name}
                         </p>
                     </div>
@@ -129,18 +135,17 @@ export default function ParticipationShow({
                     {userRole === 'official_team' && (
                         <div className="flex items-center gap-3">
                             <Link
-                                href={`/${userRole}/participations/${participation.public_id}/edit`}
+                                href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/edit`}
                             >
                                 <Button variant="outline" className="gap-2">
-                                    <Edit3 className="h-4 w-4" />
-                                    Edit Pendaftaran
+                                    <Edit3 className="h-4 w-4" /> Edit
+                                    Pendaftaran
                                 </Button>
                             </Link>
                         </div>
                     )}
                 </div>
 
-                {/* Status Alert jika Ditolak */}
                 {participation.status === 'rejected' &&
                     participation.status_message && (
                         <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
@@ -157,7 +162,6 @@ export default function ParticipationShow({
                     )}
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* KOLOM KIRI: Informasi Utama */}
                     <div className="space-y-6 lg:col-span-2">
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10">
@@ -219,7 +223,6 @@ export default function ParticipationShow({
                             </CardContent>
                         </Card>
 
-                        {/* Dokumen Persyaratan */}
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50">
                                 <CardTitle className="text-lg">
@@ -290,7 +293,6 @@ export default function ParticipationShow({
                         </Card>
                     </div>
 
-                    {/* KOLOM KANAN: Bukti Pembayaran & Form Verifikasi (Panitia) */}
                     <div className="space-y-6 lg:col-span-1">
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50">
@@ -375,7 +377,6 @@ export default function ParticipationShow({
                                                     </span>
                                                 </div>
                                             </Label>
-
                                             <Label
                                                 htmlFor="approved"
                                                 className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-500/10 hover:bg-muted has-data-[state=checked]:border-emerald-500 has-data-[state=checked]:bg-emerald-500/10"
@@ -390,7 +391,6 @@ export default function ParticipationShow({
                                                     </span>
                                                 </div>
                                             </Label>
-
                                             <Label
                                                 htmlFor="rejected"
                                                 className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 peer-data-[state=checked]:border-destructive peer-data-[state=checked]:bg-destructive/10 hover:bg-muted has-data-[state=checked]:border-destructive has-data-[state=checked]:bg-destructive/10"
@@ -456,7 +456,6 @@ export default function ParticipationShow({
                     </div>
                 </div>
 
-                {/* Komponen Reusable PDF Viewer */}
                 <PdfViewerDialog
                     document={viewDocument}
                     onClose={() => setViewDocument(null)}

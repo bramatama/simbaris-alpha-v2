@@ -60,7 +60,7 @@ export default function EditJudge({
 }: EditJudgeProps) {
     const { auth } = usePage<PageProps & { auth: Auth }>().props;
     const userRole = auth.user.role;
-
+    const committeePosition = auth.user.committee_position;
     const currentExpertiseIds = (
         eventJudge.judge_expertises ||
         eventJudge.judgeExpertises ||
@@ -106,7 +106,7 @@ export default function EditJudge({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Edit Penugasan Juri - ${event.event_name}`} />
 

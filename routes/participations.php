@@ -18,23 +18,32 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
     Route::put('/events/{public_id}/participation-orders/levels/{event_level_id}', [ParticipationOrderController::class, 'update'])->name('events.participations.orders.update');
     Route::delete('/events/{public_id}/participation-orders/levels/{event_level_id}', [ParticipationOrderController::class, 'destroy'])->name('events.participations.orders.destroy');
 
-    Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');
-    Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participation.edit');
-    Route::patch('/participations/{participation:public_id}/status', [ParticipationController::class, 'updateStatus'])->name('participations.status.update');
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participation.edit');
+    Route::patch('/events/{event:public_id}/participations/{participation:public_id}/status', [ParticipationController::class, 'updateStatus'])->name('participations.status.update');
+    Route::delete('/participations/{participation:public_id}/delete', [ParticipationController::class, 'destroy'])->name('participations.destroy');
 
-    Route::get('/participations/{public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
+    Route::get('events/{event:public_id}/participations/{participation:public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
+    
     Route::get('/my-participations', [ParticipationController::class, 'myParticipations'])->name('participations.myParticipations');
 
-    Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participations.information.show');
-    Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participations.edit');
-    Route::put('/participations/{participation:public_id}/registration', [ParticipationController::class, 'updateRegistration'])->name('participation.registration.update');
-    Route::get('/participations/{participation:public_id}/documents', [ParticipationController::class, 'documentIndex'])->name('participations.documents.index');
-    Route::post('/participations/{participation:public_id}/documents', [ParticipationController::class, 'uploadParticipationDocuments'])->name('participations.documents.store');
-    Route::delete('/participations/{participation:public_id}/documents/{participation_document:document_id}',[ParticipationController::class, 'destroyDocument'])->name('participations.documents.delete');
+    Route::prefix('/events/{event:public_id}')->group(function () {
+        // --- Fitur Kelola Informasi Pendaftaran ---
+        Route::get('/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participations.information.show');
+        Route::get('/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participations.edit');
+        Route::put('/participations/{participation:public_id}/registration', [ParticipationController::class, 'updateRegistration'])->name('participation.registration.update');
+        Route::delete('/participations/{participation:public_id}/delete', [ParticipationController::class, 'destroy'])->name('participations.destroy');
+        // --- Fitur Dokumen Tim ---
+        Route::get('/participations/{participation:public_id}/documents', [ParticipationController::class, 'documentIndex'])->name('participations.documents.index');
+        Route::post('/participations/{participation:public_id}/documents', [ParticipationController::class, 'uploadParticipationDocuments'])->name('participations.documents.store');
+        Route::delete('/participations/{participation:public_id}/documents/{participation_document:document_id}',[ParticipationController::class, 'destroyDocument'])->name('participations.documents.delete');
 
-    Route::get('/participations/{public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
-    Route::post('/participations/{public_id}/members', [TeamMemberController::class, 'sync'])->name('participations.members.sync');
+        // --- Fitur Anggota Tim (Members) ---
+        Route::get('/participations/{participation:public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
+        Route::post('/participations/{participation:public_id}/members', [TeamMemberController::class, 'sync'])->name('participations.members.sync');
+        
+    });
 });

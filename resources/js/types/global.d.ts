@@ -15,5 +15,6 @@ declare module '@inertiajs/core' {
         auth: Auth;
         sidebarOpen: boolean;
         isMobileDevice: boolean;
+        url: string;
     }
 }

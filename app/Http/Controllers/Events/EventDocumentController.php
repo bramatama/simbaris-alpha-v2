@@ -5,20 +5,24 @@ namespace App\Http\Controllers\Events;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventDocument;
+use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class EventDocumentController extends Controller
 {
+    use HasEventAccess;
     /**
-     * Menampilkan daftar dokumen untuk event tertentu.
+     * Menampilkan dokumen yang terdaftar pada event.
      */
     public function index($public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'],['committee']);
 
         $documents = EventDocument::where('event_id', $event->event_id)
             ->latest()
@@ -32,11 +36,13 @@ class EventDocumentController extends Controller
     }
 
     /**
-     * Menyimpan banyak dokumen PDF sekaligus untuk event tertentu.
+     * Mengunggah dokumen PDF untuk event.
      */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         // Validasi: documents harus berupa array, dan setiap isinya wajib file PDF
         $request->validate([
@@ -78,10 +84,14 @@ class EventDocumentController extends Controller
     }
     
     /**
-     * Menghapus dokumen tunggal.
+     * Menghapus dokumen dari event.
      */
     public function destroy($public_id, $document_id)
     {
+        $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         $document = EventDocument::findOrFail($document_id);
         
         DB::transaction(function () use ($document) {

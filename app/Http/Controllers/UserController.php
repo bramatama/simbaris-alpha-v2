@@ -10,7 +10,16 @@ use App\Models\User;
 class UserController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Membatasi pengelolaan akun hanya untuk administrator.
+     */
+    public function __construct()
+    {
+        // Jika user belum login atau role-nya bukan admin, langsung banting 403 Forbidden
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Akses ditolak: Fitur ini khusus untuk Super Admin.');
+    }
+    
+    /**
+     * Menampilkan daftar akun yang dapat dikelola administrator.
      */
     public function index(Request $request)
     {
@@ -31,6 +40,7 @@ class UserController extends Controller
         ]);
     }
 
+    /** Menampilkan ringkasan informasi satu akun. */
     public function show(User $user)
     {
         return inertia('users/Show', [
@@ -39,7 +49,7 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus satu akun selain akun administrator yang sedang aktif.
      */
     public function destroy(User $user)
     {
@@ -55,6 +65,7 @@ class UserController extends Controller
             ->with('success', 'User deleted successfully.');
     }
 
+    /** Menghapus beberapa akun yang dipilih administrator. */
     public function destroyMany(Request $request)
     {
         $currentUserId = auth()->user()?->user_id;

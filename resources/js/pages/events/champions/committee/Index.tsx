@@ -4,6 +4,7 @@ import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
 import { Button } from '@/components/ui/button';
 import {
     Accordion,
@@ -21,17 +22,26 @@ import {
     Trash2,
     Banknote,
     ScrollText,
+    Layers,
 } from 'lucide-react';
 
 export default function ChampionsIndex({ event, groupedChampions }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     // Inisialisasi tab aktif berdasarkan query parameter (atau default jenjang pertama)
     const params = new URLSearchParams(window.location.search);
     const initialLevelId = params.get('level_id')
         ? parseInt(params.get('level_id')!)
         : groupedChampions[0]?.event_level_id || null;
+
+    const eventLevels = groupedChampions.map((group: any) => ({
+        event_level_id: group.event_level_id,
+        level: {
+            level_name: group.level_name,
+        },
+    }));
 
     const [activeLevelId, setActiveLevelId] = useState<number | null>(
         initialLevelId,
@@ -44,6 +54,16 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
     const activeGroup = groupedChampions.find(
         (g: any) => g.event_level_id === activeLevelId,
     );
+
+    const handleLevelChange = (levelIdStr: string) => {
+        const levelId = Number(levelIdStr);
+
+        if (!levelId) return;
+
+        setActiveLevelId(levelId);
+
+        window.history.replaceState(null, '', `?level_id=${levelId}`);
+    };
 
     const confirmDelete = (categoryId: number, categoryName: string) => {
         setCategoryToDelete({ id: categoryId, name: categoryName });
@@ -81,7 +101,7 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Manajemen Juara - ${event.event_name}`} />
 
@@ -104,54 +124,27 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                             hadiah per jenjang
                         </p>
                     </div>
-
-                    <Link
-                        href={`/committee/events/${event.public_id}/champions/create`}
-                    >
-                        <Button className="w-full gap-2 shadow-sm sm:w-auto">
-                            <Plus className="h-4 w-4" /> Tambah Penghargaan
-                        </Button>
-                    </Link>
                 </div>
 
                 {/* JENJANG TABS */}
                 {groupedChampions.length > 0 ? (
                     <div className="space-y-4">
-                        <div className="flex w-full flex-col gap-2 overflow-hidden">
-                            <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                Jenjang Perlombaan:
-                            </span>
-                            <div className="hide-scrollbar flex w-full items-center gap-2 overflow-x-auto pb-2">
-                                {groupedChampions.map((group: any) => (
-                                    <Badge
-                                        key={group.event_level_id}
-                                        variant={
-                                            activeLevelId ===
-                                            group.event_level_id
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        className={`shrink-0 cursor-pointer rounded-md px-4 py-1.5 text-xs whitespace-nowrap transition-colors ${
-                                            activeLevelId ===
-                                            group.event_level_id
-                                                ? 'pointer-events-none shadow-sm'
-                                                : 'border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                                        }`}
-                                        onClick={() => {
-                                            setActiveLevelId(
-                                                group.event_level_id,
-                                            );
-                                            window.history.replaceState(
-                                                null,
-                                                '',
-                                                `?level_id=${group.event_level_id}`,
-                                            );
-                                        }}
-                                    >
-                                        {group.level_name}
-                                    </Badge>
-                                ))}
-                            </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <LevelDropdownFilter
+                                eventLevels={eventLevels}
+                                activeLevelId={activeLevelId}
+                                onLevelChange={handleLevelChange}
+                                placeholder="Pilih jenjang perlombaan..."
+                                className="w-full sm:w-64"
+                            />
+                            <Link
+                                href={`/committee/events/${event.public_id}/champions/create`}
+                            >
+                                <Button className="w-full gap-2 shadow-sm sm:w-auto">
+                                    <Plus className="h-4 w-4" /> Tambah
+                                    Penghargaan
+                                </Button>
+                            </Link>
                         </div>
 
                         {/* KONTEN KATEGORI JUARA */}
@@ -178,7 +171,7 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                                                     value={`cat-${category.champion_category_id}`}
                                                     className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm"
                                                 >
-                                                    <AccordionTrigger className="px-4 py-4 cursor-pointer hover:bg-muted/30 hover:no-underline md:px-6">
+                                                    <AccordionTrigger className="cursor-pointer px-4 py-4 hover:bg-muted/30 hover:no-underline md:px-6">
                                                         <div className="flex w-full items-center justify-between pr-4">
                                                             <div className="flex items-center gap-2.5 text-left">
                                                                 <Trophy className="h-5 w-5 shrink-0 text-primary" />
@@ -296,7 +289,7 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                                                                                         </span>
                                                                                     </div>
                                                                                     {et.prize_descriptions && (
-                                                                                        <div className=" rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                                                                                        <div className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
                                                                                             {
                                                                                                 et.prize_descriptions
                                                                                             }
@@ -319,9 +312,30 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                         )}
                     </div>
                 ) : (
-                    <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                        Event ini belum memiliki jenjang perlombaan sama sekali.
-                    </div>
+                    <Card className="flex flex-col items-center justify-center border-2 border-dashed border-border/60 bg-muted/10 p-8 text-center shadow-none sm:p-12">
+                        <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
+                            <Layers className="h-8 w-8" />
+                        </div>
+                        <h3 className="mb-1.5 text-base font-bold text-foreground sm:text-lg">
+                            Belum Ada Jenjang Perlombaan
+                        </h3>
+                        <p className="max-w-md text-xs text-muted-foreground sm:text-sm">
+                            Event ini belum memiliki jenjang perlombaan
+                            terdaftar. Tambahkan jenjang perlombaan terlebih
+                            dahulu untuk mengonfigurasi format penilaian juri.
+                        </p>
+                        {userRole === 'committee' && (
+                            <Link
+                                href={`/${userRole}/events/${event.public_id}/levels`}
+                                className="mt-5"
+                            >
+                                <Button size="sm" className="gap-2">
+                                    <Plus className="h-4 w-4" /> Kelola Jenjang
+                                    Perlombaan
+                                </Button>
+                            </Link>
+                        )}
+                    </Card>
                 )}
             </div>
 

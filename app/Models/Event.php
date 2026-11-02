@@ -42,6 +42,9 @@ class Event extends Model
         'registration_end_time',
         'start_time',
         'end_time',
+        'is_result_visible',
+        'is_recap_visible',
+        'is_leaderboard_visible',
         'created_by',
     ];
 
@@ -72,6 +75,11 @@ class Event extends Model
     public function eventJudges(): HasMany
     {
         return $this->hasMany(EventJudge::class, 'event_id');
+    }
+
+    public function eventPenalties(): HasMany
+    {
+        return $this->hasMany(EventPenalty::class, 'event_id');
     }
 
     public function eventCommittees(): HasMany

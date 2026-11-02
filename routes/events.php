@@ -12,7 +12,6 @@ Route::get('/events/{event:public_id}/information', [EventController::class, 'sh
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::post('/api/judge/participations/{participation:public_id}/autosave', [JudgeEvaluationController::class, 'autosave'])->name('api.judge.autosave');
 });
 
@@ -63,8 +62,4 @@ Route::middleware(['auth', 'verified', 'role:judge'])->prefix('judge')->name('ju
     Route::get('/assigned-events', [EventController::class, 'my_events'])->name('events.assigned-events');
     Route::get('events/{event:public_id}/participants', [JudgeEvaluationController::class, 'participants'])->name('participants');
     Route::get('events/{event:public_id}/participants/{participation:public_id}', [JudgeEvaluationController::class, 'show'])->name('events.participants.show');
-    Route::get('events/{event:public_id}/participants/{participation:public_id}/evaluate/{scoringCategory}', [JudgeEvaluationController::class, 'evaluate'])->name('events.participants.evaluate');
-
-    Route::post('events/{event:public_id}/participants/{participation:public_id}/evaluate/{scoringCategory}/submit', [JudgeEvaluationController::class, 'submitCategory'])->name('events.participants.submit_category');
-    Route::post('events/{event:public_id}/participants/{participation:public_id}/lock/{scoringCategory}', [JudgeEvaluationController::class, 'lockCategory'])->name('events.participants.lock_category');
 });

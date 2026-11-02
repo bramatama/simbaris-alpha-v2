@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 class TempFileController extends Controller
 {
+    /** Menyimpan berkas sementara untuk digunakan dalam formulir. */
     public function storeTemp(Request $request)
     {
         $request->validate([

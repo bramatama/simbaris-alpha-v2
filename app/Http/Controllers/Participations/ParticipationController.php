@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\EventLevel;
 use App\Models\Participation;
 use App\Models\ParticipationDocument;
+use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -15,14 +16,19 @@ use Illuminate\Validation\ValidationException;
 
 class ParticipationController extends Controller
 {
+    use HasEventAccess;
+
     /**
-     * Menampilkan daftar pendaftar untuk event tertentu.
+     * Menampilkan daftar pendaftaran pada event.
      */
     public function index($public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        // Validasi Akses Panitia Administrasi / Admin
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $participations = Participation::where('event_id', $event->event_id)
             ->with([
@@ -32,47 +38,44 @@ class ParticipationController extends Controller
             ->latest()
             ->get();
 
-        return  inertia('events/participations/participation_lists/committee/Index', [
+        return inertia('events/participations/participation_lists/committee/Index', [
             'event' => $event,
             'participations' => $participations,
         ]);
     }
 
     /**
-     * Menampilkan daftar pendaftaran sendiri
+     * Menampilkan pendaftaran milik tim yang sedang menggunakan akun.
      */
     public function myParticipations()
     {
-        $myOfficialTeamId = auth()->user()->officialTeam->official_team_id?? null;
+        $user = auth()->user();
+        abort_if($user?->role !== 'official_team', 403, 'Akses khusus Official Team.');
 
-        if ($myOfficialTeamId === null) {
-            abort(403, 'Unauthorized access');
-        }
+        $myOfficialTeamId = $user->officialTeam?->official_team_id;
+        abort_if(!$myOfficialTeamId, 403, 'Profil Official Team Anda tidak ditemukan.');
 
-        $participations = Participation::whereHas('officialTeam', function ($query) {
-                $query->where('user_id', auth()->id());
-            })->with('eventLevel.level')->latest()->get();
+        $participations = Participation::where('official_team_id', $myOfficialTeamId)
+            ->with(['eventLevel.level', 'event']) 
+            ->latest()
+            ->get();
 
-        return inertia('events/participations/participation_lists/official_team/MyParticipations', 
-        ['participations' => $participations,
-        'myOfficialTeamId' => $myOfficialTeamId
+        return inertia('events/participations/participation_lists/official_team/MyParticipations', [
+            'participations' => $participations,
+            'myOfficialTeamId' => $myOfficialTeamId
         ]);
     }
 
     /**
-     * Menampilkan halaman form pendaftaran event (Khusus Official Team).
+     * Menampilkan formulir pendaftaran tim ke event.
      */
     public function create($public_id)
     {
-        $role = auth()->user()->role;
-        
-        if ($role !== 'official_team') {
-            abort(403, 'Hanya akun Official Team yang dapat mendaftar pada event ini.');
-        }
-
         $event = Event::select('event_id', 'public_id', 'event_name')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        $this->validateEventAccess($event, [], ['official_team']);
 
         $eventLevels = EventLevel::where('event_id', $event->event_id)
             ->with('level:level_id,level_name')
@@ -84,6 +87,9 @@ class ParticipationController extends Controller
         ]);
     }
 
+    /**
+     * Memeriksa ketersediaan kuota untuk pendaftaran tim.
+     */
     public function checkQuota(Request $request, $public_id)
     {
         $request->validate([
@@ -92,6 +98,9 @@ class ParticipationController extends Controller
         ]);
 
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        
+        $this->validateEventAccess($event, [], ['official_team']);
+
         $levelCounts = collect($request->teams)->countBy('event_level_id');
 
         foreach ($levelCounts as $levelId => $requestedQuota) {
@@ -99,7 +108,6 @@ class ParticipationController extends Controller
                 ->where('event_id', $event->event_id)
                 ->firstOrFail();
 
-            // Cek hanya jika kuota tidak kosong/null (berarti dibatasi)
             if (!empty($level->quota) && $level->quota > 0) {
                 $currentParticipations = Participation::where('event_level_id', $level->event_level_id)->count();
 
@@ -114,10 +122,16 @@ class ParticipationController extends Controller
         return response()->json(['message' => 'Kuota tersedia.']);
     }
 
+    /**
+     * Mendaftarkan tim ke event.
+     */
     public function store(Request $request, $public_id)
     {
-
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, [], ['official_team']);
+
+        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
 
         $validated = $request->validate([
             'teams' => 'required|array|min:1',
@@ -125,24 +139,14 @@ class ParticipationController extends Controller
             'teams.*.team_name' => 'required|string|max:255',
             'teams.*.pic_name' => 'required|string|max:255',
             'teams.*.pic_phone_number' => 'required|string|max:20',
-            
             'temp_payment_proof_path' => 'required|string',
         ]);
 
-        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-
-        if (!$officialTeamId) {
-            throw ValidationException::withMessages([
-                'error' => 'Hanya akun Official Team yang dapat mendaftar event.',
-            ]);
-        }
 
         $paymentProofPath = null;
 
         try {
-            DB::transaction(function () use ($request, $validated, $event, $officialTeamId, &$paymentProofPath) {
-                
-               // --- LOGIKA BARU PEMINDAHAN BUKTI BAYAR ---
+            DB::transaction(function () use ($validated, $event, $officialTeamId, &$paymentProofPath) {
                 $tempPath = $validated['temp_payment_proof_path'];
                 
                 if (!Storage::disk('public')->exists($tempPath)) {
@@ -157,7 +161,6 @@ class ParticipationController extends Controller
                 Storage::disk('local')->move($tempPath, $paymentProofPath);
 
                 $levelCounts = collect($validated['teams'])->countBy('event_level_id');
-                
                 $sortedLevelIds = $levelCounts->keys()->sort();
                 $eventLevels = [];
 
@@ -213,11 +216,10 @@ class ParticipationController extends Controller
     }
 
     /**
-     * Menampilkan detail pendaftaran.
+     * Menampilkan detail pendaftaran tim.
      */
-    public function show($public_id)
+    public function show(Event $event, $public_id)
     {
-        $role = auth()->user()->role;
         $participation = Participation::with([
             'event:event_id,public_id,event_name',
             'officialTeam',
@@ -225,46 +227,44 @@ class ParticipationController extends Controller
             'participationDocuments'
         ])->where('public_id', $public_id)->firstOrFail();
 
-            $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-            if ($officialTeamId !== null && $participation->official_team_id !== $officialTeamId) {
-                abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
-            }
+        $this->validateEventAccess($event, ['administration'], ['committee', 'official_team'], $participation);
 
         return inertia('events/participations/participation_details/Show', [
+            'event' => $event,
             'participation' => $participation,
         ]);
     }
 
     /**
-     * Menampilkan form edit pendaftaran.
+     * Menampilkan formulir perubahan data pendaftaran.
      */
-    public function edit($public_id)
+    public function edit(Event $event, $public_id)
     {
+        $participation = Participation::with(['participationDocuments', 'event'])
+            ->where('public_id', $public_id)
+            ->firstOrFail();
 
-        $participation = Participation::with(['participationDocuments', 'event'])->where('public_id',$public_id)->firstOrFail();
-        
+        $this->validateEventAccess($event, ['administration'], ['committee', 'official_team'], $participation);
+
         $eventLevels = EventLevel::where('event_id', $participation->event_id)
             ->with('level')
             ->get();
             
-        return inertia('events/participations/participation_edit/Edit', 
-            [
-                'participation' => $participation,
-                'eventLevels' => $eventLevels,
-            ]);
+        return inertia('events/participations/participation_edit/Edit', [
+            'event' => $event,
+            'participation' => $participation,
+            'eventLevels' => $eventLevels,
+        ]);
     }
 
     /**
-     * Memperbarui data pendaftaran (Khusus Official Team).
+     * Memperbarui informasi pendaftaran tim.
      */
-    public function updateRegistration(Request $request, $public_id)
+    public function updateRegistration(Request $request, Event $event, $public_id)
     {
         $participation = Participation::where('public_id', $public_id)->firstOrFail();
 
-        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-        if ($participation->official_team_id !== $officialTeamId) {
-            abort(403, 'Anda tidak memiliki akses untuk mengubah data ini.');
-        }
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         $validated = $request->validate([
             'team_name' => 'required|string|max:255',
@@ -313,21 +313,15 @@ class ParticipationController extends Controller
     }
 
     /**
-     * Memperbarui status pendaftaran (Khusus Committee / Admin).
+     * Memperbarui status pendaftaran tim.
      */    
-    public function updateStatus(Request $request, $public_id)
+    public function updateStatus(Request $request, Event $event, $public_id)
     {
-        $participation = Participation::with('event:event_id,public_id')
-            ->where('public_id', $public_id)
+        $participation = Participation::where('public_id', $public_id)
+            ->where('event_id', $event->event_id)
             ->firstOrFail();
 
-        $event = $participation->event;
-
-        $role = auth()->user()->role;
-
-        if (!in_array($role, ['committee', 'admin'])) {
-            abort(403, 'Hanya panitia yang dapat mengubah status pendaftaran.');
-        }
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $request->validate([
             'status' => 'required|in:pending,approved,rejected',
@@ -338,10 +332,7 @@ class ParticipationController extends Controller
             $validated['status_message'] = null;
         }
 
-        if (
-            $validated['status'] === 'rejected' &&
-            empty($validated['status_message'])
-        ) {
+        if ($validated['status'] === 'rejected' && empty($validated['status_message'])) {
             return back()->withErrors([
                 'status_message' => 'Alasan penolakan wajib diisi.',
             ]);
@@ -353,46 +344,36 @@ class ParticipationController extends Controller
         ]);
 
         return redirect()
-            ->route('committee.participations.index', [
-                'event' => $event->public_id,
-            ])
+            ->route('committee.participations.index', ['event' => $event->public_id])
             ->with('success', 'Status pendaftaran berhasil diperbarui.');
     }
 
-
     /**
-     * Menampilkan halaman khusus manajemen dokumen pendaftaran.
+     * Menampilkan dokumen persyaratan milik pendaftaran.
      */
-    public function documentIndex($public_id)
+    public function documentIndex(Event $event, $public_id)
     {        
         $participation = Participation::with([
             'event:event_id,public_id,event_name',
             'participationDocuments'
         ])->where('public_id', $public_id)->firstOrFail();
 
-        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-        if ($participation->official_team_id !== $officialTeamId || $officialTeamId === null) {
-            abort(403, 'Anda tidak memiliki akses untuk melihat dokumen pendaftaran ini.');
-        }
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         return inertia('events/documents/official_team/Documents', [
+            'event' => $event,
             'participation' => $participation,
         ]);
     }
 
     /**
-     * Mengunggah dokumen persyaratan untuk pendaftaran.
+     * Mengunggah dokumen persyaratan pendaftaran.
      */
-    public function uploadParticipationDocuments(Request $request, $public_id)
+    public function uploadParticipationDocuments(Request $request, Event $event, $public_id)
     {
-        $participation = Participation::where('public_id',$public_id)->firstOrFail();
+        $participation = Participation::where('public_id', $public_id)->firstOrFail();
 
-        $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-        if ($participation->official_team_id !== $officialTeamId) {
-            return response()->json(
-                ['message' => 'Anda tidak memiliki akses untuk mengunggah dokumen pada pendaftaran ini.'],
-                 403); 
-        }
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         $request->validate([
             'file' => 'required|file|mimes:pdf|max:5120',
@@ -406,12 +387,11 @@ class ParticipationController extends Controller
             DB::transaction(function () use ($request, $participation) {
                 if ($request->hasFile('file')) {
                     $uploadedFile = $request->file('file');
-
                     $path = $uploadedFile->store('participation_documents', 'local');
 
                     ParticipationDocument::create([
                         'participation_id' => $participation->participation_id,
-                        'document_name' => $uploadedFile -> getClientOriginalName(),
+                        'document_name' => $uploadedFile->getClientOriginalName(),
                         'document_path' => $path,
                     ]);
                 }
@@ -430,24 +410,15 @@ class ParticipationController extends Controller
     }
 
     /**
-     * Menghapus salah satu dokumen persyaratan.
+     * Menghapus dokumen persyaratan dari pendaftaran.
      */
-    public function destroyDocument($public_id,$document_id)
+    public function destroyDocument(Event $event, $public_id, $document_id)
     {
-        // Cari dokumen beserta relasi pendaftarannya untuk validasi kepemilikan
-        $document = ParticipationDocument::get()->findOrFail($document_id);
-        $participation = Participation::where('public_id',$public_id)->firstOrFail();
+        $participation = Participation::where('public_id', $public_id)->firstOrFail();
+        $document = ParticipationDocument::where('participation_id', $participation->participation_id)
+            ->findOrFail($document_id);
 
-        $role = auth()->user()->role;
-        
-        if ($role === 'official_team') {
-            $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
-            if ($participation->official_team_id !== $officialTeamId) {
-                abort(403, 'Anda tidak memiliki akses untuk menghapus dokumen ini.');
-            }
-        } elseif (!in_array($role, ['committee', 'admin'])) {
-            abort(403, 'Unauthorized access');
-        }
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         $documentPath = $document->document_path;
 
@@ -463,11 +434,15 @@ class ParticipationController extends Controller
     }
 
     /**
-     * Menghapus data pendaftaran beserta file-filenya.
+     * Menghapus pendaftaran beserta berkas terkait.
      */
     public function destroy($public_id)
     {
-        $participation = Participation::with('participationDocuments')->where('public_id',$public_id)->firstOrFail();
+        $participation = Participation::with(['participationDocuments', 'event'])
+            ->where('public_id', $public_id)
+            ->firstOrFail();
+
+        $this->validateEventAccess($participation->event, ['administration'], ['official_team', 'committee'], $participation);
 
         $teamLogoPath = $participation->team_logo_path;
         $paymentProofPath = $participation->payment_proof_path;
@@ -481,12 +456,10 @@ class ParticipationController extends Controller
             Storage::disk('public')->delete($teamLogoPath);
         }
 
-        // Hapus fisik bukti bayar
         if ($paymentProofPath && Storage::disk('local')->exists($paymentProofPath)) {
             Storage::disk('local')->delete($paymentProofPath);
         }
 
-        // Hapus fisik dokumen persyaratan
         foreach ($documentPaths as $docPath) {
             if (Storage::disk('local')->exists($docPath)) {
                 Storage::disk('local')->delete($docPath);

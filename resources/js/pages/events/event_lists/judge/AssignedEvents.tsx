@@ -113,7 +113,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
 
                                     <div className="border-t border-border/50 pt-2">
                                         <Link
-                                            href={`/committee/events/${event.public_id}/information`}
+                                            href={`/judge/events/${event.public_id}/participants`}
                                             className="block w-full"
                                         >
                                             <Button

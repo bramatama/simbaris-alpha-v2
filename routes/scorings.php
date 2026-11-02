@@ -42,3 +42,7 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
     Route::get('/events/{public_id}/scoring-categories/{scoring_category_id}', [EventScoringCategoryController::class, 'show'])->name('events.scoring-categories.show');
     Route::get('/events/{public_id}/scoring-categories/levels/{event_level_id}/preview', [EventScoringCategoryController::class, 'previewLevel'])->name('events.scoring-categories.preview-level');
 });
+
+Route::middleware(['auth', 'verified', 'role:judge'])->prefix('judge')->name('judge.')->group(function () {
+    Route::get('/events/{public_id}/form-previews', [EventScoringCategoryController::class, 'judgePreview'])->name('form-preview');
+});

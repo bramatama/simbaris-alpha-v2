@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,16 +11,32 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { PageProps } from '@inertiajs/core';
+import { useRoute } from 'ziggy-js';
 
 interface CommitteeTableProps {
     committees: any[];
+    currentUserCommittee: {
+        committee_id: number;
+        position: string;
+    } | null;
     onDeleteClick: (id: number) => void;
 }
 
 export default function CommitteeTable({
     committees,
+    currentUserCommittee,
     onDeleteClick,
 }: CommitteeTableProps) {
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth.user.role;
+
+    const canDeleteCommittee = (ec: any) =>
+        (userRole === 'admin' ||
+            currentUserCommittee?.position === 'administration') &&
+        Number(ec.committee?.committee_id) !==
+            Number(currentUserCommittee?.committee_id);
+
     return (
         <div className="w-full">
             {/* VIEW MOBILE: COMPACT CARD (Disembunyikan di layar MD ke atas) */}
@@ -61,16 +78,18 @@ export default function CommitteeTable({
                                         </Badge>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="w-full text-foreground hover:bg-destructive/50"
-                                    onClick={() =>
-                                        onDeleteClick(ec.event_committee_id)
-                                    }
-                                >
-                                    <UserX className="mr-1.5 h-4 w-4" /> Remove
-                                </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="w-full text-foreground hover:bg-destructive/50"
+                                        onClick={() =>
+                                            onDeleteClick(ec.event_committee_id)
+                                        }
+                                        disabled={!canDeleteCommittee(ec)}
+                                    >
+                                        <UserX className="mr-1.5 h-4 w-4" />{' '}
+                                        Remove
+                                    </Button>
                             </CardContent>
                         </Card>
                     ))
@@ -86,7 +105,8 @@ export default function CommitteeTable({
                 <Table className="min-w-max">
                     <TableHeader className="bg-muted/50">
                         <TableRow>
-                            <TableHead>Name & Contact</TableHead>
+                            <TableHead>Name & Email</TableHead>
+                            <TableHead>Contact</TableHead>
                             <TableHead>Department</TableHead>
                             <TableHead>Position</TableHead>
                             <TableHead className="text-right">
@@ -105,6 +125,12 @@ export default function CommitteeTable({
                                         <div className="mt-1 flex items-center gap-1.5 text-muted-foreground">
                                             <Mail className="h-3.5 w-3.5" />{' '}
                                             {ec.committee?.user?.email}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-base font-semibold">
+                                            {ec.committee?.user?.contact_info ||
+                                                '-'}
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-medium">
@@ -128,6 +154,7 @@ export default function CommitteeTable({
                                                     ec.event_committee_id,
                                                 )
                                             }
+                                            disabled={!canDeleteCommittee(ec)}
                                         >
                                             <UserX className="mr-1.5 h-4 w-4" />{' '}
                                             Remove

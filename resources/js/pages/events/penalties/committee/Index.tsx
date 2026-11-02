@@ -48,6 +48,7 @@ export default function EventPenaltiesIndex({
 }: any) {
     const { auth, errors: pageErrors } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     // State Manajemen Form (Tambah/Edit)
     const [isEditing, setIsEditing] = useState(false);
@@ -195,7 +196,7 @@ export default function EventPenaltiesIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Penalti & Pelanggaran - ${event.event_name}`} />
 

@@ -25,6 +25,9 @@ return new class extends Migration
             $table->dateTime('registration_end_time');
             $table->dateTime('start_time');
             $table->dateTime('end_time');
+            $table->boolean('is_result_visible')->default(false);
+            $table->boolean('is_recap_visible')->default(false);
+            $table->boolean('is_leaderboard_visible')->default(false);
             $table->foreignId('created_by')->index()->constrained('admins','admin_id')->onDelete('cascade');
             $table->timestamps();
         });

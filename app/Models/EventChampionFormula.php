@@ -20,7 +20,7 @@ class EventChampionFormula extends Model
     protected function casts(): array
     {
         return [
-            'weight_multiplier' => 'decimal:4',
+            'weight_multiplier' => 'decimal:2',
         ];
     }
 

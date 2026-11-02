@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditTrail extends Model
@@ -17,13 +19,38 @@ class AuditTrail extends Model
         'score_value',
         'ip_address',
         'user_agent',
+        'clicked_at'
     ];
 
     protected function casts(): array
     {
         return [
             'score_value' => 'decimal:2',
+            'clicked_at' => 'datetime:Y-m-d H:i:s',
         ];
+    }
+
+    protected function clickedAt(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => $value
+                ? Carbon::parse($value)->setTimezone(config('app.timezone'))
+                : null,
+        );
+    }
+
+    protected function clickedAtHuman(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value, array $attributes) {
+                if (empty($attributes['clicked_at'])) {
+                    return null;
+                }
+
+                return Carbon::parse($attributes['clicked_at'])
+                    ->translatedFormat('l, d M Y - H:i:s');
+            }
+        );
     }
 
     public function participation(): BelongsTo

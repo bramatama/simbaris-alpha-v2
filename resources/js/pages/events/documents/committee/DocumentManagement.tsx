@@ -48,6 +48,7 @@ export default function DocumentManagement({
 }: DocumentManagementProps) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     // State untuk konfirmasi hapus dokumen
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -75,7 +76,7 @@ export default function DocumentManagement({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Manajemen Dokumen - ${event.event_name}`} />
 
@@ -87,7 +88,7 @@ export default function DocumentManagement({
                             href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             Manajemen Dokumen Juknis

@@ -11,15 +11,23 @@ use Illuminate\Validation\Rule;
 class MasterChampionCategoryController extends Controller
 {
     /**
+     * Kunci seluruh endpoint di controller ini khusus untuk Super Admin
+     */
+    public function __construct()
+    {
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Akses ditolak: Fitur ini khusus untuk Super Admin.');
+    }
+
+    /**
      * Menampilkan daftar Master Kategori Juara.
      */
     public function index()
     {
-        // Mengambil semua master kategori diurutkan berdasarkan nama
         $championCategories = ChampionCategory::with([
             'champions' => function ($query) {
-            $query->orderBy('champion_id', 'asc');
-        }])->orderBy('champion_category_id', 'asc')->get();
+                $query->orderBy('champion_id', 'asc');
+            }
+        ])->orderBy('champion_category_id', 'asc')->get();
 
         return inertia('events/champions/admin/Index', [
             'championCategories' => $championCategories,
@@ -54,7 +62,6 @@ class MasterChampionCategoryController extends Controller
                 'required',
                 'string',
                 'max:255',
-                // Pengecualian unique untuk ID yang sedang diupdate
                 Rule::unique('champion_categories', 'champion_category_name')->ignore($category->champion_category_id, 'champion_category_id'),
             ],
         ]);

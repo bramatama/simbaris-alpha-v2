@@ -4,6 +4,7 @@ import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -13,6 +14,8 @@ import {
     FileCode2,
     LayoutList,
     SearchCode,
+    Lock,
+    Layers,
 } from 'lucide-react';
 
 interface MasterCategory {
@@ -52,10 +55,16 @@ export default function ScoringCategoryIndex({
 }: ScoringIndexProps) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     const isCommittee = ['committee', 'admin'].includes(userRole);
+    const isOngoing = event.status === 'ongoing';
 
-    const handleLevelChange = (levelId: number) => {
+    const handleLevelChange = (levelIdStr: string) => {
+        const levelId = Number(levelIdStr);
+
+        if (!levelId) return;
+
         router.get(
             `/${userRole}/events/${event.public_id}/scoring-categories`,
             { level_id: levelId },
@@ -65,7 +74,7 @@ export default function ScoringCategoryIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Kategori Penilaian - ${event.event_name}`} />
             <div className="grid w-full min-w-0 grid-cols-1">
@@ -83,77 +92,95 @@ export default function ScoringCategoryIndex({
                             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
                                 Format Penilaian Juri
                             </h1>
-                            <p className="mt-1 text-sm text-muted-foreground wrap-break-word md:text-base">
+                            <p className="mt-1 text-sm wrap-break-word text-muted-foreground md:text-base">
                                 Daftar kategori penilaian
                             </p>
                         </div>
-
-                        {activeLevel && (
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                {scoringCategories.length > 0 && (
-                                    <Link
-                                        href={`/${userRole}/events/${event.public_id}/scoring-categories/levels/${activeLevel.event_level_id}/preview`}
-                                    >
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-9 w-full gap-2 border-primary/50 text-primary shadow-sm hover:bg-primary/10 sm:w-auto"
-                                        >
-                                            <SearchCode className="h-4 w-4" />{' '}
-                                            Preview Keseluruhan
-                                        </Button>
-                                    </Link>
-                                )}
-                                {isCommittee && (
-                                    <Link
-                                        href={`/${userRole}/events/${event.public_id}/scoring-categories/create`}
-                                    >
-                                        <Button
-                                            size="sm"
-                                            className="h-9 w-full gap-1.5 shadow-sm sm:w-auto"
-                                        >
-                                            <Plus className="h-4 w-4" /> Tambah
-                                            Kategori
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                        )}
                     </div>
+
+                    {/* PERINGATAN BILA EVENT SEDANG ONGOING */}
+                    {isOngoing ? (
+                        <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-amber-800 dark:text-amber-300">
+                            <Lock className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <div className="text-sm">
+                                <span className="font-bold">
+                                    Form Penilaian Dikunci:
+                                </span>{' '}
+                                Event saat ini sedang berlangsung. Seluruh
+                                struktur kategori dan rubrik penilaian tidak
+                                dapat ditambah, diubah, atau dihapus.
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4 text-primary">
+                            <Lock className="h-5 w-5 shrink-0 text-primary" />
+                            <div className="text-sm">
+                                <span className="font-bold">
+                                    Peringatan Status:
+                                </span>{' '}
+                                Form Penilaian akan terkunci ketika hari
+                                perlombaan dimulai
+                            </div>
+                        </div>
+                    )}
 
                     {/* FILTER JENJANG */}
                     {eventLevels.length > 0 ? (
                         <div className="space-y-4">
-                            <div className="flex w-full flex-col gap-2 overflow-hidden">
-                                <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    Filter Jenjang:
-                                </span>
-                                <div className="hide-scrollbar flex w-full items-center gap-2 overflow-x-auto pb-2">
-                                    {eventLevels.map((level) => (
-                                        <Badge
-                                            key={level.event_level_id}
-                                            variant={
-                                                activeLevel?.event_level_id ===
-                                                level.event_level_id
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                            className={`shrink-0 cursor-pointer rounded-md px-3 py-1.5 text-xs whitespace-nowrap transition-colors ${
-                                                activeLevel?.event_level_id ===
-                                                level.event_level_id
-                                                    ? 'pointer-events-none shadow-sm'
-                                                    : 'border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                                            }`}
-                                            onClick={() =>
-                                                handleLevelChange(
-                                                    level.event_level_id,
-                                                )
-                                            }
-                                        >
-                                            {level.level.level_name}
-                                        </Badge>
-                                    ))}
-                                </div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <LevelDropdownFilter
+                                    eventLevels={eventLevels}
+                                    activeLevelId={
+                                        activeLevel?.event_level_id ?? null
+                                    }
+                                    onLevelChange={handleLevelChange}
+                                    placeholder="Pilih jenjang perlombaan..."
+                                    className="w-full sm:w-64"
+                                />
+
+                                {activeLevel && (
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        {scoringCategories.length > 0 && (
+                                            <Link
+                                                href={`/${userRole}/events/${event.public_id}/scoring-categories/levels/${activeLevel.event_level_id}/preview`}
+                                            >
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-9 w-full gap-2 border-primary/50 text-primary shadow-sm hover:bg-primary/10 sm:w-auto"
+                                                >
+                                                    <SearchCode className="h-4 w-4" />
+                                                    Preview Keseluruhan
+                                                </Button>
+                                            </Link>
+                                        )}
+
+                                        {isCommittee &&
+                                            (isOngoing ? (
+                                                <Button
+                                                    size="sm"
+                                                    disabled
+                                                    className="h-9 w-full cursor-not-allowed gap-1.5 opacity-60 shadow-sm sm:w-auto"
+                                                    title="Tidak dapat menambah kategori saat event berlangsung"
+                                                >
+                                                    <Lock className="h-4 w-4" />
+                                                    Tambah Kategori
+                                                </Button>
+                                            ) : (
+                                                <Link
+                                                    href={`/${userRole}/events/${event.public_id}/scoring-categories/create`}
+                                                >
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-9 w-full gap-1.5 shadow-sm sm:w-auto"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                        Tambah Kategori
+                                                    </Button>
+                                                </Link>
+                                            ))}
+                                    </div>
+                                )}
                             </div>
 
                             {activeLevel && (
@@ -178,7 +205,7 @@ export default function ScoringCategoryIndex({
                                                 Belum ada form rubrik untuk
                                                 jenjang ini.
                                             </p>
-                                            {isCommittee && (
+                                            {isCommittee && !isOngoing && (
                                                 <Link
                                                     href={`/${userRole}/events/${event.public_id}/scoring-categories/create`}
                                                 >
@@ -262,10 +289,32 @@ export default function ScoringCategoryIndex({
                             )}
                         </div>
                     ) : (
-                        <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                            Event ini belum memiliki jenjang perlombaan sama
-                            sekali.
-                        </div>
+                        /* BLANK STATE EVENT LEVELS KOSONG */
+                        <Card className="flex flex-col items-center justify-center border-2 border-dashed border-border/60 bg-muted/10 p-8 text-center shadow-none sm:p-12">
+                            <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
+                                <Layers className="h-8 w-8" />
+                            </div>
+                            <h3 className="mb-1.5 text-base font-bold text-foreground sm:text-lg">
+                                Belum Ada Jenjang Perlombaan
+                            </h3>
+                            <p className="max-w-md text-xs text-muted-foreground sm:text-sm">
+                                Event ini belum memiliki jenjang perlombaan
+                                terdaftar. Tambahkan jenjang perlombaan terlebih
+                                dahulu untuk mengonfigurasi format penilaian
+                                juri.
+                            </p>
+                            {isCommittee && (
+                                <Link
+                                    href={`/${userRole}/events/${event.public_id}/levels`}
+                                    className="mt-5"
+                                >
+                                    <Button size="sm" className="gap-2">
+                                        <Plus className="h-4 w-4" /> Kelola
+                                        Jenjang Perlombaan
+                                    </Button>
+                                </Link>
+                            )}
+                        </Card>
                     )}
                 </div>
             </div>

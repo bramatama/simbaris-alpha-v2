@@ -13,6 +13,12 @@ import {
     CalendarCheck2,
     Medal,
     ListOrdered,
+    Podium,
+    Summary,
+    ClipboardClock,
+    Save,
+    Timer,
+    ClipboardCheck,
 } from 'lucide-react';
 
 export const getMasterDataInnerNav = (): NavItem[] => {
@@ -44,6 +50,7 @@ export const getMasterDataInnerNav = (): NavItem[] => {
 export const getEventInnerNav = (
     eventPublicId: string,
     role: string,
+    position?: string,
 ): NavItem[] => {
     const items: NavItem[] = [
         {
@@ -69,63 +76,157 @@ export const getEventInnerNav = (
     }
 
     if (role === 'committee') {
-        items.push(
-            {
-                title: 'Edit Lomba',
-                href: `/${role}/events/${eventPublicId}/edit`,
-                icon: Edit,
-            },
-            {
-                title: 'Panitia Lomba',
-                href: `/${role}/events/${eventPublicId}/committees`,
-                icon: Star,
-            },
-            {
-                title: 'Manajemen Jenjang',
-                href: `/${role}/events/${eventPublicId}/levels`,
-                icon: DoorStairwell,
-            },
-            {
-                title: 'Dokumen Lomba',
-                href: `/${role}/events/${eventPublicId}/documents`,
-                icon: FileText,
-            },
-            {
-                title: 'Manajemen Penilaian',
-                href: `/${role}/events/${eventPublicId}/scoring-categories`,
-                icon: NotebookPen,
-            },
-            {
-                title: 'Juri Lomba',
-                href: `/${role}/events/${eventPublicId}/judges`,
-                icon: Gavel,
-            },
-            {
-                title: 'Manajemen Juara',
-                href: `/${role}/events/${eventPublicId}/champions`,
-                icon: Trophy,
-            },
-            {
-                title: 'Manajemen Penalti',
-                href: `/${role}/events/${eventPublicId}/penalties`,
-                icon: TriangleAlert,
-            },
-            {
-                title: 'Ketentuan Juara',
-                href: `/${role}/events/${eventPublicId}/formulas`,
-                icon: Medal,
-            },
-            {
-                title: 'Peserta Lomba',
-                href: `/${role}/events/${eventPublicId}/participations`,
-                icon: UserGroup,
-            },
-            {
-                title: 'Urutan Tampil',
-                href: `/${role}/events/${eventPublicId}/participation-orders`,
-                icon: ListOrdered,
-            },
-        );
+        const normalizedPosition = position?.toLowerCase();
+        if (normalizedPosition === 'administration') {
+            items.push(
+                {
+                    title: 'Edit Lomba',
+                    href: `/${role}/events/${eventPublicId}/edit`,
+                    icon: Edit,
+                },
+                {
+                    title: 'Panitia Lomba',
+                    href: `/${role}/events/${eventPublicId}/committees`,
+                    icon: Star,
+                },
+                {
+                    title: 'Manajemen Jenjang',
+                    href: `/${role}/events/${eventPublicId}/levels`,
+                    icon: DoorStairwell,
+                },
+                {
+                    title: 'Dokumen Lomba',
+                    href: `/${role}/events/${eventPublicId}/documents`,
+                    icon: FileText,
+                },
+                {
+                    title: 'Manajemen Penilaian',
+                    href: `/${role}/events/${eventPublicId}/scoring-categories`,
+                    icon: NotebookPen,
+                },
+                {
+                    title: 'Juri Lomba',
+                    href: `/${role}/events/${eventPublicId}/judges`,
+                    icon: Gavel,
+                },
+                {
+                    title: 'Manajemen Juara',
+                    href: `/${role}/events/${eventPublicId}/champions`,
+                    icon: Trophy,
+                },
+                {
+                    title: 'Manajemen Penalti',
+                    href: `/${role}/events/${eventPublicId}/penalties`,
+                    icon: TriangleAlert,
+                },
+                {
+                    title: 'Ketentuan Juara',
+                    href: `/${role}/events/${eventPublicId}/formulas`,
+                    icon: Medal,
+                },
+                {
+                    title: 'Peserta Lomba',
+                    href: `/${role}/events/${eventPublicId}/participations`,
+                    icon: UserGroup,
+                },
+                {
+                    title: 'Urutan Tampil',
+                    href: `/${role}/events/${eventPublicId}/participation-orders`,
+                    icon: ListOrdered,
+                },
+                {
+                    title: 'Hasil Perlombaan',
+                    href: `/${role}/events/${eventPublicId}/leaderboard`,
+                    icon: Podium,
+                },
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // B. POSISI AUDITOR (Fokus Monitoring, Timer, Penalti, & Rekap)
+        // ---------------------------------------------------------------------
+        else if (normalizedPosition === 'auditor') {
+            items.push(
+                {
+                    title: 'Urutan Tampil',
+                    href: `/${role}/events/${eventPublicId}/participation-orders`,
+                    icon: ClipboardCheck,
+                },
+                {
+                    title: 'Hasil Perlombaan',
+                    href: `/${role}/events/${eventPublicId}/leaderboard`,
+                    icon: Podium,
+                },
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // C. FALLBACK / POSISI LAINNYA (Tampilkan Semua Menu)
+        // ---------------------------------------------------------------------
+        else {
+            items.push(
+                {
+                    title: 'Edit Lomba',
+                    href: `/${role}/events/${eventPublicId}/edit`,
+                    icon: Edit,
+                },
+                {
+                    title: 'Panitia Lomba',
+                    href: `/${role}/events/${eventPublicId}/committees`,
+                    icon: Star,
+                },
+                {
+                    title: 'Manajemen Jenjang',
+                    href: `/${role}/events/${eventPublicId}/levels`,
+                    icon: DoorStairwell,
+                },
+                {
+                    title: 'Dokumen Lomba',
+                    href: `/${role}/events/${eventPublicId}/documents`,
+                    icon: FileText,
+                },
+                {
+                    title: 'Manajemen Penilaian',
+                    href: `/${role}/events/${eventPublicId}/scoring-categories`,
+                    icon: NotebookPen,
+                },
+                {
+                    title: 'Juri Lomba',
+                    href: `/${role}/events/${eventPublicId}/judges`,
+                    icon: Gavel,
+                },
+                {
+                    title: 'Manajemen Juara',
+                    href: `/${role}/events/${eventPublicId}/champions`,
+                    icon: Trophy,
+                },
+                {
+                    title: 'Manajemen Penalti',
+                    href: `/${role}/events/${eventPublicId}/penalties`,
+                    icon: TriangleAlert,
+                },
+                {
+                    title: 'Ketentuan Juara',
+                    href: `/${role}/events/${eventPublicId}/formulas`,
+                    icon: Medal,
+                },
+                {
+                    title: 'Peserta Lomba',
+                    href: `/${role}/events/${eventPublicId}/participations`,
+                    icon: UserGroup,
+                },
+                {
+                    title: 'Urutan Tampil',
+                    href: `/${role}/events/${eventPublicId}/participation-orders`,
+                    icon: ListOrdered,
+                },
+                {
+                    title: 'Hasil Perlombaan',
+                    href: `/${role}/events/${eventPublicId}/leaderboard`,
+                    icon: Podium,
+                },
+            );
+        }
     }
 
     return items;
@@ -133,27 +234,53 @@ export const getEventInnerNav = (
 
 export const getParticipationInnerNav = (
     participationId: string,
+    eventId: string,
 ): NavItem[] => {
     const items: NavItem[] = [
         {
-            title: 'Informasi Umum',
-            href: `/official_team/participations/${participationId}/information`,
+            title: 'Informasi Event',
+            href: `/official_team/events/${eventId}/information`,
             icon: InfoIcon,
         },
         {
+            title: 'Informasi Pendaftaran',
+            href: `/official_team/events/${eventId}/participations/${participationId}/information`,
+            icon: Save,
+        },
+        {
             title: 'Edit Pendaftaran',
-            href: `/official_team/participations/${participationId}/edit`,
+            href: `/official_team/events/${eventId}/participations/${participationId}/edit`,
             icon: Edit,
         },
         {
             title: 'Dokumen Pendaftaran',
-            href: `/official_team/participations/${participationId}/documents`,
+            href: `/official_team/events/${eventId}/participations/${participationId}/documents`,
             icon: FileText,
         },
         {
             title: 'Manajemen Pasukan',
-            href: `/official_team/participations/${participationId}/members`,
+            href: `/official_team/events/${eventId}/participations/${participationId}/members`,
             icon: UserGroup,
+        },
+        {
+            title: 'Hasil Penilaian',
+            href: `/official_team/events/${eventId}/participations/${participationId}/evaluation-result`,
+            icon: NotebookPen,
+        },
+        {
+            title: 'Rekap Penilaian',
+            href: `/official_team/events/${eventId}/participations/${participationId}/my-recap`,
+            icon: Summary,
+        },
+        {
+            title: 'Log Penilaian',
+            href: `/official_team/events/${eventId}/participations/${participationId}/audit-logs`,
+            icon: ClipboardClock,
+        },
+        {
+            title: 'Hasil Perlombaan',
+            href: `/official_team/events/${eventId}/leaderboard`,
+            icon: Podium,
         },
     ];
     return items;
@@ -165,6 +292,11 @@ export const getEvaluationInnerNav = (eventPublicId: string): NavItem[] => {
             title: 'Daftar Peserta',
             href: `/judge/events/${eventPublicId}/participants`,
             icon: UserGroup,
+        },
+        {
+            title: 'Preview Form Penilaian',
+            href: `/judge/events/${eventPublicId}/form-previews`,
+            icon: NotebookPen,
         },
     ];
     return items;

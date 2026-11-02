@@ -60,6 +60,7 @@ export default function DynamicScoringBuilderCreate({
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
@@ -392,7 +393,7 @@ export default function DynamicScoringBuilderCreate({
     if (!isMounted) {
         return (
             <InnerAppLayout
-                sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+                sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
             >
                 <div className="flex min-h-screen items-center justify-center">
                     <Spinner className="h-8 w-8 text-primary" />
@@ -403,7 +404,7 @@ export default function DynamicScoringBuilderCreate({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Buat Form Penilaian - ${event.event_name}`} />
             <DndContext

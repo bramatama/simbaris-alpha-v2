@@ -17,13 +17,16 @@ import type { PageProps } from '@inertiajs/core';
 
 export default function CommitteeIndex({
     event,
+    currentUserCommittee,
     existingCommittees = [],
 }: {
     event: any;
+    currentUserCommittee: any;
     existingCommittees: any[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -42,7 +45,7 @@ export default function CommitteeIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head title={`Committees - ${event.event_name}`} />
 
@@ -53,7 +56,7 @@ export default function CommitteeIndex({
                             href={`/${userRole}/events/${event.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-4 w-4" /> Back to Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight">
                             Committee Roster
@@ -86,6 +89,7 @@ export default function CommitteeIndex({
                         {/* Komponen Tabel Dipanggil di Sini */}
                         <CommitteeTable
                             committees={event.event_committees}
+                            currentUserCommittee={currentUserCommittee}
                             onDeleteClick={(id) => setDeleteId(id)}
                         />
                     </CardContent>

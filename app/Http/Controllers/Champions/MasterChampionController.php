@@ -12,6 +12,14 @@ use Illuminate\Validation\Rule;
 class MasterChampionController extends Controller
 {
     /**
+     * Kunci seluruh endpoint di controller ini khusus untuk Super Admin
+     */
+    public function __construct()
+    {
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Akses ditolak: Fitur ini khusus untuk Super Admin.');
+    }
+    
+    /**
      * Menyimpan Master Piala baru.
      */
     public function store(Request $request)

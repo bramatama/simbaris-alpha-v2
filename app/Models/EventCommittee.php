@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventCommittee extends Model
 {
@@ -44,5 +45,14 @@ class EventCommittee extends Model
     public function committee(): BelongsTo
     {
         return $this->belongsTo(Committee::class, 'committee_id');
+    }
+
+    public function recordedSessions(): HasMany
+    {
+        return $this->hasMany(
+            EvaluationSession::class,
+            'recorder_by',
+            'event_committee_id'
+        );
     }
 }

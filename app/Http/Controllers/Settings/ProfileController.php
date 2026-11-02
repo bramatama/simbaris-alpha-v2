@@ -17,7 +17,7 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
-     * Show the user's profile settings page.
+     * Menampilkan pengaturan profil akun yang sedang digunakan.
      */
     public function edit(Request $request): Response
     {
@@ -30,7 +30,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Memperbarui informasi profil akun yang sedang digunakan.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -69,7 +69,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Menghapus akun dan mengakhiri sesi pengguna.
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {

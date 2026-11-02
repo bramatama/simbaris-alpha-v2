@@ -13,34 +13,38 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
+use App\Concerns\HasEventAccess;
 
 class EventController extends Controller
 {
-    /**
-     * Display a listing of all events.
-     */
+    use HasEventAccess;
+    
+    /** Menampilkan daftar event yang dapat diakses pengguna. */
     public function index()
     {
         $role = auth()->user()?->role;
 
-        $events = $role !== 'admin'
-        ? Event::latest()->get()->where('status', '!=', 'draft')
-        : Event::withCount('participations')->latest()->get();
-    
-        $view = match ($role) {
-            'admin' => 'events/event_lists/admin/Index',
-            'official_team' => 'events/event_lists/Index',
-            default => abort(403, 'Unauthorized Access')
-        };
+        $events = Event::query()
+            ->when($role !== 'admin', function ($query) {
+                $query->where('status', '!=', 'draft');
+            })
+            ->when($role === 'admin', function ($query) {
+                $query->withCount('participations');
+            })
+            ->latest()
+            ->get();
 
-        return inertia( $view, [
+        $view = match ($role) {
+                    'admin' => 'events/event_lists/admin/Index',
+                    'official_team', null => 'events/event_lists/Index', 
+                    default => abort(403, 'Unauthorized Access'),
+                };
+        return inertia($view, [
             'events' => $events,
         ]);
     }
 
-    /**
-     * Display the events for the authenticated user.
-     */
+    /** Menampilkan event yang ditugaskan kepada panitia atau juri. */
     public function my_events()
     {
         $user = auth()->user();
@@ -66,28 +70,26 @@ class EventController extends Controller
             ]);
         }
 
-        // 3. Blokir selain panitia dan juri
-        abort(403, 'Unauthorized access');
+
+        return redirect()->route('home');
     }
 
-    /**
-     * Show the form for creating a new event.
-     */
+    /** Menampilkan formulir pembuatan event untuk administrator. */
     public function create()
     {
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Hanya Admin yang dapat membuat event baru.');
         $existingCommittees = Committee::with('user:user_id,name,email')->get();
 
-        // 2. Kirimkan ke frontend
         return inertia('events/event_create/Create', [
             'existingCommittees' => $existingCommittees
         ]);
     }
 
-    /**
-     * Store a newly created event in storage.
-     */
+    /** Membuat event baru beserta panitia yang ditugaskan. */
     public function store(Request $request)
     {
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Hanya Admin yang dapat membuat event baru.');
+        
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -112,18 +114,14 @@ class EventController extends Controller
         $validationErrors = [];
 
         foreach ($validated['committees'] as $index => $committeeData) {
-
             $user = User::where('email', $committeeData['email'])->first();
 
             if ($user) {
-
                 if ($user->role !== 'committee') {
-                    $validationErrors["committees.$index.email"] =
-                        "Email already used by another account.";
+                    $validationErrors["committees.$index.email"] = "Email already used by another account.";
                 } else {
                     $committee = Committee::where('user_id', $user->user_id)->first();
-                    $existingCommittees[] =
-                        $user->name . ' (' . $committee->department . ')';
+                    $existingCommittees[] = $user->name . ' (' . $committee->department . ')';
                 }
             }
         }
@@ -134,10 +132,7 @@ class EventController extends Controller
 
         if ($existingCommittees && empty($validated['force_create'])) {
             throw ValidationException::withMessages([
-                'confirmation' =>
-                    'Existing committee found: ' .
-                    implode(', ', $existingCommittees) .
-                    '. Continue?',
+                'confirmation' => 'Existing committee found: ' . implode(', ', $existingCommittees) . '. Continue?',
             ]);
         }
         
@@ -147,7 +142,6 @@ class EventController extends Controller
         }
         try{
             DB::transaction(function () use ($validated, $request, $posterPath) {
-
                 $event = Event::create([
                     'public_id' => Str::uuid(),
                     'event_name' => $validated['event_name'],
@@ -163,7 +157,6 @@ class EventController extends Controller
                 ]);
 
                 foreach ($validated['committees'] as $committeeData) {
-
                     $user = User::firstOrCreate(
                         ['email' => $committeeData['email']],
                         [
@@ -193,50 +186,49 @@ class EventController extends Controller
             throw $e;
         }
 
-        return redirect()
-            ->route('events.index')
-            ->with('success', 'Event created successfully!');
+        return redirect()->route('events.index')->with('success', 'Event created successfully!');
     }
 
-    /**
-     * Display the specified event.
-     */
+    /** Menampilkan detail event dan status kesiapan pengelolaannya. */
     public function show($id)
     {
-        $role = auth()->user()->role;
+        $user = auth()->user();
+        $role = $user?->role ?? 'guest';
         
-        // Query dasar untuk mengambil event berdasarkan public_id
         $query = Event::where('public_id', $id);
 
-        // Eager loading data tambahan berdasarkan role agar dashboard informatif
-        $event =  $query->with([
-                                'eventJudges.judge.user:user_id,name',
-                                'eventJudges:event_id,event_judge_id,judge_id',
-                                'eventJudges.judgeExpertises.scoringCategory' => function ($q) {
-                                    $q->select(
-                                        'scoring_category_id',
-                                        'event_level_id',
-                                        'master_category_id'
-                                    )->with([
-                                        'masterCategory:master_category_id,category_name',
-                                        'eventLevel:event_level_id,event_id,level_id',
-                                        'eventLevel.level:level_id,level_name',
-                                    ]);
-                                },                                
-                                'eventLevels' => function ($q) {
-                                    $q->select(
-                                        'event_level_id',
-                                        'event_id',
-                                        'level_id',
-                                        'registration_fees',
-                                        'quota'
-                                    )->with('level:level_id,level_name')->withCount('participations');
-                                },
-                                'participations:event_id,participation_id,event_level_id,team_name',
-                                'eventDocuments:event_id,document_id,document_name,document_path'
-                            ])
-                            ->withCount('participations', 'eventJudges')
-                            ->firstOrFail();    
+        $event = $query->with([
+                'eventCommittees.committee.user' => function ($q) {
+                    $q->select(
+                        'user_id',
+                        'name',
+                        'contact_info'
+                    )->first();
+                },
+                'eventJudges:event_id,event_judge_id,judge_id',
+                'eventJudges.judge.user:user_id,name',
+                'eventJudges.judgeExpertises.scoringCategory' => function ($q) {
+                    $q->select(
+                        'scoring_category_id',
+                        'event_level_id',
+                        'master_category_id'
+                    )->with([
+                        'masterCategory:master_category_id,category_name',
+                        'eventLevel:event_level_id,event_id,level_id',
+                        'eventLevel.level:level_id,level_name',
+                    ]);
+                },                                
+                'eventLevels' => function ($q) {
+                    $q->with('level:level_id,level_name')
+                    ->withCount('participations', 'scoringCategories');
+                },
+                'participations:event_id,participation_id,event_level_id,team_name,official_team_id,appearance_order',
+                'eventDocuments:event_id,document_id,document_name,document_path',
+                'eventPenalties:event_penalty_id,event_id',
+                'eventChampionCategories.formulas:formula_id,event_champion_category_id'
+            ])
+            ->withCount('participations', 'eventJudges', 'eventDocuments', 'eventPenalties', 'eventChampionCategories')
+            ->firstOrFail();    
 
         $event->eventJudges->transform(function ($eventJudge) {
             $eventJudge->expertises = $eventJudge->judgeExpertises
@@ -263,37 +255,51 @@ class EventController extends Controller
             return $eventJudge;
         });
 
+        $eventLevels = $event->eventLevels;
+
+        $readinessChecks = [
+            'has_documents' => ($event->event_documents_count ?? 0) > 0,
+            'has_levels' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => $l->quota > 0 && $l->registration_fees !== null),
+            'has_scoring_categories' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => ($l->scoring_categories_count ?? 0) > 0),
+            'has_judges' => ($event->event_judges_count ?? 0) > 0,
+            'has_champion_categories' => ($event->event_champion_categories_count ?? 0) > 0,
+            'has_penalties' => ($event->event_penalties_count ?? 0) > 0,
+            'has_champion_formulas' => ($event->eventChampionCategories ?? collect())->pluck('formulas')->flatten()->isNotEmpty(),
+            'has_appearance_orders' => ($event->participations ?? collect())->whereNotNull('appearance_order')->isNotEmpty(),
+        ];
+
+        $myOfficialTeamId = $user?->officialTeam?->official_team_id ?? null;
+
         return inertia('events/event_details/Show', [
             'event' => $event,
+            'myOfficialTeamId' => $myOfficialTeamId,
+            'readinessChecks' => $readinessChecks,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified event.
-     */
+    /** Menampilkan formulir perubahan detail event. */
     public function edit($id)
     {
         $role = auth()->user()->role;
-
-        if (!in_array($role, ['committee', 'admin'])) {
-            abort(403, 'Hanya admin dan panitia yang dapat mengubah event.');
-        }
 
         $event = Event::where('public_id', $id)
             ->with(['eventCommittees.committee.user'])
             ->firstOrFail();
         
+        $this->validateEventAccess($event, ['administration'],['committee']);
+
         return inertia('events/event_edit/Edit', [
             'event' => $event
         ]);
     }
 
-    /**
-     * Update the specified event in storage.
-     */
+    /** Memperbarui informasi dan pengaturan visibilitas hasil event. */
     public function update(Request $request, $id)
     {
         $event = Event::where('public_id', $id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -304,6 +310,9 @@ class EventController extends Controller
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after_or_equal:start_time',
+            'is_result_visible' => 'nullable|boolean', // Tambahkan validasi flag visibilitas hasil tim
+            'is_recap_visibile' => 'nullable|boolean', // Tambahkan validasi flag visibilitas leaderboard
+            'is_leaderboard_visible' => 'nullable|boolean', // Tambahkan validasi flag visibilitas leaderboard
         ]);
 
         if ($request->filled('temp_poster_path')) {
@@ -322,17 +331,32 @@ class EventController extends Controller
             }
         }
 
-        $event->save();
+        // Menyimpan status visibilitas (menggunakan input boolean untuk keamanan format dari React/Inertia)
+        $event->is_result_visible = $request->boolean('is_result_visible');
+        $event->is_recap_visible = $request->boolean('is_recap_visible');
+        $event->is_leaderboard_visible = $request->boolean('is_leaderboard_visible');
+        
+        $event->update([
+            'event_name' => $validated['event_name'],
+            'description' => $validated['description'],
+            'location' => $validated['location'],
+            'status' => $validated['status'],
+            'registration_start_time' => $validated['registration_start_time'],
+            'registration_end_time' => $validated['registration_end_time'],
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+        ]);
 
         return redirect()->back()->with('success', 'Detail Event berhasil diperbarui');
     }
 
-    /**
-     * Remove the specified event from storage.
-     */
+    /** Menghapus event beserta berkas poster terkait. */
     public function destroy($id)
     {
         $event = Event::where('public_id', $id)->firstOrFail();
+        
+        $this->validateEventAccess($event, ['administration'], ['committee']);
+
         $poster_path = $event->poster_path;
         DB::transaction(function () use ($event) {
             EventCommittee::where('event_id', $event->event_id)->delete();

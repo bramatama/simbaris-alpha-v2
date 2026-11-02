@@ -6,7 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { PageProps } from '@inertiajs/core';
-import { ArrowLeft, Edit, Trash2, Calculator, CheckSquare } from 'lucide-react';
+import {
+    ArrowLeft,
+    Edit,
+    Trash2,
+    Calculator,
+    CheckSquare,
+    Lock,
+} from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -23,7 +30,9 @@ export default function ScoringCategoryShow({
 }: any) {
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
+    const committeePosition = auth.user.committee_position;
     const isCommittee = ['committee', 'admin'].includes(userRole);
+    const isOngoing = event.status === 'ongoing';
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -49,7 +58,7 @@ export default function ScoringCategoryShow({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
         >
             <Head
                 title={`Preview Form: ${scoringCategory.master_category?.category_name}`}
@@ -79,23 +88,49 @@ export default function ScoringCategoryShow({
 
                     {isCommittee && (
                         <div className="flex gap-2">
-                            <Link
-                                href={`/${userRole}/events/${event.public_id}/scoring-categories/${scoringCategory.scoring_category_id}/edit`}
-                            >
-                                <Button
-                                    variant="outline"
-                                    className="w-full gap-2 border-primary/50 text-primary shadow-sm hover:bg-primary/10 sm:w-auto"
-                                >
-                                    <Edit className="h-4 w-4" /> Edit Form
-                                </Button>
-                            </Link>
-                            <Button
-                                variant="destructive"
-                                className="w-full gap-2 shadow-sm sm:w-auto"
-                                onClick={() => setIsDeleteDialogOpen(true)}
-                            >
-                                <Trash2 className="h-4 w-4" /> Hapus
-                            </Button>
+                            {isOngoing ? (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        disabled
+                                        className="w-full cursor-not-allowed gap-2 border-border/60 opacity-60 sm:w-auto"
+                                        title="Form tidak dapat diubah saat event berlangsung"
+                                    >
+                                        <Lock className="h-4 w-4" /> Edit Form
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        disabled
+                                        className="w-full cursor-not-allowed gap-2 opacity-60 sm:w-auto"
+                                        title="Form tidak dapat dihapus saat event berlangsung"
+                                    >
+                                        <Lock className="h-4 w-4" /> Hapus
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        href={`/${userRole}/events/${event.public_id}/scoring-categories/${scoringCategory.scoring_category_id}/edit`}
+                                    >
+                                        <Button
+                                            variant="outline"
+                                            className="w-full gap-2 border-primary/50 text-primary shadow-sm hover:bg-primary/10 sm:w-auto"
+                                        >
+                                            <Edit className="h-4 w-4" /> Edit
+                                            Form
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        variant="destructive"
+                                        className="w-full gap-2 shadow-sm sm:w-auto"
+                                        onClick={() =>
+                                            setIsDeleteDialogOpen(true)
+                                        }
+                                    >
+                                        <Trash2 className="h-4 w-4" /> Hapus
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

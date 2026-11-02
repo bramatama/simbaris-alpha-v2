@@ -11,15 +11,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/config/date_datetime';
-import { Eye, Edit3, Settings2, ShieldAlert } from 'lucide-react';
+import { Eye, Settings2, ShieldAlert, Trophy } from 'lucide-react';
 
 interface ParticipationTableProps {
+    event?: any | null;
     participations: any[];
     userRole: 'committee' | 'official_team' | string;
     myOfficialTeamId?: string | null;
 }
 
 export function ParticipationTable({
+    event,
     participations,
     userRole,
     myOfficialTeamId,
@@ -49,6 +51,15 @@ export function ParticipationTable({
         }
     };
 
+    // Helper untuk merender URL yang benar (terutama untuk Official Team)
+    const getActionUrl = (p: any) => {
+        if (isCommittee) {
+            return `/${userRole}/events/${event.public_id}/participations/${p.public_id}/information`;
+        } else {
+            return `/${userRole}/events/${p.event?.public_id}/participations/${p.public_id}/information`;
+        }
+    };
+
     if (!participations || participations.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
@@ -65,7 +76,7 @@ export function ParticipationTable({
 
     return (
         <div className="w-full">
-            {/* VIEW MOBILE: COMPACT CARD (Disembunyikan di ukuran MD ke atas) */}
+            {/* VIEW MOBILE: COMPACT CARD */}
             <div className="flex flex-col gap-3 md:hidden">
                 {participations.map((p) => {
                     const isMyTeam = myOfficialTeamId === p.official_team_id;
@@ -93,9 +104,21 @@ export function ParticipationTable({
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            {p.event_level?.level?.level_name}
-                                        </p>
+                                        <div className="flex flex-col gap-0.5">
+                                            {/* Tambahan Info Event */}
+                                            {!isCommittee && p.event && (
+                                                <p className="flex items-center gap-1 text-[11px] font-medium text-primary">
+                                                    <Trophy className="h-3 w-3" />
+                                                    {p.event.event_name}
+                                                </p>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                {
+                                                    p.event_level?.level
+                                                        ?.level_name
+                                                }
+                                            </p>
+                                        </div>
                                     </div>
                                     {(isCommittee || isMyTeam) && (
                                         <div className="shrink-0">
@@ -131,7 +154,7 @@ export function ParticipationTable({
                                 <div className="pt-2">
                                     {isCommittee ? (
                                         <Link
-                                            href={`/${userRole}/participations/${p.public_id}/information`}
+                                            href={getActionUrl(p)}
                                             className="block w-full"
                                         >
                                             <Button
@@ -147,7 +170,7 @@ export function ParticipationTable({
                                         <>
                                             {isMyTeam ? (
                                                 <Link
-                                                    href={`/${userRole}/participations/${p.public_id}/information`}
+                                                    href={getActionUrl(p)}
                                                     className="block w-full"
                                                 >
                                                     <Button
@@ -173,7 +196,7 @@ export function ParticipationTable({
                 })}
             </div>
 
-            {/* VIEW DESKTOP: SHADCN TABLE (Disembunyikan di layar kecil) */}
+            {/* VIEW DESKTOP: SHADCN TABLE */}
             <div className="hidden w-full overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm md:block">
                 <Table className="min-w-max border-collapse">
                     <TableHeader className="bg-muted/30">
@@ -184,13 +207,16 @@ export function ParticipationTable({
                                     : 'Nama Tim / Pangkalan'}
                             </TableHead>
 
-                            {isCommittee ? (
+                            {/* Tambahan Kolom Event untuk Official Team */}
+                            {!isCommittee && (
+                                <TableHead className="border-b border-border/50 p-4 font-semibold">
+                                    Event & Jenjang
+                                </TableHead>
+                            )}
+
+                            {isCommittee && (
                                 <TableHead className="border-b border-border/50 p-4 font-semibold">
                                     PIC & Kontak
-                                </TableHead>
-                            ) : (
-                                <TableHead className="border-b border-border/50 p-4 font-semibold">
-                                    Jenjang
                                 </TableHead>
                             )}
 
@@ -247,7 +273,24 @@ export function ParticipationTable({
                                         </div>
                                     </TableCell>
 
-                                    {isCommittee ? (
+                                    {/* Tambahan Render Data Event */}
+                                    {!isCommittee && (
+                                        <TableCell className="p-4">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-semibold text-primary">
+                                                    {p.event?.event_name || '-'}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {
+                                                        p.event_level?.level
+                                                            ?.level_name
+                                                    }
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    )}
+
+                                    {isCommittee && (
                                         <TableCell className="p-4">
                                             <p className="text-xs font-medium text-foreground">
                                                 {p.pic_name}
@@ -255,10 +298,6 @@ export function ParticipationTable({
                                             <p className="mt-0.5 text-xs text-muted-foreground">
                                                 {p.pic_phone_number}
                                             </p>
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell className="p-4 text-xs font-medium">
-                                            {p.event_level?.level?.level_name}
                                         </TableCell>
                                     )}
 
@@ -274,9 +313,7 @@ export function ParticipationTable({
                                     <TableCell className="p-4 text-right">
                                         {isCommittee ? (
                                             <div className="flex items-center justify-end gap-2">
-                                                <Link
-                                                    href={`/${userRole}/participations/${p.public_id}/information`}
-                                                >
+                                                <Link href={getActionUrl(p)}>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -290,18 +327,39 @@ export function ParticipationTable({
                                         ) : (
                                             <>
                                                 {isMyTeam ? (
-                                                    <Link
-                                                        href={`/${userRole}/participations/${p.public_id}/information`}
-                                                    >
-                                                        <Button
-                                                            variant="default"
-                                                            size="sm"
-                                                            className="h-8 gap-1.5 text-xs"
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {p.status ===
+                                                            'approved' &&
+                                                            p.event && (
+                                                                <Link
+                                                                    href={`/${userRole}/events/${p.event.public_id}/participations/${p.public_id}/my-recap`}
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-8 gap-1.5 text-xs"
+                                                                    >
+                                                                        <Trophy className="h-3.5 w-3.5" />{' '}
+                                                                        Hasil
+                                                                        Nilai
+                                                                    </Button>
+                                                                </Link>
+                                                            )}
+                                                        <Link
+                                                            href={getActionUrl(
+                                                                p,
+                                                            )}
                                                         >
-                                                            <Settings2 className="h-3.5 w-3.5" />{' '}
-                                                            Kelola Tim
-                                                        </Button>
-                                                    </Link>
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                className="h-8 gap-1.5 text-xs"
+                                                            >
+                                                                <Settings2 className="h-3.5 w-3.5" />{' '}
+                                                                Kelola Tim
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
                                                 ) : (
                                                     <span className="text-[11px] text-muted-foreground/50 italic">
                                                         Privasi Terjaga

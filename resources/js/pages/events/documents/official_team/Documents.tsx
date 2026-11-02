@@ -18,8 +18,10 @@ import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { FileUploader } from '@/components/ui/file-uploader';
 
 export default function OfficialTeamParticipationDocuments({
+    event,
     participation,
 }: {
+    event: any;
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
@@ -29,17 +31,15 @@ export default function OfficialTeamParticipationDocuments({
         name: string;
         url: string;
     } | null>(null);
-
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Fungsi konfirmasi hapus dokumen
     const confirmDelete = () => {
         if (deleteId === null) return;
         setIsDeleting(true);
 
         router.delete(
-            `/${userRole}/participations/${participation.public_id}/documents/${deleteId}`,
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/documents/${deleteId}`,
             {
                 preserveScroll: true,
                 onSuccess: () => setDeleteId(null),
@@ -50,7 +50,10 @@ export default function OfficialTeamParticipationDocuments({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getParticipationInnerNav(participation.public_id)}
+            sidebarNavItems={getParticipationInnerNav(
+                participation.public_id,
+                event.public_id,
+            )}
         >
             <Head title={`Dokumen Tim - ${participation.team_name}`} />
 
@@ -58,7 +61,7 @@ export default function OfficialTeamParticipationDocuments({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
-                            href={`/${userRole}/participations/${participation.public_id}/information`}
+                            href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/information`}
                             className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali ke
@@ -75,7 +78,6 @@ export default function OfficialTeamParticipationDocuments({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                    {/* KOLOM KIRI: Form Tambah Dokumen Baru (Lebar 5/12) */}
                     <div className="space-y-6 lg:col-span-5">
                         <Card className="h-full border-dashed border-primary/20 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
@@ -93,23 +95,18 @@ export default function OfficialTeamParticipationDocuments({
                                     variant="document"
                                     multiple={true}
                                     maxSizeMB={5}
-                                    endpoint={`/${userRole}/participations/${participation.public_id}/documents`}
-                                    onUploadSuccess={(fileId, path) => {
+                                    endpoint={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/documents`}
+                                    onUploadSuccess={() =>
                                         router.reload({
                                             only: ['participation'],
-                                        });
-                                    }}
-                                    onRemove={(fileId) => {
-                                        // Opsional: Karena upload ini instan, menghapus item dari antrean UI
-                                        // tidak benar-benar menghapusnya dari database. Pengguna harus menghapusnya
-                                        // dari daftar tabel dokumen di sebelah kanan jika ingin membatalkan.
-                                    }}
+                                        })
+                                    }
+                                    onRemove={() => {}}
                                 />
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* KOLOM KANAN: List Dokumen Terunggah (Lebar 7/12) */}
                     <div className="space-y-6 lg:col-span-7">
                         <Card className="h-full border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10 px-5 py-4">
@@ -142,7 +139,6 @@ export default function OfficialTeamParticipationDocuments({
                                                             {doc.document_name}
                                                         </p>
                                                     </div>
-
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -192,7 +188,6 @@ export default function OfficialTeamParticipationDocuments({
                     </div>
                 </div>
 
-                {/* Dialog Konfirmasi Hapus */}
                 <ConfirmationDialog
                     open={deleteId !== null}
                     onOpenChange={(open) => !open && setDeleteId(null)}

@@ -7,22 +7,26 @@ use App\Models\Event;
 use App\Models\EventLevel;
 use App\Models\ChampionCategory;
 use App\Models\EventChampionCategory;
-use App\Models\Champion;
 use App\Models\EventChampion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Concerns\HasEventAccess;
 
 class EventChampionController extends Controller
 {
+    use HasEventAccess;
+
     /**
-     * 1. INDEX: Menampilkan daftar piala yang dikelompokkan berdasarkan Jenjang lalu Kategori.
+     * Menampilkan daftar penghargaan event menurut jenjang dan kategori.
      */
     public function index($public_id)
     {
         $event = Event::select('event_id', 'public_id', 'event_name', 'status')
             ->where('public_id', $public_id)
             ->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'],['committee']);
 
         $activeCategories = EventChampionCategory::where('event_id', $event->event_id)
             ->with('championCategory:champion_category_id,champion_category_name')
@@ -68,11 +72,12 @@ class EventChampionController extends Controller
     }
 
     /**
-     * 2. CREATE: Halaman Form Builder untuk menyusun daftar piala baru.
+     * Menampilkan formulir untuk menyusun penghargaan event.
      */
     public function create($public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'],['committee']);
         
         $eventLevels = EventLevel::with([
             'level:level_id,level_name',
@@ -97,11 +102,13 @@ class EventChampionController extends Controller
     }
 
     /**
-     * 3. STORE: Menyimpan form builder (Banyak Piala -> Banyak Jenjang).
+     * Menyimpan penghargaan untuk kategori dan jenjang event yang dipilih.
      */
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
+        $this->validateEventAccess($event, ['administration'],['committee']);
 
         $validated = $this->validateChampionBuilder($request, false);
 
@@ -141,11 +148,12 @@ class EventChampionController extends Controller
     }
 
     /**
-     * 4. EDIT: Halaman Form Builder untuk mengedit piala pada suatu jenjang & kategori tertentu.
+     * Menampilkan formulir perubahan penghargaan pada jenjang dan kategori.
      */
     public function edit($public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'],['committee']);
         
         $eventLevel = EventLevel::with('level:level_id,level_name')
             ->where('event_level_id', $event_level_id)
@@ -176,11 +184,12 @@ class EventChampionController extends Controller
     }
 
     /**
-     * 5. UPDATE: Sinkronisasi pembaruan piala untuk satu jenjang & kategori.
+     * Memperbarui penghargaan pada satu jenjang dan kategori event.
      */
     public function update(Request $request, $public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'],['committee']);
         
         $eventLevel = EventLevel::where('event_level_id', $event_level_id)
             ->where('event_id', $event->event_id)
@@ -199,11 +208,12 @@ class EventChampionController extends Controller
     }
 
     /**
-     * 6. DESTROY: Menghapus seluruh piala dalam satu kategori di suatu jenjang.
+     * Menghapus penghargaan dari kategori pada satu jenjang event.
      */
     public function destroy($public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+        $this->validateEventAccess($event, ['administration'],['committee']);
         
         // Hapus piala yang berelasi dengan event_level dan champion_category ini
         EventChampion::where('event_level_id', $event_level_id)
@@ -233,6 +243,7 @@ class EventChampionController extends Controller
     // PRIVATE HELPER METHODS
     // =========================================================================
 
+    /** Memvalidasi data penghargaan yang dikirim dari formulir. */
     private function validateChampionBuilder(Request $request, $isUpdate = false)
     {
         $data = $request->all();
@@ -270,6 +281,7 @@ class EventChampionController extends Controller
         return $validated;
     }
 
+    /** Menyelaraskan daftar penghargaan kategori dengan data event. */
     private function syncChampions($eventLevelId, $championCategoryId, $championsData, $isSync = false)
     {
         $submittedChampionIds = [];
