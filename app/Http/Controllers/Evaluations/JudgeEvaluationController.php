@@ -163,9 +163,20 @@ class JudgeEvaluationController extends Controller
     /**
      * Menyimpan sementara perubahan nilai dari formulir juri.
      */
-    public function autosave(Request $request, Event $event, Participation $participation)
+    /**
+ * Menyimpan sementara perubahan nilai dari formulir juri.
+ */
+public function autosave(Request $request, Participation $participation)
     {
-        abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+        $user = auth()->user();
+
+        abort_if(!in_array($user?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
+
+        $event = $participation->event;
+        if (!$event) {
+            abort(404, 'Event tidak ditemukan.');
+        }
+
         $this->validateEventAccess($event, [], ['judge']);
 
         $validated = $request->validate([
@@ -177,7 +188,11 @@ class JudgeEvaluationController extends Controller
             'scores.*.clicked_at' => 'required|date',
         ]);
 
-        $judgeId = auth()->user()->judge->judge_id;
+        $judge = $user->judge;
+        if (!$judge) {
+            abort(403, 'Profil juri Anda tidak ditemukan.');
+        }
+        $judgeId = $judge->judge_id;
 
         DB::transaction(function () use ($validated, $participation, $judgeId, $request) {
             
