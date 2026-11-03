@@ -31,13 +31,13 @@ class DatabaseSeeder extends Seeder
         ]);
         DB::table('admins')->insert(['user_id' => $adminUserId]);
 
-        // $this->call([
-        //     LevelSeeder::class,
-        //     ScoringSeeder::class,
-        //     UserSeeder::class,
-        //     EventSeeder::class,
-        //     ParticipationSeeder::class,
-        //     ChampionSeeder::class,
-        // ]);
+        $this->call([
+            LevelSeeder::class,
+            ScoringSeeder::class,
+            ChampionSeeder::class,
+            // UserSeeder::class,
+            // EventSeeder::class,
+            // ParticipationSeeder::class,
+        ]);
     }
 }
