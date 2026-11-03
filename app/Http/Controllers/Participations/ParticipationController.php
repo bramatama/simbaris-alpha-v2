@@ -442,14 +442,25 @@ class ParticipationController extends Controller
     /**
      * Menghapus pendaftaran beserta berkas terkait.
      */
-    public function destroy($public_id)
+    public function destroy(Event $event, $public_id)
     {
-        $participation = Participation::with(['participationDocuments', 'event'])
+        $participation = Participation::with(['participationDocuments'])
+            ->where('event_id', $event->event_id)
             ->where('public_id', $public_id)
             ->firstOrFail();
+        $user = auth()->user();
 
-        $this->validateEventAccess($participation->event, ['administration'], ['official_team', 'committee'], $participation);
+        $this->validateEventAccess($event, ['administration'], ['official_team', 'committee'], $participation);
 
+        if ($user->role === 'official_team') {
+            if ($participation->official_team_id !== $user->officialTeam?->official_team_id) {
+                abort(403, 'Anda tidak memiliki hak untuk menghapus pendaftaran tim ini.');
+            }
+
+            if ($participation->status === 'approved') {
+                return redirect()->back()->with('error', 'Pendaftaran yang sudah terverifikasi tidak dapat dihapus mandiri. Silakan hubungi panitia untuk pengajuan pembatalan.');
+        }
+    }
         $teamLogoPath = $participation->team_logo_path;
         $paymentProofPath = $participation->payment_proof_path;
         $documentPaths = $participation->participationDocuments->pluck('document_path')->toArray();
@@ -458,7 +469,7 @@ class ParticipationController extends Controller
             $participation->delete();
         });
 
-        if ($teamLogoPath && Storage::disk('public')->exists($teamLogoPath)){
+        if ($teamLogoPath && Storage::disk('public')->exists($teamLogoPath)) {
             Storage::disk('public')->delete($teamLogoPath);
         }
 
@@ -467,11 +478,11 @@ class ParticipationController extends Controller
         }
 
         foreach ($documentPaths as $docPath) {
-            if (Storage::disk('local')->exists($docPath)) {
+            if ($docPath && Storage::disk('local')->exists($docPath)) {
                 Storage::disk('local')->delete($docPath);
             }
         }
 
-        return redirect()->back()->with('success', 'Pendaftaran berhasil dihapus.');
+        return redirect()->route('official_team.participations.myParticipations', ['event' => $event->public_id])->with('success', 'Pendaftaran berhasil dihapus.');
     }
 }

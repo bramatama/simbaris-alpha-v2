@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
     Route::get('/events/{event:public_id}/participations/{participation:public_id}/information', [ParticipationController::class, 'show'])->name('participation.information.show');
     Route::get('/events/{event:public_id}/participations/{participation:public_id}/edit', [ParticipationController::class, 'edit'])->name('participation.edit');
     Route::patch('/events/{event:public_id}/participations/{participation:public_id}/status', [ParticipationController::class, 'updateStatus'])->name('participations.status.update');
-    Route::delete('/participations/{participation:public_id}/delete', [ParticipationController::class, 'destroy'])->name('participations.destroy');
+    Route::delete('/events/{event:public_id}/participations/{participation:public_id}/delete', [ParticipationController::class, 'destroy'])->name('participations.destroy');
 
     Route::get('events/{event:public_id}/participations/{participation:public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
 });
@@ -44,6 +44,5 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
         // --- Fitur Anggota Tim (Members) ---
         Route::get('/participations/{participation:public_id}/members', [TeamMemberController::class, 'index'])->name('participations.members.index');
         Route::post('/participations/{participation:public_id}/members', [TeamMemberController::class, 'sync'])->name('participations.members.sync');
-        
     });
 });

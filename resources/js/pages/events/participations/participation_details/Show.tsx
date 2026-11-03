@@ -1,4 +1,4 @@
-import { Head, Link, usePage, useForm } from '@inertiajs/react';
+import { Head, Link, usePage, useForm, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -31,6 +32,8 @@ import {
     Eye,
     Edit3,
     Save,
+    Trash2,
+    AlertTriangle,
 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -54,6 +57,9 @@ export default function ParticipationShow({
         url: string;
     } | null>(null);
 
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const { data, setData, patch, processing, errors } = useForm({
         status: participation.status || 'pending',
         status_message: participation.status_message || '',
@@ -65,6 +71,20 @@ export default function ParticipationShow({
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/status`,
             {
                 preserveScroll: true,
+            },
+        );
+    };
+
+    const handleDeleteParticipation = () => {
+        setIsDeleting(true);
+        router.delete(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/delete`,
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsDeleting(false);
+                    setShowDeleteDialog(false);
+                },
             },
         );
     };
@@ -98,9 +118,13 @@ export default function ParticipationShow({
         <InnerAppLayout
             sidebarNavItems={
                 userRole === 'committee'
-                    ? getEventInnerNav(event.public_id, userRole, committeePosition || undefined)
+                    ? getEventInnerNav(
+                          event.public_id,
+                          userRole,
+                          committeePosition || undefined,
+                      )
                     : getParticipationInnerNav(
-                        participation.public_id,
+                          participation.public_id,
                           event.public_id,
                       )
             }
@@ -132,7 +156,7 @@ export default function ParticipationShow({
                         </p>
                     </div>
 
-                    {userRole === 'official_team' && (
+                    {userRole === 'official_team' ? (
                         <div className="flex items-center gap-3">
                             <Link
                                 href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/edit`}
@@ -143,6 +167,20 @@ export default function ParticipationShow({
                                 </Button>
                             </Link>
                         </div>
+                    ) : (
+                        <Button
+                            type="submit"
+                            form="verify"
+                            disabled={processing}
+                            className="gap-2"
+                        >
+                            {processing ? (
+                                <Spinner className="h-4 w-4" />
+                            ) : (
+                                <Save className="h-4 w-4" />
+                            )}
+                            Simpan Perubahan
+                        </Button>
                     )}
                 </div>
 
@@ -292,7 +330,6 @@ export default function ParticipationShow({
                             </CardContent>
                         </Card>
                     </div>
-
                     <div className="space-y-6 lg:col-span-1">
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50">
@@ -340,125 +377,157 @@ export default function ParticipationShow({
                         </Card>
 
                         {userRole === 'committee' && (
-                            <form onSubmit={submitStatus}>
-                                <Card className="border-primary/20 shadow-md">
-                                    <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
-                                        <CardTitle className="text-base text-primary">
-                                            Verifikasi Panitia
-                                        </CardTitle>
-                                        <CardDescription className="text-xs">
-                                            Ubah status kelayakan tim ini.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4 pt-5">
-                                        <RadioGroup
-                                            value={data.status}
-                                            onValueChange={(value) => {
-                                                setData('status', value);
-                                                if (value === 'approved')
-                                                    setData(
-                                                        'status_message',
-                                                        '',
-                                                    );
-                                            }}
-                                            className="flex flex-col gap-2"
-                                        >
-                                            <Label
-                                                htmlFor="pending"
-                                                className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 peer-data-[state=checked]:border-orange-500 peer-data-[state=checked]:bg-orange-500/10 hover:bg-muted has-data-[state=checked]:border-orange-500 has-data-[state=checked]:bg-orange-500/10"
-                                            >
-                                                <RadioGroupItem
-                                                    value="pending"
-                                                    id="pending"
-                                                />
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium">
-                                                        Menunggu
-                                                    </span>
-                                                </div>
-                                            </Label>
-                                            <Label
-                                                htmlFor="approved"
-                                                className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-500/10 hover:bg-muted has-data-[state=checked]:border-emerald-500 has-data-[state=checked]:bg-emerald-500/10"
-                                            >
-                                                <RadioGroupItem
-                                                    value="approved"
-                                                    id="approved"
-                                                />
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium">
-                                                        Disetujui
-                                                    </span>
-                                                </div>
-                                            </Label>
-                                            <Label
-                                                htmlFor="rejected"
-                                                className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 peer-data-[state=checked]:border-destructive peer-data-[state=checked]:bg-destructive/10 hover:bg-muted has-data-[state=checked]:border-destructive has-data-[state=checked]:bg-destructive/10"
-                                            >
-                                                <RadioGroupItem
-                                                    value="rejected"
-                                                    id="rejected"
-                                                />
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium">
-                                                        Ditolak
-                                                    </span>
-                                                </div>
-                                            </Label>
-                                        </RadioGroup>
-                                        <InputError message={errors.status} />
-
-                                        {data.status === 'rejected' && (
-                                            <div className="animate-in space-y-2 pt-2 fade-in slide-in-from-top-2">
-                                                <Label
-                                                    htmlFor="status_message"
-                                                    className="text-xs text-destructive"
-                                                >
-                                                    Alasan Penolakan (Wajib)
-                                                </Label>
-                                                <Textarea
-                                                    id="status_message"
-                                                    placeholder="Beritahu peserta apa yang salah..."
-                                                    value={data.status_message}
-                                                    onChange={(e) =>
+                            <>
+                                <form id="verify" onSubmit={submitStatus}>
+                                    <Card className="border-primary/20 shadow-md">
+                                        <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
+                                            <CardTitle className="text-base text-primary">
+                                                Verifikasi Panitia
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">
+                                                Ubah status kelayakan tim ini.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4 pt-5">
+                                            <RadioGroup
+                                                value={data.status}
+                                                onValueChange={(value) => {
+                                                    setData('status', value);
+                                                    if (value === 'approved')
                                                         setData(
                                                             'status_message',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="min-h-20 border-destructive/50 text-xs focus-visible:ring-destructive"
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.status_message
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                    <CardFooter className="border-t border-border/50 bg-muted/10 p-4">
-                                        <Button
-                                            type="submit"
-                                            disabled={processing}
-                                            className="w-full gap-2"
-                                        >
-                                            {processing ? (
-                                                <Spinner className="h-4 w-4" />
-                                            ) : (
-                                                <Save className="h-4 w-4" />
+                                                            '',
+                                                        );
+                                                }}
+                                                className="flex flex-col gap-2"
+                                            >
+                                                <Label
+                                                    htmlFor="pending"
+                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-orange-500 has-data-[state=checked]:bg-orange-500/10"
+                                                >
+                                                    <RadioGroupItem
+                                                        value="pending"
+                                                        id="pending"
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium">
+                                                            Menunggu
+                                                        </span>
+                                                    </div>
+                                                </Label>
+                                                <Label
+                                                    htmlFor="approved"
+                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-emerald-500 has-data-[state=checked]:bg-emerald-500/10"
+                                                >
+                                                    <RadioGroupItem
+                                                        value="approved"
+                                                        id="approved"
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium">
+                                                            Disetujui
+                                                        </span>
+                                                    </div>
+                                                </Label>
+                                                <Label
+                                                    htmlFor="rejected"
+                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-destructive has-data-[state=checked]:bg-destructive/10"
+                                                >
+                                                    <RadioGroupItem
+                                                        value="rejected"
+                                                        id="rejected"
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium">
+                                                            Ditolak
+                                                        </span>
+                                                    </div>
+                                                </Label>
+                                            </RadioGroup>
+                                            <InputError
+                                                message={errors.status}
+                                            />
+
+                                            {data.status === 'rejected' && (
+                                                <div className="animate-in space-y-2 pt-2 fade-in slide-in-from-top-2">
+                                                    <Label
+                                                        htmlFor="status_message"
+                                                        className="text-xs text-destructive"
+                                                    >
+                                                        Alasan Penolakan (Wajib)
+                                                    </Label>
+                                                    <Textarea
+                                                        id="status_message"
+                                                        placeholder="Beritahu peserta apa yang salah..."
+                                                        value={
+                                                            data.status_message
+                                                        }
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'status_message',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="min-h-20 border-destructive/50 text-xs focus-visible:ring-destructive"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors.status_message
+                                                        }
+                                                    />
+                                                </div>
                                             )}
-                                            Simpan Perubahan
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </form>
+                                        </CardContent>
+                                    </Card>
+                                </form>
+                            </>
                         )}
                     </div>
+                    {userRole === 'committee' && (
+                        <Card className="border-destructive/30 bg-destructive/5 shadow-sm lg:col-span-3">
+                            <CardContent className="flex flex-col gap-4 sm:flex-row items-center sm:justify-between">
+                                <div className="flex flex-col items-center sm:items-start gap-1.5">
+                                    <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                                        Hapus Pendaftaran
+                                    </CardTitle>
+
+                                    <CardDescription className="text-xs text-destructive/80">
+                                        Hapus data pendaftaran tim ini secara
+                                        permanen.
+                                    </CardDescription>
+                                </div>
+
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-fit shrink-0 gap-2 font-semibold shadow-sm"
+                                    onClick={() => setShowDeleteDialog(true)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Hapus Pendaftaran
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <PdfViewerDialog
                     document={viewDocument}
                     onClose={() => setViewDocument(null)}
+                />
+
+                {/* CONFIRMATION DIALOG HAPUS PANITIA */}
+                <ConfirmationDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                    title="Hapus Pendaftaran Peserta?"
+                    description={`Apakah Anda yakin ingin menghapus pendaftaran tim "${participation.team_name}"? Tindakan ini akan menghapus seluruh dokumen dan data pendaftaran secara permanen.`}
+                    variant="destructive"
+                    confirmText="Ya, Hapus Permanen"
+                    cancelText="Batal"
+                    isProcessing={isDeleting}
+                    onConfirm={handleDeleteParticipation}
                 />
             </div>
         </InnerAppLayout>

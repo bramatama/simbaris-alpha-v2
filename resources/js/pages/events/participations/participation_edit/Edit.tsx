@@ -1,5 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -16,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import InputError from '@/components/input-error';
 import { FileUploader } from '@/components/ui/file-uploader';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -23,6 +25,8 @@ import {
     FileText,
     CheckCircle2,
     ImagePlus,
+    Trash2,
+    AlertTriangle,
 } from 'lucide-react';
 
 export default function OfficialTeamParticipationEdit({
@@ -35,6 +39,9 @@ export default function OfficialTeamParticipationEdit({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
     const isApproved = participation.status === 'approved';
+
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
@@ -51,6 +58,20 @@ export default function OfficialTeamParticipationEdit({
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/registration`,
             {
                 preserveScroll: true,
+            },
+        );
+    };
+
+    const handleDeleteParticipation = () => {
+        setIsDeleting(true);
+        router.delete(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/delete`,
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsDeleting(false);
+                    setShowDeleteDialog(false);
+                },
             },
         );
     };
@@ -347,9 +368,64 @@ export default function OfficialTeamParticipationEdit({
                                     </Button>
                                 </CardFooter>
                             </Card>
+
+                            {/* DANGER ZONE OFFICIAL TEAM */}
+                            <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
+                                <CardHeader className="border-b border-destructive/20 pb-4">
+                                    <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                                        <AlertTriangle className="h-5 w-5" />{' '}
+                                        Zona Bahaya
+                                    </CardTitle>
+
+                                    <CardDescription className="text-xs text-destructive/80">
+                                        {isApproved
+                                            ? 'Pendaftaran yang telah disetujui/terverifikasi oleh panitia tidak dapat dibatalkan atau dihapus secara mandiri.'
+                                            : 'Batalkan keikutsertaan dan hapus seluruh berkas pendaftaran tim ini.'}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-bold text-foreground">
+                                                Batalkan Pendaftaran
+                                            </p>
+
+                                            <p className="text-xs text-muted-foreground">
+                                                Tindakan ini permanen dan tidak
+                                                dapat dikembalikan.
+                                            </p>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            disabled={isApproved}
+                                            onClick={() =>
+                                                setShowDeleteDialog(true)
+                                            }
+                                            className="gap-2 font-semibold shadow-sm"
+                                        >
+                                            <Trash2 className="h-4 w-4" />{' '}
+                                            Batalkan Pendaftaran
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
                 </form>
+
+                {/* CONFIRMATION DIALOG HAPUS OFFICIAL TEAM */}
+                <ConfirmationDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                    title="Batalkan Pendaftaran Tim?"
+                    description="Apakah Anda yakin ingin membatalkan keikutsertaan tim ini? Seluruh data pendaftaran dan berkas yang telah diunggah akan dihapus secara permanen."
+                    variant="destructive"
+                    confirmText="Ya, Batalkan Pendaftaran"
+                    cancelText="Kembali"
+                    isProcessing={isDeleting}
+                    onConfirm={handleDeleteParticipation}
+                />
             </div>
         </InnerAppLayout>
     );
