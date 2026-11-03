@@ -4,16 +4,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <meta property="og:title" content="Simbaris - Sistem Manajemen Lomba" />
-        <meta
-            property="og:description"
-            content="Platform manajemen lomba baris-berbaris."
-        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="{{ url()->current() }}" />
+        <meta property="og:title" content="SIMBARIS - Sistem Informasi Manajemen Lomba Baris-Berbaris" />
+        <meta property="og:description" content="Platform digital manajemen lomba baris-berbaris, penilaian juri real-time, dan papan peringkat otomatis." />
+        <meta property="og:image" content="{{ asset('img/og-image.jpg') }}" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <!-- <meta
             property="og:image"
             content="https://domainmu.com/images/og-image.png"
         /> -->
-        <meta property="og:type" content="website" />
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
