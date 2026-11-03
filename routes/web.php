@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 use App\Http\Controllers\Files\TempFileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
