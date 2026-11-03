@@ -16,6 +16,7 @@ import {
     LayoutList,
     Columns3,
     CheckSquare,
+    AlertCircle,
 } from 'lucide-react';
 import {
     Select,
@@ -215,7 +216,7 @@ export default function DynamicScoringBuilderCreate({
 
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
     };
     const removeCriteriaRow = (id: string) =>
@@ -251,7 +252,7 @@ export default function DynamicScoringBuilderCreate({
         });
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
     };
 
@@ -275,7 +276,7 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
     const removeScore = (critId: string, rubricId: string, scoreId: string) => {
@@ -294,7 +295,7 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
     const updateScoreValue = (
@@ -319,17 +320,19 @@ export default function DynamicScoringBuilderCreate({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
+    // FUNGSI SMOOTH SCROLL TO ERROR DI CREATE PAGE
     const scrollToError = () => {
         setTimeout(() => {
             const firstError = document.querySelector('.is-error-msg');
-            if (firstError)
+            if (firstError) {
                 firstError.scrollIntoView({
                     behavior: 'smooth',
                     block: 'center',
                 });
+            }
         }, 100);
     };
 
@@ -339,26 +342,46 @@ export default function DynamicScoringBuilderCreate({
         const newLocalErrors: Record<string, string> = {};
 
         if (globalRubrics.length === 0) {
-            newLocalErrors['global'] = 'Buat minimal 1 kolom kategori.';
+            newLocalErrors['global'] =
+                'Buat minimal 1 kolom kategori di bagian atas.';
             hasError = true;
         }
         if (uiCriteria.length === 0) {
             newLocalErrors['global'] =
-                'Tambahkan minimal 1 baris komponen gerakan.';
+                'Tambahkan minimal 1 baris komponen materi gerakan.';
             hasError = true;
         }
 
         uiCriteria.forEach((crit) => {
+            // Validasi Nama Kriteria
             if (!crit.name.trim()) {
                 newLocalErrors[`crit_${crit.id}`] =
-                    'Nama komponen penilaian wajib diisi.';
+                    'Nama komponen gerakan belum dipilih.';
                 hasError = true;
             }
+
+            // Validasi Jumlah dan Kelengkapan Nilai Rubrik
             globalRubrics.forEach((gr) => {
-                const count = (crit.rubricData[gr.id] || []).length;
-                if (count !== gr.expected_count) {
+                const scores = crit.rubricData[gr.id] || [];
+
+                // 1. Cek Apakah Jumlah Opsi Pas dengan Katetogori
+                if (scores.length !== gr.expected_count) {
                     newLocalErrors[`crit_${crit.id}`] =
-                        'Terdapat jumlah opsi nilai yang tidak sesuai dengan ketentuan kolom kategori.';
+                        `Jumlah opsi nilai untuk '${gr.name}' harus ${gr.expected_count} item (saat ini: ${scores.length}).`;
+                    hasError = true;
+                }
+
+                // 2. Cek Apakah Ada Input Opsi Nilai yang Masih Kosong
+                const hasEmptyScore = scores.some(
+                    (s) =>
+                        s.value === '' ||
+                        s.value === null ||
+                        s.value === undefined,
+                );
+
+                if (hasEmptyScore) {
+                    newLocalErrors[`crit_${crit.id}`] =
+                        `Terdapat nilai opsi pada '${gr.name}' yang masih kosong. Harap isi semua nilai angka.`;
                     hasError = true;
                 }
             });
@@ -366,7 +389,7 @@ export default function DynamicScoringBuilderCreate({
 
         if (hasError) {
             setLocalErrors(newLocalErrors);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            scrollToError();
             return;
         }
 
@@ -387,13 +410,18 @@ export default function DynamicScoringBuilderCreate({
         }));
         post(`/${userRole}/events/${event.public_id}/scoring-categories`, {
             preserveScroll: true,
+            onError: scrollToError,
         });
     };
 
     if (!isMounted) {
         return (
             <InnerAppLayout
-                sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+                sidebarNavItems={getEventInnerNav(
+                    event.public_id,
+                    userRole,
+                    committeePosition || undefined,
+                )}
             >
                 <div className="flex min-h-screen items-center justify-center">
                     <Spinner className="h-8 w-8 text-primary" />
@@ -404,7 +432,11 @@ export default function DynamicScoringBuilderCreate({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Buat Form Penilaian - ${event.event_name}`} />
             <DndContext
@@ -412,7 +444,7 @@ export default function DynamicScoringBuilderCreate({
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
             >
-                <div className="mx-auto min-h-screen w-full max-w-7xl space-y-6 bg-muted/5 p-4 md:p-6 lg:p-8">
+                <div className="mx-auto min-h-screen w-full max-w-7xl space-y-6 bg-muted/5 p-4 pb-32 md:p-6 lg:p-8">
                     <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <Link
@@ -432,15 +464,20 @@ export default function DynamicScoringBuilderCreate({
                         </div>
                     </div>
 
+                    {/* GLOBAL ERROR CONTAINER */}
                     {localErrors['global'] && (
-                        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
-                            {localErrors['global']}
+                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
+                            <AlertCircle className="h-5 w-5 shrink-0" />
+                            <div>{localErrors['global']}</div>
                         </div>
                     )}
                     {errors.criteria && (
-                        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
-                            Validasi Server: Terdapat kelengkapan data yang
-                            gagal disimpan.
+                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
+                            <AlertCircle className="h-5 w-5 shrink-0" />
+                            <div>
+                                Validasi Server: Terdapat kelengkapan data yang
+                                gagal disimpan. Periksa baris komponen di bawah.
+                            </div>
                         </div>
                     )}
 

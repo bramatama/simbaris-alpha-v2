@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
+import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import { getEventInnerNav } from '@/config/inner_sidebar';
@@ -14,6 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Filter, Unlock, EyeOff } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 
 /* =========================================================
    TYPES
@@ -50,11 +52,14 @@ export default function EvaluationResult({
     grandTotal,
     judgeStatuses,
     isLocked,
-    isVisible = true, // Default true jika diakses panitia
+    isVisible = true,
 }: EvaluationResultProps) {
     const { auth, url } = usePage<PageProps>().props;
     const userRole = auth.user.role;
     const committeePosition = auth.user.committee_position;
+
+    const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);
+    const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
 
     const baseUrl = url.split('?')[0];
     const handleBack = () => {
@@ -75,19 +80,20 @@ export default function EvaluationResult({
         );
     };
 
-    const handleUnlockRequest = () => {
+    const confirmUnlockRequest = () => {
         if (!activeCategory) return;
-        if (
-            confirm(
-                'Buka kunci penilaian juri untuk kategori ini? Status akan diubah menjadi "Needs Review" sehingga juri dapat mengubah kembali nilainya.',
-            )
-        ) {
-            router.post(
-                `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/evaluation_result/unlock`,
-                { scoring_category_id: activeCategory?.scoring_category_id },
-                { preserveScroll: true },
-            );
-        }
+        setIsProcessingUnlock(true);
+        router.post(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/evaluation_result/unlock`,
+            { scoring_category_id: activeCategory?.scoring_category_id },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsProcessingUnlock(false);
+                    setIsUnlockDialogOpen(false);
+                },
+            },
+        );
     };
 
     const categoryName =
@@ -116,7 +122,11 @@ export default function EvaluationResult({
                           participation.public_id,
                           event.public_id,
                       )
-                    : getEventInnerNav(event.public_id, userRole, committeePosition || undefined)
+                    : getEventInnerNav(
+                          event.public_id,
+                          userRole,
+                          committeePosition || undefined,
+                      )
             }
         >
             <Head title={`Hasil Penilaian - ${participation.team_name}`} />
@@ -151,7 +161,7 @@ export default function EvaluationResult({
                         </div>
                     </div>
 
-                    {/* Filter dan Aksi (Hanya muncul jika visible atau panitia) */}
+                    {/* Filter dan Aksi */}
                     {isVisible && (
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                             <div className="w-full space-y-1.5 sm:max-w-sm">
@@ -198,7 +208,9 @@ export default function EvaluationResult({
                                 activeCategory &&
                                 isLocked && (
                                     <Button
-                                        onClick={handleUnlockRequest}
+                                        onClick={() =>
+                                            setIsUnlockDialogOpen(true)
+                                        }
                                         variant="destructive"
                                         className="h-10 w-full shadow-sm sm:w-auto sm:min-w-40"
                                     >
@@ -210,7 +222,7 @@ export default function EvaluationResult({
                     )}
                 </div>
 
-                {/* KONDISI BLANK STATE JIKA VISIBILITAS BELUM DIBUKA */}
+                {/* KONDISI BLANK STATE */}
                 {!isVisible ? (
                     <Card className="space-y-4 border-dashed border-border/80 bg-muted/10 p-12 text-center">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -230,7 +242,7 @@ export default function EvaluationResult({
                 ) : (
                     /* TABEL MATRIKS & MOBILE CARDS */
                     <Card className="overflow-hidden border-border/70 p-0 shadow-sm">
-                        {/* 1. TAMPILAN MOBILE (CARD LAYOUT) */}
+                        {/* TAMPILAN MOBILE */}
                         <div className="flex flex-col gap-4 bg-muted/10 p-4 sm:hidden">
                             {scoresMatrix.map((row, idx) => (
                                 <div
@@ -313,7 +325,7 @@ export default function EvaluationResult({
                             )}
                         </div>
 
-                        {/* 2. TAMPILAN DESKTOP/TABLET (TABEL KLASIK) */}
+                        {/* TAMPILAN DESKTOP */}
                         <div className="hidden w-full overflow-x-auto overscroll-x-contain sm:block">
                             <table className="w-full min-w-175 border-collapse text-left text-sm">
                                 <thead className="border-b border-border bg-muted/60 font-semibold text-foreground">
@@ -438,6 +450,19 @@ export default function EvaluationResult({
                     </Card>
                 )}
             </div>
+
+            {/* CONFIRMATION DIALOG FOR UNLOCK REVIEW */}
+            <ConfirmationDialog
+                open={isUnlockDialogOpen}
+                onOpenChange={setIsUnlockDialogOpen}
+                title="Buka Kunci Penilaian Juri?"
+                description="Status penilaian kategori ini akan diubah menjadi 'Needs Review' sehingga juri terkait dapat memperbaiki atau menyesuaikan kembali skor nilainya."
+                variant="destructive"
+                confirmText="Ya, Buka Kunci"
+                cancelText="Batal"
+                isProcessing={isProcessingUnlock}
+                onConfirm={confirmUnlockRequest}
+            />
         </InnerAppLayout>
     );
 }

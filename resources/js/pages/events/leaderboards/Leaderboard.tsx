@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm, usePage} from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
@@ -91,7 +91,7 @@ export default function Leaderboard({
     // State untuk Modal Tiebreaker Massal
     const [isBulkOverrideModalOpen, setIsBulkOverrideModalOpen] =
         useState(false);
-    const [availableTieRanks, setAvailableTieRanks] = useState<number[]>([]);
+    const [, setAvailableTieRanks] = useState<number[]>([]);
 
     // Form data
     const {
@@ -115,10 +115,6 @@ export default function Leaderboard({
     };
 
     const getRankClassName = (rank: number) => {
-        if (filters.sort !== 'rank') {
-            return 'bg-muted text-muted-foreground';
-        }
-
         switch (rank) {
             case 1:
                 return 'bg-amber-400 text-amber-900 shadow-md';
@@ -131,22 +127,18 @@ export default function Leaderboard({
         }
     };
 
-    // Di dalam komponen Leaderboard, tambahkan helper ini:
     const getAvailableRanks = (currentIndex: number) => {
-        // Jumlah tim yang sedang seri menentukan rank berapa saja yang tersedia (misal: ada 2 tim yang seri, maka pilihannya rank 1 dan 2)
         const totalTied = formData.overrides.length;
         const allPossibleRanks = Array.from(
             { length: totalTied },
             (_, i) => i + 1,
         );
 
-        // Kumpulkan rank apa saja yang SUDAH dipilih oleh baris tim lain
         const selectedRanksByOthers = formData.overrides
             .filter((_, idx) => idx !== currentIndex)
             .map((o) => Number(o.rank_override))
             .filter((r) => r > 0);
 
-        // Kembalikan daftar rank yang belum dipilih
         return allPossibleRanks.map((rank) => ({
             rank,
             disabled: selectedRanksByOthers.includes(rank),
@@ -227,7 +219,6 @@ export default function Leaderboard({
     };
 
     const openBulkOverrideModal = (targetScore: number) => {
-        // Ambil semua tim seri berserta original index mereka untuk menghitung Pool Peringkat
         const tiedTeamsWithIndex = leaderboardData.data
             .map((row: any, index: number) => ({
                 ...row,
@@ -235,7 +226,6 @@ export default function Leaderboard({
             }))
             .filter((row: any) => row.final_score === targetScore);
 
-        // Buat Array untuk Pool Peringkat yang tersedia (berdasarkan Index aslinya)
         const rankPool = tiedTeamsWithIndex.map(
             (t: any) => t.originalIndex + 1,
         );
@@ -268,7 +258,6 @@ export default function Leaderboard({
 
     const updateOverrideRank = (index: number, value: string) => {
         const newOverrides = [...formData.overrides];
-        // Jika user memilih "reset", kita ubah kembali jadi string kosong agar nilai database jadi NULL
         newOverrides[index].rank_override = value === 'reset' ? '' : value;
         setFormData('overrides', newOverrides);
     };
@@ -406,6 +395,7 @@ export default function Leaderboard({
                             </Select>
                         </div>
                     </div>
+
                     <Card className="overflow-hidden border-border/70 p-0 shadow-sm">
                         {/* 1. TAMPILAN MOBILE (CARD LAYOUT) */}
                         <div className="flex flex-col gap-4 bg-muted/10 p-4 sm:hidden">
@@ -431,21 +421,26 @@ export default function Leaderboard({
                                             index,
                                             leaderboardData.data,
                                         );
-                                        const rankToDisplay = isChampion
-                                            ? row.rank_override || index + 1
-                                            : index + 1;
+
+                                        const visualRowNumber =
+                                            (leaderboardData.from || 1) + index;
+
+                                        const actualRank =
+                                            row.actual_rank ?? visualRowNumber;
+
                                         const isMyTeam =
                                             role === 'official_team' &&
                                             myOfficialTeamId &&
                                             participation?.official_team_id ===
                                                 myOfficialTeamId;
 
-                                        // Cari apakah peringkat ini punya nama gelar juara
+                                        // PENCARIAN JUARA BERDASARKAN actual_rank ASLI
                                         const championTitle = isChampion
                                             ? activeEventChampions?.find(
                                                   (ec: any) =>
-                                                      ec.rank_position ===
-                                                      rankToDisplay,
+                                                      Number(
+                                                          ec.rank_position,
+                                                      ) === Number(actualRank),
                                               )?.champion?.champion_name
                                             : null;
 
@@ -461,9 +456,9 @@ export default function Leaderboard({
                                                 {/* Header Card: Peringkat & Nama Tim */}
                                                 <div className="flex items-start gap-3 border-b border-border/50 pb-3">
                                                     <div
-                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${getRankClassName(Number(rankToDisplay))}`}
+                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${getRankClassName(Number(   ))}`}
                                                     >
-                                                        {rankToDisplay}
+                                                        {visualRowNumber}
                                                     </div>
                                                     <div className="flex min-w-0 flex-col">
                                                         <span className="leading-tight font-bold text-foreground">
@@ -657,6 +652,8 @@ export default function Leaderboard({
                                 </div>
                             )}
                         </div>
+
+                        {/* 2. TAMPILAN DESKTOP/TABLET (TABEL KLASIK) */}
                         <div className="hidden w-full overflow-x-auto sm:block">
                             {isVisible === false ? (
                                 <Card className="space-y-4 p-12 text-center">
@@ -677,7 +674,7 @@ export default function Leaderboard({
                                     <TableHeader className="bg-muted/40">
                                         <TableRow>
                                             <TableHead className="w-20 text-center font-bold">
-                                                Peringkat
+                                                No / Peringkat
                                             </TableHead>
                                             <TableHead className="min-w-50 font-bold">
                                                 Nama Tim / Peserta
@@ -741,11 +738,14 @@ export default function Leaderboard({
                                                             index,
                                                             leaderboardData.data,
                                                         );
-                                                    const rankToDisplay =
-                                                        isChampion
-                                                            ? row.rank_override ||
-                                                              index + 1
-                                                            : index + 1;
+                                                    const visualRowNumber =
+                                                        (leaderboardData.from ||
+                                                            1) + index;
+
+                                                    const actualRank =
+                                                        row.actual_rank ??
+                                                        visualRowNumber;
+
                                                     const isMyTeam =
                                                         role ===
                                                             'official_team' &&
@@ -753,12 +753,17 @@ export default function Leaderboard({
                                                         participation?.official_team_id ===
                                                             myOfficialTeamId;
 
+                                                    // PENCARIAN JUARA BERDASARKAN actual_rank ASLI
                                                     const championTitle =
                                                         isChampion
                                                             ? activeEventChampions?.find(
                                                                   (ec: any) =>
-                                                                      ec.rank_position ===
-                                                                      rankToDisplay,
+                                                                      Number(
+                                                                          ec.rank_position,
+                                                                      ) ===
+                                                                      Number(
+                                                                          actualRank,
+                                                                      ),
                                                               )?.champion
                                                                   ?.champion_name
                                                             : null;
@@ -776,10 +781,10 @@ export default function Leaderboard({
                                                             <TableCell className="text-center">
                                                                 <div className="flex flex-col items-center justify-center">
                                                                     <span
-                                                                        className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${getRankClassName(Number(rankToDisplay))}`}
+                                                                        className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${getRankClassName(Number(actualRank))}`}
                                                                     >
                                                                         {
-                                                                            rankToDisplay
+                                                                            visualRowNumber
                                                                         }
                                                                     </span>
                                                                 </div>
@@ -974,6 +979,7 @@ export default function Leaderboard({
                                 </Table>
                             )}
                         </div>
+
                         {leaderboardData?.links &&
                             leaderboardData.links.length > 3 && (
                                 <div className="flex items-center justify-center border-t border-border/50 bg-muted/10 p-4">
@@ -1134,7 +1140,6 @@ export default function Leaderboard({
                                                         {ov.final_score}
                                                     </TableCell>
 
-                                                    {/* DROPDOWN SELEKSI PERINGKAT ANTI-KEMBAR */}
                                                     <TableCell>
                                                         <Select
                                                             value={
@@ -1237,7 +1242,11 @@ export default function Leaderboard({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, role, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                role,
+                committeePosition || undefined,
+            )}
         >
             {pageContent}
         </InnerAppLayout>

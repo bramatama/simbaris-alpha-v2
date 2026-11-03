@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -18,6 +18,7 @@ import {
     Clock,
     ArrowLeft,
     Filter,
+    Layers,
 } from 'lucide-react';
 import { ParticipationTable } from '@/components/tables/participation_table/participation_table';
 
@@ -34,6 +35,7 @@ export default function CommitteeParticipationIndex({
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterLevel, setFilterLevel] = useState<string>('all');
 
     // Statistik Cepat
     const totalPending = participations.filter(
@@ -43,18 +45,41 @@ export default function CommitteeParticipationIndex({
         (p) => p.status === 'approved',
     ).length;
 
-    // Filter Data
+    const availableLevels = useMemo(() => {
+        const levelsMap = new Map();
+        participations.forEach((p) => {
+            const levelObj = p.event_level?.level;
+            if (levelObj && !levelsMap.has(levelObj.level_id)) {
+                levelsMap.set(levelObj.level_id, levelObj.level_name);
+            }
+        });
+        return Array.from(levelsMap.entries()).map(([id, name]) => ({
+            id: String(id),
+            name,
+        }));
+    }, [participations]);
+
     const filteredData = participations.filter((p) => {
         const matchSearch =
             p.team_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.pic_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-        return matchSearch && matchStatus;
+        const matchLevel =
+            filterLevel === 'all' ||
+            String(p.event_level?.level?.level_id) === filterLevel ||
+            p.event_level?.level?.level_name?.toLowerCase() ===
+                filterLevel.toLowerCase();
+
+        return matchSearch && matchStatus && matchLevel;
     });
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Daftar Pendaftar - ${event.event_name}`} />
 
@@ -79,7 +104,7 @@ export default function CommitteeParticipationIndex({
                     </div>
                 </div>
 
-                {/* Statistik Cepat (Lebih Kompak) */}
+                {/* Statistik Cepat */}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
                     <Card className="col-span-2 border-border/50 bg-muted/10 shadow-sm md:col-span-1">
                         <CardContent className="flex items-center gap-3 p-3.5">
@@ -133,7 +158,8 @@ export default function CommitteeParticipationIndex({
                     {/* Header Filter dengan Select Dropdown */}
                     <CardHeader className="flex flex-col gap-3 border-b border-border/50 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
-                            <div className="relative w-full sm:w-40">
+                            {/* Filter Status */}
+                            <div className="relative w-full sm:w-42">
                                 <Filter className="pointer-events-none absolute top-2.5 left-2.5 z-10 h-4 w-4 text-muted-foreground" />
                                 <Select
                                     value={filterStatus}
@@ -159,6 +185,33 @@ export default function CommitteeParticipationIndex({
                                 </Select>
                             </div>
 
+                            {/* Filter Jenjang (Level) */}
+                            <div className="relative w-full sm:w-42">
+                                <Layers className="pointer-events-none absolute top-2.5 left-2.5 z-10 h-4 w-4 text-muted-foreground" />
+                                <Select
+                                    value={filterLevel}
+                                    onValueChange={setFilterLevel}
+                                >
+                                    <SelectTrigger className="h-9 w-full bg-background pl-8 shadow-sm">
+                                        <SelectValue placeholder="Jenjang" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Jenjang
+                                        </SelectItem>
+                                        {availableLevels.map((lvl) => (
+                                            <SelectItem
+                                                key={lvl.id}
+                                                value={lvl.id}
+                                            >
+                                                {lvl.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Pencarian Nama Tim / PIC */}
                             <div className="relative w-full sm:w-55 md:w-64">
                                 <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                                 <input

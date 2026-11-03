@@ -13,6 +13,7 @@ import {
     Play,
     Lock,
 } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 
 /* ==========================================
    TYPES & STATUS HELPERS
@@ -77,23 +78,37 @@ const CategoryAccordion = ({
     userRole: string;
 }) => {
     const [isOpen, setIsOpen] = useState(true);
+    const [showLockDialog, setShowLockDialog] = useState(false);
+    const [isLocking, setIsLocking] = useState(false);
 
     const evaluateUrl = `/${userRole}/events/${event.public_id}/participants/${participation.public_id}/evaluate/${category.scoring_category_id}`;
     const lockUrl = `/${userRole}/events/${event.public_id}/participants/${participation.public_id}/lock/${category.scoring_category_id}`;
 
-    const handleLock = (e: React.MouseEvent) => {
+    const handleOpenLockModal = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (
-            window.confirm(
-                `Apakah Anda yakin ingin mengunci nilai untuk kategori ${category.master_category.category_name}? Aksi ini bersifat permanen.`,
-            )
-        ) {
-            router.post(lockUrl, {}, { preserveScroll: true });
-        }
+        setShowLockDialog(true);
     };
 
-    // Hapus 'needs_review' dari isLocked agar tombol bisa muncul kembali
+    const confirmLock = () => {
+        setIsLocking(true);
+        router.post(
+            lockUrl,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsLocking(false);
+                    setShowLockDialog(false);
+                },
+            },
+        );
+    };
+
     const isLocked = category.category_status === 'locked';
+    const categoryTitle =
+        category.master_category?.category_name ||
+        category.category_name ||
+        'Kategori';
 
     return (
         <Card className="overflow-hidden border-border/70 shadow-sm">
@@ -104,7 +119,7 @@ const CategoryAccordion = ({
                 <div className="flex items-center gap-3">
                     <ClipboardCheck className="h-5 w-5 text-primary" />
                     <h3 className="font-bold text-foreground sm:text-lg">
-                        {category.master_category.category_name}
+                        {categoryTitle}
                     </h3>
                     <div className="ml-2">
                         {getStatusBadge(category.category_status)}
@@ -121,11 +136,12 @@ const CategoryAccordion = ({
                     className="flex items-center gap-2"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {(category.category_status === 'draft' || category.category_status === 'needs_review') && (
+                    {(category.category_status === 'draft' ||
+                        category.category_status === 'needs_review') && (
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleLock}
+                            onClick={handleOpenLockModal}
                             className="border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
                         >
                             <Lock className="mr-1.5 h-4 w-4" /> Kunci Nilai
@@ -143,8 +159,8 @@ const CategoryAccordion = ({
                             {category.category_status === 'needs_review'
                                 ? 'Revisi Nilai'
                                 : category.category_status === 'draft'
-                                ? 'Lanjutkan'
-                                : 'Mulai Menilai'}
+                                  ? 'Lanjutkan'
+                                  : 'Mulai Menilai'}
                         </Button>
                     )}
 
@@ -206,7 +222,7 @@ const CategoryAccordion = ({
                                                         }
                                                         className="p-4"
                                                     >
-                                                        <div className="flex flex-wra   p gap-2">
+                                                        <div className="flex flex-wrap gap-2">
                                                             {rubricCol.rubric_scores.map(
                                                                 (
                                                                     score: any,
@@ -249,6 +265,18 @@ const CategoryAccordion = ({
                     </div>
                 </CardContent>
             )}
+
+            {/* CONFIRMATION DIALOG KUNCI NILAI KATEGORI */}
+            <ConfirmationDialog
+                open={showLockDialog}
+                onOpenChange={setShowLockDialog}
+                title={`Kunci Nilai ${categoryTitle}?`}
+                description={`Apakah Anda yakin ingin mengunci nilai untuk kategori ${categoryTitle}? Setelah dikunci, nilai ini tidak dapat diubah kembali kecuali dibuka ulang oleh panitia.`}
+                confirmText="Ya, Kunci Nilai"
+                cancelText="Batal"
+                isProcessing={isLocking}
+                onConfirm={confirmLock}
+            />
         </Card>
     );
 };
@@ -266,7 +294,6 @@ export default function TeamPreview({
     const userRole = auth.user.role;
     const backUrl = `/${userRole}/events/${event.public_id}/participants`;
 
-    // SOLUSI UNTUK "UNKNOWN" STATUS: Menghitung status global secara langsung di sisi Frontend
     let computedGlobalStatus = 'ready';
     const isAnyNeedsReview = scoringCategories.some(
         (c) => c.category_status === 'needs_review',
@@ -335,7 +362,6 @@ export default function TeamPreview({
                             <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                 Status Keseluruhan
                             </span>
-                            {/* Menggunakan status yang dihitung oleh Frontend */}
                             {getStatusBadge(computedGlobalStatus)}
                         </div>
                     </CardContent>

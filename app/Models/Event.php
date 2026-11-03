@@ -60,6 +60,9 @@ class Event extends Model
         'end_time' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'is_result_visible' => 'boolean',
+        'is_recap_visible' => 'boolean',
+        'is_leaderboard_visible' => 'boolean',
     ];
 
     public function creator(): BelongsTo
@@ -104,5 +107,10 @@ class Event extends Model
             'event_id',
             'event_id'
         );
+    }
+
+    public function paymentMethods()
+    {
+        return $this->hasMany(EventPaymentMethod::class, 'event_id', 'event_id');
     }
 }

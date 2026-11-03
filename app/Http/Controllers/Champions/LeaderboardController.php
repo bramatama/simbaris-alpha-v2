@@ -18,12 +18,13 @@ use App\Concerns\HasEventAccess;
 class LeaderboardController extends Controller
 {
     use HasEventAccess;
+
     /**
      * Menampilkan peringkat event berdasarkan kategori penghargaan atau penilaian.
      */
     public function index(Request $request, Event $event)
     {
-        $this->validateEventAccess($event, ['administration','auditor'],['committee','official_team']);
+        $this->validateEventAccess($event, ['administration', 'auditor'], ['committee', 'official_team']);
         $user = Auth::user();
         $role = $user->role; 
         $myOfficialTeamId = $role === 'official_team' ? $user->officialTeam?->official_team_id : null;
@@ -51,7 +52,7 @@ class LeaderboardController extends Controller
                 $activeCategoryData = $championCategories->firstWhere('event_champion_category_id', $filterId);
                 $leaderboardData = $this->buildChampionLeaderboard($event->event_id, $eventLevelId, $filterId, $sortBy);
 
-            if ($activeCategoryData) {
+                if ($activeCategoryData) {
                     $activeEventChampions = EventChampion::where('event_level_id', $eventLevelId)
                         ->whereHas('champion', function ($q) use ($activeCategoryData) {
                             $q->where('champion_category_id', $activeCategoryData->champion_category_id);
@@ -66,7 +67,6 @@ class LeaderboardController extends Controller
             }
         }
 
-        // Return Inertia: Sisipkan props `isVisible` untuk diolah Frontend
         return inertia('events/leaderboards/Leaderboard', [
             'event' => $event,
             'role' => $role,
@@ -92,7 +92,7 @@ class LeaderboardController extends Controller
      */
     public function myRecap(Event $event, Participation $participation)
     {
-        $this->validateEventAccess($event,[],['official_team'], $participation);
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
         $user = Auth::user();
 
         $isVisible = in_array($user->role, ['committee', 'admin']) || (bool) $event->is_recap_visible;
@@ -155,7 +155,7 @@ class LeaderboardController extends Controller
      */
     public function bulkRankOverride(Request $request, Event $event)
     {
-        $this->validateEventAccess($event, ['administration','auditor'],['committee']);
+        $this->validateEventAccess($event, ['administration', 'auditor'], ['committee']);
         $validated = $request->validate([
             'overrides' => 'required|array',
             'overrides.*.recap_id' => 'required|exists:score_recaps,recap_id',
@@ -178,47 +178,136 @@ class LeaderboardController extends Controller
             ->whereHas('formulas', fn($q) => $q->where('event_level_id', $eventLevelId))
             ->with(['formulas' => fn($q) => $q->where('event_level_id', $eventLevelId)->with('scoringCategory.masterCategory'), 'eventPenalties', 'championCategory'])->get();
     }
+
     /** Mengambil kategori penilaian pada jenjang event. */
     private function getScoringCategories($eventLevelId) {
         return ScoringCategory::with('masterCategory')->where('event_level_id', $eventLevelId)->get();
     }
+
     /** Memastikan filter leaderboard merujuk ke kategori yang tersedia. */
     private function validateFilterId($filterType, $filterId, $championCategories, $scoringCategories) {
-        if ($filterType === 'champion' && !$championCategories->contains('event_champion_category_id', $filterId)) { return $championCategories->first()?->event_champion_category_id; } 
-        if ($filterType === 'scoring' && !$scoringCategories->contains('scoring_category_id', $filterId)) { return $scoringCategories->first()?->scoring_category_id; }
+        if ($filterType === 'champion' && !$championCategories->contains('event_champion_category_id', $filterId)) { 
+            return $championCategories->first()?->event_champion_category_id; 
+        } 
+        if ($filterType === 'scoring' && !$scoringCategories->contains('scoring_category_id', $filterId)) { 
+            return $scoringCategories->first()?->scoring_category_id; 
+        }
         return $filterId;
     }
-    /** Menyusun peringkat tim berdasarkan hasil kategori penghargaan. */
-    private function buildChampionLeaderboard($eventId, $eventLevelId, $filterId, $sortBy) {
-        $query = Participation::select('participations.*', 'score_recaps.final_score', 'score_recaps.recap_id', 'score_recaps.rank_override')
-            ->leftJoin('score_recaps', function($join) use ($filterId) { $join->on('participations.participation_id', '=', 'score_recaps.participation_id')->where('score_recaps.event_champion_category_id', '=', $filterId); })
+
+    /** 
+     * Menyusun peringkat tim berdasarkan hasil kategori penghargaan (Murni + Overrides).
+     */
+    private function buildChampionLeaderboard($eventId, $eventLevelId, $filterId, $sortBy) 
+    {
+        // 1. Dapatkan daftar ID tim berurutan secara murni berdasarkan Peringkat / Nilai
+        $allTiedRankOrderedIds = DB::table('participations')
+            ->leftJoin('score_recaps', function($join) use ($filterId) { 
+                $join->on('participations.participation_id', '=', 'score_recaps.participation_id')
+                     ->where('score_recaps.event_champion_category_id', '=', $filterId); 
+            })
+            ->where('participations.event_id', $eventId)
+            ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
+            ->orderByRaw('CASE WHEN score_recaps.rank_override IS NOT NULL THEN score_recaps.rank_override ELSE 9999 END ASC')
+            ->orderByRaw('COALESCE(score_recaps.final_score, 0) DESC')
+            ->orderBy('participations.appearance_order', 'asc')
+            ->pluck('participations.participation_id')
+            ->toArray();
+
+        $rankMapping = array_flip($allTiedRankOrderedIds);
+
+        $query = Participation::select(
+                'participations.*', 
+                'score_recaps.final_score', 
+                'score_recaps.recap_id', 
+                'score_recaps.rank_override'
+            )
+            ->leftJoin('score_recaps', function($join) use ($filterId) { 
+                $join->on('participations.participation_id', '=', 'score_recaps.participation_id')
+                     ->where('score_recaps.event_champion_category_id', '=', $filterId); 
+            })
             ->where('participations.event_id', $eventId)
             ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
             ->with(['teamScores', 'teamPenalties.eventPenalty.masterPenalty']);
 
         if ($sortBy === 'rank') {
-            $query->orderByRaw('CASE WHEN score_recaps.rank_override IS NOT NULL THEN score_recaps.rank_override ELSE 9999 END ASC')->orderByRaw('COALESCE(score_recaps.final_score, 0) DESC')->orderBy('participations.team_name', 'asc');
+            $query->orderByRaw('CASE WHEN score_recaps.rank_override IS NOT NULL THEN score_recaps.rank_override ELSE 9999 END ASC')
+                  ->orderByRaw('COALESCE(score_recaps.final_score, 0) DESC')
+                  ->orderBy('participations.appearance_order', 'asc');
         } elseif ($sortBy === 'appearance_order') {
             $query->orderBy('participations.appearance_order', 'asc');
         } else {
             $query->orderBy('participations.team_name', 'asc');
         }
+
         $paginator = $query->paginate(15)->withQueryString();
-        $paginator->getCollection()->transform(fn($part) => [ 'recap_id' => $part->recap_id, 'final_score' => (float) ($part->final_score ?? 0), 'rank_override' => $part->rank_override, 'participation' => $part ]);
+
+        $paginator->getCollection()->transform(function($part) use ($rankMapping) { 
+            $calculatedRank = isset($rankMapping[$part->participation_id]) 
+                ? $rankMapping[$part->participation_id] + 1 
+                : null;
+
+            return [ 
+                'recap_id' => $part->recap_id, 
+                'final_score' => (float) ($part->final_score ?? 0), 
+                'rank_override' => $part->rank_override,
+                'actual_rank' => $part->rank_override ?: $calculatedRank,
+                'participation' => $part 
+            ];
+        });
+
         return $paginator;
     }
-    /** Menyusun peringkat tim berdasarkan total kategori penilaian. */
-    private function buildScoringLeaderboard($eventId, $eventLevelId, $filterId, $sortBy) {
+
+    /** 
+     * Menyusun peringkat tim berdasarkan total kategori penilaian (Nilai Murni).
+     */
+    private function buildScoringLeaderboard($eventId, $eventLevelId, $filterId, $sortBy) 
+    {
+        $allScoringRankOrderedIds = DB::table('participations')
+            ->leftJoin('team_scores', function($join) use ($filterId) {
+                $join->on('participations.participation_id', '=', 'team_scores.participation_id')
+                     ->where('team_scores.scoring_category_id', '=', $filterId);
+            })
+            ->where('participations.event_id', $eventId)
+            ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
+            ->groupBy('participations.participation_id', 'participations.appearance_order')
+            ->orderByRaw('COALESCE(SUM(team_scores.total_score), 0) DESC')
+            ->orderBy('participations.appearance_order', 'asc')
+            ->pluck('participations.participation_id')
+            ->toArray();
+
+        $rankMapping = array_flip($allScoringRankOrderedIds);
+
         $query = Participation::where('event_id', $eventId)
             ->when($eventLevelId, fn($q) => $q->where('event_level_id', $eventLevelId))
             ->withSum(['teamScores' => fn($q) => $q->where('scoring_category_id', $filterId)], 'total_score');
 
-        if ($sortBy === 'rank') { $query->orderByRaw('COALESCE(team_scores_sum_total_score, 0) DESC')->orderBy('team_name', 'asc'); } 
-        elseif ($sortBy === 'appearance_order') { $query->orderBy('appearance_order', 'asc'); } 
-        else { $query->orderBy('team_name', 'asc'); }
+        if ($sortBy === 'rank') { 
+            $query->orderByRaw('COALESCE(team_scores_sum_total_score, 0) DESC')->orderBy('appearance_order', 'asc'); 
+        } 
+        elseif ($sortBy === 'appearance_order') { 
+            $query->orderBy('appearance_order', 'asc'); 
+        } 
+        else { 
+            $query->orderBy('team_name', 'asc'); 
+        }
 
         $paginator = $query->paginate(15)->withQueryString();
-        $paginator->getCollection()->transform(fn($part) => [ 'score_id' => 'aggr_' . $part->participation_id, 'total_score' => (float) ($part->team_scores_sum_total_score ?? 0), 'participation' => $part ]);
+
+        $paginator->getCollection()->transform(function($part) use ($rankMapping) { 
+            $calculatedRank = isset($rankMapping[$part->participation_id]) 
+                ? $rankMapping[$part->participation_id] + 1 
+                : null;
+
+            return [ 
+                'score_id' => 'aggr_' . $part->participation_id, 
+                'total_score' => (float) ($part->team_scores_sum_total_score ?? 0), 
+                'actual_rank' => $calculatedRank,
+                'participation' => $part 
+            ];
+        });
+
         return $paginator;
     }
 }

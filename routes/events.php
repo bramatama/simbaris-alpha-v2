@@ -3,6 +3,7 @@
 use App\Http\Controllers\Events\EventController;
 use App\Http\Controllers\Events\EventCommitteeController;
 use App\Http\Controllers\Events\EventDocumentController;
+use App\Http\Controllers\Events\EventPaymentMethodController;
 use App\Http\Controllers\Events\EventJudgeController;
 use App\Http\Controllers\Events\EventLevelController;
 use App\Http\Controllers\Participations\ParticipationController;
@@ -33,6 +34,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {
     Route::get('/my-events', [EventController::class, 'my_events'])->name('events.my_events');
     Route::resource('events', EventController::class)->only(['edit', 'update']);
+
+    Route::get('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'index'])
+        ->name('events.payment-methods.index');
+    Route::put('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'update'])
+        ->name('events.payment-methods.update');
 
     Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 

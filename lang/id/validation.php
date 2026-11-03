@@ -65,6 +65,14 @@ return [
         'judge_id' => 'juri',
         'prize_money' => 'uang pembinaan',
         'certificate' => 'sertifikat',
+
+        'methods' => 'metode pembayaran',
+        'methods.*.type' => 'jenis pembayaran',
+        'methods.*.bank_name' => 'nama bank',
+        'methods.*.account_number' => 'nomor rekening',
+        'methods.*.account_holder' => 'nama pemilik rekening',
+        'methods.*.temp_qris_path' => 'gambar QRIS',
+        'methods.*.is_active' => 'status metode pembayaran',
     ],
 
 ];

@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\EventLevel;
 use App\Models\Participation;
 use App\Models\ParticipationDocument;
+use App\Models\EventPaymentMethod;
 use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,10 +81,15 @@ class ParticipationController extends Controller
         $eventLevels = EventLevel::where('event_id', $event->event_id)
             ->with('level:level_id,level_name')
             ->get();
+        
+        $paymentMethods = EventPaymentMethod::where('event_id', $event->event_id)
+        ->where('is_active', true)
+        ->get();
 
         return inertia('events/participations/enroll/Create', [
             'event' => $event,
             'eventLevels' => $eventLevels,
+            'paymentMethods' => $paymentMethods,
         ]);
     }
 
@@ -138,7 +144,7 @@ class ParticipationController extends Controller
             'teams.*.event_level_id' => 'required|exists:event_levels,event_level_id',
             'teams.*.team_name' => 'required|string|max:255',
             'teams.*.pic_name' => 'required|string|max:255',
-            'teams.*.pic_phone_number' => 'required|string|max:20',
+            'teams.*.pic_phone_number' => 'required|string|regex:/^[0-9]{12,15}$/',
             'temp_payment_proof_path' => 'required|string',
         ]);
 

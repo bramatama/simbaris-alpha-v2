@@ -10,7 +10,15 @@ import {
     ComboboxEmpty,
     ComboboxGroup,
 } from '@/components/ui/combobox';
-import { GripVertical, X, Copy, Trash2, CheckSquare, Plus } from 'lucide-react';
+import {
+    GripVertical,
+    X,
+    Copy,
+    Trash2,
+    CheckSquare,
+    Plus,
+    AlertCircle,
+} from 'lucide-react';
 import {
     useSortable,
     SortableContext,
@@ -146,7 +154,7 @@ export function SortableScoreBox({
                 onChange={(e) =>
                     onUpdate(critId, rubricId, score.id, e.target.value)
                 }
-                className="h-8 w-16 rounded-none border-0 bg-transparent px-2 text-center font-bold text-primary focus-visible:ring-0"
+                className="h-8 w-14 rounded-none border-0 bg-transparent px-2 text-center font-bold text-primary focus-visible:ring-0"
             />
             <button
                 type="button"
@@ -203,10 +211,19 @@ export function SortableCriteriaRow({
                 setUiName(matchedCriteria.criteria_name);
                 setSearchValue(matchedCriteria.criteria_name);
             }
+        } else if (!crit.name) {
+            setUiName('');
+            setSearchValue('');
         }
     }, [crit.name, availableMasterCriteria]);
 
-    const filteredMasterCriteria = 
+    const handleClearCriteria = () => {
+        setUiName('');
+        setSearchValue('');
+        onUpdateName(crit.id, '');
+    };
+
+    const filteredMasterCriteria =
         availableMasterCriteria?.filter((mc: any) =>
             mc.criteria_name.toLowerCase().includes(searchValue.toLowerCase()),
         ) || [];
@@ -218,6 +235,8 @@ export function SortableCriteriaRow({
         zIndex: isDragging ? 10 : 1,
     };
 
+    const hasRowError = Boolean(localErrors[`crit_${crit.id}`]);
+
     return (
         <div
             id={`crit-row-${crit.id}`}
@@ -226,7 +245,13 @@ export function SortableCriteriaRow({
             className="relative transition-all"
         >
             <Card
-                className={`overflow-hidden border border-border/80 bg-background shadow-sm transition-shadow ${isDragging ? 'border-primary/60 shadow-lg ring-2 ring-primary/60' : 'hover:border-primary/30'}`}
+                className={`overflow-hidden border bg-background shadow-sm transition-all ${
+                    hasRowError
+                        ? 'is-error-msg border-destructive/80 ring-2 ring-destructive/20'
+                        : isDragging
+                          ? 'border-primary/60 shadow-lg ring-2 ring-primary/60'
+                          : 'border-border/80 hover:border-primary/30'
+                }`}
             >
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center">
                     <div className="flex w-full items-center gap-3 sm:max-w-xl">
@@ -265,10 +290,22 @@ export function SortableCriteriaRow({
                                     setSearchValue(val)
                                 }
                             >
-                                <ComboboxInput
-                                    placeholder="Pilih Kriteria/Materi Gerakan..."
-                                    className="h-9 w-full rounded-none border-0 border-b-2 border-dashed border-border bg-transparent px-1 text-base font-bold shadow-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-primary/50 focus:border-solid focus-visible:border-primary focus-visible:ring-0"
-                                />
+                                <div className="relative flex w-full items-center">
+                                    <ComboboxInput
+                                        placeholder="Pilih Kriteria/Materi Gerakan..."
+                                        className="h-9 w-full rounded-none border-0 border-b-2 border-dashed border-border bg-transparent px-1 pr-7 text-base font-bold shadow-none transition-colors placeholder:font-normal placeholder:text-muted-foreground/60 hover:border-primary/50 focus:border-solid focus-visible:border-primary focus-visible:ring-0"
+                                    />
+                                    {(uiName || searchValue) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleClearCriteria}
+                                            className="absolute right-1 z-10 cursor-pointer rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                            title="Hapus pilihan"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
                                 <ComboboxContent>
                                     <ComboboxList>
                                         {filteredMasterCriteria.length ===
@@ -324,6 +361,7 @@ export function SortableCriteriaRow({
                     </div>
                 </div>
 
+                {/* CardContent Sisa Kode Tetap Sama */}
                 <CardContent className="space-y-6 p-5 sm:p-6">
                     {localErrors[`crit_${crit.id}`] && (
                         <p className="is-error-msg mt-0 rounded-md bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">

@@ -3,10 +3,11 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { debounce, isEqual } from 'lodash';
 import EvaluationAppLayout from '@/layouts/evaluation-page-layout';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageProps } from '@inertiajs/core';
 import { ArrowLeft, CheckCircle2, Loader2, Save, XCircle } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 
 /* ==========================================
    TYPES
@@ -42,6 +43,14 @@ export default function ScoringForm({
     >('idle');
     const lastSavedPayloadRef = useRef<LocalScore[]>([]);
 
+    // STATE CONFIRMATION DIALOGS
+    const [showBackDialog, setShowBackDialog] = useState(false);
+    const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+    const [submitDialogConfig, setSubmitDialogConfig] = useState({
+        title: '',
+        description: '',
+    });
+
     const autosaveUrl = `/api/${userRole}/participations/${participation.public_id}/autosave`;
     const submitCategoryUrl = `/${userRole}/events/${event.public_id}/participants/${participation.public_id}/evaluate/${activeCategory.scoring_category_id}/submit`;
     const backUrl = `/${userRole}/events/${event.public_id}/participants/${participation.public_id}`;
@@ -65,11 +74,11 @@ export default function ScoringForm({
 
         setLocalScores(newInitialScores);
         lastSavedPayloadRef.current = Object.values(newInitialScores);
-        setSaveStatus('idle'); // Paksa indikator kembali ke 'idle' setiap ganti kategori
+        setSaveStatus('idle');
     }, [activeCategory.scoring_category_id, existingScores]);
 
     /* ==========================================
-       AUTOSAVE DEBOUNCE LOGIC (5 DETIK)
+       AUTOSAVE DEBOUNCE LOGIC (7.5 DETIK)
     ========================================== */
     const debouncedSave = useCallback(
         debounce(async (scoresToSave: LocalScore[]) => {
@@ -87,7 +96,7 @@ export default function ScoringForm({
                 setSaveStatus('error');
                 console.error('Gagal melakukan autosave:', error);
             }
-        }, 10000),
+        }, 7500),
         [],
     );
 
@@ -110,60 +119,55 @@ export default function ScoringForm({
     /* ==========================================
        HANDLER INTERAKSI KLIK NILAI
     ========================================== */
-   const handleScoreClick = (
-       criteriaId: number,
-       rubricScoreId: number,
-       scoreValue: number,
-   ) => {
-       setLocalScores((prev) => {
-           const updated = { ...prev };
+    const handleScoreClick = (
+        criteriaId: number,
+        rubricScoreId: number,
+        scoreValue: number,
+    ) => {
+        setLocalScores((prev) => {
+            const updated = { ...prev };
 
-           // LOGIKA TOGGLE: Jika yang diklik adalah nilai yang sedang aktif, BATALKAN (Hapus)
-           if (updated[criteriaId]?.rubric_score_id === rubricScoreId) {
-               delete updated[criteriaId];
-           } else {
-               // Jika baru/berbeda, tetapkan nilainya
-               updated[criteriaId] = {
-                   criteria_id: criteriaId,
-                   rubric_score_id: rubricScoreId,
-                   score_value: scoreValue,
-                   clicked_at: new Date().toISOString(),
-               };
-           }
+            if (updated[criteriaId]?.rubric_score_id === rubricScoreId) {
+                delete updated[criteriaId];
+            } else {
+                updated[criteriaId] = {
+                    criteria_id: criteriaId,
+                    rubric_score_id: rubricScoreId,
+                    score_value: scoreValue,
+                    clicked_at: new Date().toISOString(),
+                };
+            }
 
-           debouncedSave(Object.values(updated));
-           setSaveStatus('idle');
-           return updated;
-       });
-   };
+            debouncedSave(Object.values(updated));
+            setSaveStatus('idle');
+            return updated;
+        });
+    };
 
     /* ==========================================
-       SUBMIT KATEGORI (DENGAN KONFIRMASI)
+       TRIGGER & CONFIRM SUBMIT KATEGORI
     ========================================== */
-    const handleSubmitCategory = () => {
+    const handleTriggerSubmit = () => {
         const finalScores = Object.values(localScores);
         const totalCriteria = activeCategory.assessment_criteria.length;
 
-        // Peringatan jika belum lengkap
         if (finalScores.length < totalCriteria) {
-            if (
-                !window.confirm(
-                    `Anda baru mengisi ${finalScores.length} dari ${totalCriteria} kriteria. Yakin ingin menyimpan dan melanjutkan?`,
-                )
-            ) {
-                return;
-            }
+            setSubmitDialogConfig({
+                title: 'Kriteria Belum Lengkap',
+                description: `Anda baru mengisi ${finalScores.length} dari ${totalCriteria} kriteria. Kriteria yang kosong akan bernilai 0. Yakin ingin menyimpan dan melanjutkan?`,
+            });
         } else {
-            // Peringatan jika sudah lengkap
-            if (
-                !window.confirm(
-                    'Apakah Anda yakin ingin menyimpan dan beralih dari kategori ini?',
-                )
-            ) {
-                return;
-            }
+            setSubmitDialogConfig({
+                title: 'Simpan Penilaian Kategori?',
+                description:
+                    'Apakah Anda yakin ingin menyimpan seluruh nilai dan beralih dari kategori ini?',
+            });
         }
+        setShowSubmitDialog(true);
+    };
 
+    const confirmSubmitCategory = () => {
+        const finalScores = Object.values(localScores);
         debouncedSave.cancel();
 
         router.post(
@@ -172,9 +176,17 @@ export default function ScoringForm({
             {
                 preserveScroll: true,
                 onStart: () => setSaveStatus('saving'),
-                onFinish: () => setSaveStatus('idle'), 
+                onFinish: () => {
+                    setSaveStatus('idle');
+                    setShowSubmitDialog(false);
+                },
             },
         );
+    };
+
+    const confirmBackToPreview = () => {
+        setShowBackDialog(false);
+        router.visit(backUrl);
     };
 
     return (
@@ -185,25 +197,17 @@ export default function ScoringForm({
 
             <div className="mx-auto w-full max-w-6xl space-y-6 p-2 pb-32 sm:p-4 md:p-6 lg:p-8">
                 <div className="pt-2 sm:pt-0">
-                    <Link
-                        href={backUrl}
-                        onClick={(e) => {
-                            if (
-                                !window.confirm(
-                                    'Apakah Anda yakin ingin kembali ke pratinjau? Pastikan semua perubahan terakhir Anda telah tersimpan otomatis.',
-                                )
-                            ) {
-                                e.preventDefault();
-                            }
-                        }}
-                        className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                    <Button
+                        variant="ghost"
+                        onClick={() => setShowBackDialog(true)}
+                        className="inline-flex h-auto items-center p-0 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-primary"
                     >
                         <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" />{' '}
                         Kembali ke Pratinjau Tim
-                    </Link>
+                    </Button>
                 </div>
 
-                {/* STATUS BAR & INFO TIM SPESIFIK KATEGORI */}
+                {/* STATUS BAR & INFO TIM */}
                 <div className="sticky top-13 z-30 mb-6 flex flex-col gap-4 border-b border-border/80 bg-background/95 py-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground shadow-sm">
@@ -256,22 +260,121 @@ export default function ScoringForm({
                     </div>
                 </div>
 
-                {/* TABEL PENILAIAN KLIK */}
-                <div className="space-y-8">
-                    <Card className="overflow-hidden border-border/70 shadow-sm">
-                        <div className="bg-primary/10 p-4">
-                            <h3 className="text-lg font-bold text-primary">
-                                Indikator Penilaian:{' '}
-                                {activeCategory.master_category.category_name}
-                            </h3>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                *Kriteria yang dibiarkan kosong akan otomatis
-                                bernilai 0 saat disimpan atau dikunci.
-                            </p>
-                        </div>
+                {/* FORM PENILAIAN DUAL-MODE */}
+                <div className="space-y-6">
+                    <div className="rounded-lg bg-primary/10 p-4">
+                        <h3 className="text-lg font-bold text-primary">
+                            Indikator Penilaian:{' '}
+                            {activeCategory.master_category.category_name}
+                        </h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            *Kriteria yang dibiarkan kosong akan otomatis
+                            bernilai 0 saat disimpan atau dikunci.
+                        </p>
+                    </div>
 
+                    {/* ===================================================
+                       1. TAMPILAN MOBILE & PORTRAIT TABLET (CARD LAYOUT)
+                       =================================================== */}
+                    <div className="flex flex-col gap-4 sm:hidden">
+                        {activeCategory.assessment_criteria.map(
+                            (crit: any, cIdx: number) => {
+                                const isCritAnswered = Boolean(
+                                    localScores[crit.criteria_id],
+                                );
+
+                                return (
+                                    <Card
+                                        key={crit.criteria_id}
+                                        className={`overflow-hidden border transition-all ${
+                                            isCritAnswered
+                                                ? 'border-primary/50 bg-background shadow-sm'
+                                                : 'border-border/70 bg-muted/5'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 border-b border-border/50 bg-muted/20 p-3.5">
+                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                                {cIdx + 1}
+                                            </div>
+                                            <h4 className="leading-snug font-bold text-foreground">
+                                                {crit.master_criteria
+                                                    ?.criteria_name ||
+                                                    crit.masterCriteria
+                                                        ?.criteria_name ||
+                                                    `Kriteria #${crit.master_criteria_id}`}
+                                            </h4>
+                                        </div>
+
+                                        <CardContent className="space-y-4 p-4">
+                                            {crit.rubric_categories.map(
+                                                (rubricCol: any) => (
+                                                    <div
+                                                        key={
+                                                            rubricCol.rubric_category_id
+                                                        }
+                                                        className="space-y-2"
+                                                    >
+                                                        <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                                                            {
+                                                                rubricCol.category_label
+                                                            }
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {rubricCol.rubric_scores.map(
+                                                                (
+                                                                    score: any,
+                                                                ) => {
+                                                                    const isActive =
+                                                                        localScores[
+                                                                            crit
+                                                                                .criteria_id
+                                                                        ]
+                                                                            ?.rubric_score_id ===
+                                                                        score.rubric_score_id;
+
+                                                                    return (
+                                                                        <button
+                                                                            key={
+                                                                                score.rubric_score_id
+                                                                            }
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleScoreClick(
+                                                                                    crit.criteria_id,
+                                                                                    score.rubric_score_id,
+                                                                                    score.score_value,
+                                                                                )
+                                                                            }
+                                                                            className={`flex h-11 min-w-14 flex-1 cursor-pointer items-center justify-center rounded-lg border text-base font-bold shadow-sm transition-all active:scale-95 ${
+                                                                                isActive
+                                                                                    ? 'border-primary bg-primary text-primary-foreground ring-2 ring-primary/30'
+                                                                                    : 'border-border/80 bg-background text-muted-foreground hover:border-primary/50 hover:bg-primary/5'
+                                                                            }`}
+                                                                        >
+                                                                            {
+                                                                                score.score_value
+                                                                            }
+                                                                        </button>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            },
+                        )}
+                    </div>
+
+                    {/* ===================================================
+                       2. TAMPILAN DESKTOP & LANDSCAPE TABLET (TABLE LAYOUT)
+                       =================================================== */}
+                    <Card className="hidden overflow-hidden border-border/70 shadow-sm sm:block">
                         <div className="w-full overflow-x-auto">
-                            <table className="w-full min-w-175 text-left text-sm">
+                            <table className="w-full text-left text-sm">
                                 <thead className="bg-muted/10">
                                     <tr>
                                         <th className="border-b border-border/50 p-4 font-semibold text-muted-foreground">
@@ -365,7 +468,7 @@ export default function ScoringForm({
                     </Card>
                 </div>
 
-                {/* ACTION FOOTER FINAL SUBMIT (FLOATING & FULL WIDTH) */}
+                {/* ACTION FOOTER */}
                 <div className="sticky bottom-6 z-40 mt-8 w-full rounded-xl border border-border/60 bg-background/95 px-4 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md md:px-6">
                     <div className="flex w-full items-center justify-between gap-4">
                         <p className="hidden text-xs text-muted-foreground sm:block">
@@ -375,7 +478,7 @@ export default function ScoringForm({
                         <Button
                             size="lg"
                             className="w-full gap-2 font-semibold shadow-md sm:w-auto sm:px-12"
-                            onClick={handleSubmitCategory}
+                            onClick={handleTriggerSubmit}
                             disabled={saveStatus === 'saving'}
                         >
                             <Save className="h-4 w-4" />
@@ -386,6 +489,29 @@ export default function ScoringForm({
                     </div>
                 </div>
             </div>
+
+            {/* CONFIRMATION DIALOG FOR BACK TO PREVIEW */}
+            <ConfirmationDialog
+                open={showBackDialog}
+                onOpenChange={setShowBackDialog}
+                title="Kembali ke Pratinjau Tim?"
+                description="Pastikan semua nilai perubahan terakhir Anda telah tersimpan secara otomatis sebelum meninggalkan halaman penilaian ini."
+                confirmText="Ya, Kembali"
+                cancelText="Batal"
+                onConfirm={confirmBackToPreview}
+            />
+
+            {/* CONFIRMATION DIALOG FOR SUBMIT CATEGORY */}
+            <ConfirmationDialog
+                open={showSubmitDialog}
+                onOpenChange={setShowSubmitDialog}
+                title={submitDialogConfig.title}
+                description={submitDialogConfig.description}
+                confirmText="Ya, Simpan & Lanjutkan"
+                cancelText="Batal"
+                isProcessing={saveStatus === 'saving'}
+                onConfirm={confirmSubmitCategory}
+            />
         </EvaluationAppLayout>
     );
 }

@@ -67,7 +67,7 @@ export default function InnerSidebar({
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 80);
+            setIsScrolled(window.scrollY > 5);
         };
 
         window.addEventListener('scroll', handleScroll);
@@ -76,7 +76,7 @@ export default function InnerSidebar({
 
     return (
         <aside
-            className={`w-full shrink-0 lg:sticky ${isScrolled ? 'lg:top-2' : 'lg:top-20'} lg:h-fit lg:w-52 transition-all duration-100 ease-in-out`}
+            className={`w-full shrink-0 lg:sticky ${isScrolled ? 'lg:top-2' : 'lg:top-20'} lg:h-fit lg:w-52 `}
         >
             {/* TAMPILAN MOBILE: Drawer Trigger (< lg) */}
             <div className="p-3 lg:hidden">

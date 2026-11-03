@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
     Columns3,
     Info,
     CheckSquare,
+    AlertCircle,
 } from 'lucide-react';
 
 import {
@@ -195,14 +196,14 @@ export default function DynamicScoringBuilderEdit({
         ]);
         setNewRubricName('');
         setNewRubricCount('');
-        clearLocalError('global'); // Bersihkan error
+        clearLocalError('global');
     };
 
     const removeGlobalRubric = (id: string) =>
         setGlobalRubrics((prev) => prev.filter((gr) => gr.id !== id));
 
     const addCriteriaRow = () => {
-        const newCritId = generateNewId(); // Simpan ID baru
+        const newCritId = generateNewId();
 
         setUiCriteria((prev) => [
             ...prev,
@@ -210,10 +211,9 @@ export default function DynamicScoringBuilderEdit({
         ]);
         clearLocalError('global');
 
-        // Tunggu 150ms agar React selesai merender, lalu scroll ke elemen baru
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
     };
 
@@ -228,7 +228,7 @@ export default function DynamicScoringBuilderEdit({
     };
 
     const duplicateCriteria = (cIndex: number) => {
-        const newCritId = generateNewId(); // Simpan ID baru
+        const newCritId = generateNewId();
 
         setUiCriteria((prev) => {
             const critToCopy = prev[cIndex];
@@ -250,10 +250,9 @@ export default function DynamicScoringBuilderEdit({
             return newArray;
         });
 
-        // Tunggu 150ms agar React selesai merender, lalu scroll ke elemen baru
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 150);
     };
 
@@ -274,7 +273,7 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
     const removeScore = (critId: string, rubricId: string, scoreId: string) => {
@@ -293,7 +292,7 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
     const updateScoreValue = (
@@ -318,17 +317,19 @@ export default function DynamicScoringBuilderEdit({
                     : c,
             ),
         );
-        clearLocalError(`crit_${critId}`); // Bersihkan error
+        clearLocalError(`crit_${critId}`);
     };
 
+    // FUNGSI SMOOTH SCROLL TO ERROR YANG DIPERBAIKI
     const scrollToError = () => {
         setTimeout(() => {
             const firstError = document.querySelector('.is-error-msg');
-            if (firstError)
+            if (firstError) {
                 firstError.scrollIntoView({
                     behavior: 'smooth',
-                    block: 'start',
+                    block: 'center',
                 });
+            }
         }, 100);
     };
 
@@ -338,26 +339,46 @@ export default function DynamicScoringBuilderEdit({
         const newLocalErrors: Record<string, string> = {};
 
         if (globalRubrics.length === 0) {
-            newLocalErrors['global'] = 'Buat minimal 1 kolom kategori.';
+            newLocalErrors['global'] =
+                'Buat minimal 1 kolom kategori di bagian atas.';
             hasError = true;
         }
         if (uiCriteria.length === 0) {
             newLocalErrors['global'] =
-                'Tambahkan minimal 1 baris komponen gerakan.';
+                'Tambahkan minimal 1 baris komponen materi gerakan.';
             hasError = true;
         }
 
         uiCriteria.forEach((crit) => {
+            // Validasi Nama Kriteria
             if (!crit.name.trim()) {
                 newLocalErrors[`crit_${crit.id}`] =
-                    'Nama komponen penilaian wajib diisi.';
+                    'Nama komponen gerakan belum dipilih.';
                 hasError = true;
             }
+
+            // Validasi Jumlah dan Kelengkapan Nilai Rubrik
             globalRubrics.forEach((gr) => {
-                const count = (crit.rubricData[gr.id] || []).length;
-                if (count !== gr.expected_count) {
+                const scores = crit.rubricData[gr.id] || [];
+
+                // 1. Cek Apakah Jumlah Opsi Pas dengan Katetogori
+                if (scores.length !== gr.expected_count) {
                     newLocalErrors[`crit_${crit.id}`] =
-                        'Terdapat jumlah opsi nilai yang tidak sesuai dengan ketentuan kolom kategori.';
+                        `Jumlah opsi nilai untuk '${gr.name}' harus ${gr.expected_count} item (saat ini: ${scores.length}).`;
+                    hasError = true;
+                }
+
+                // 2. Cek Apakah Ada Input Opsi Nilai yang Masih Kosong
+                const hasEmptyScore = scores.some(
+                    (s) =>
+                        s.value === '' ||
+                        s.value === null ||
+                        s.value === undefined,
+                );
+
+                if (hasEmptyScore) {
+                    newLocalErrors[`crit_${crit.id}`] =
+                        `Terdapat nilai opsi pada '${gr.name}' yang masih kosong. Harap isi semua nilai angka.`;
                     hasError = true;
                 }
             });
@@ -417,7 +438,11 @@ export default function DynamicScoringBuilderEdit({
     if (!isMounted) {
         return (
             <InnerAppLayout
-                sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+                sidebarNavItems={getEventInnerNav(
+                    event.public_id,
+                    userRole,
+                    committeePosition || undefined,
+                )}
             >
                 <div className="flex min-h-screen items-center justify-center">
                     <Spinner className="h-8 w-8 text-primary" />
@@ -428,7 +453,11 @@ export default function DynamicScoringBuilderEdit({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head
                 title={`Edit Form: ${scoringCategory.master_category?.category_name}`}
@@ -459,15 +488,20 @@ export default function DynamicScoringBuilderEdit({
                         </div>
                     </div>
 
+                    {/* ERROR BOX CONTAINER GLOBAL */}
                     {localErrors['global'] && (
-                        <div className="is-error-msg rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
-                            {localErrors['global']}
+                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
+                            <AlertCircle className="h-5 w-5 shrink-0" />
+                            <div>{localErrors['global']}</div>
                         </div>
                     )}
                     {errors.criteria && (
-                        <div className="is-error-msg rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
-                            Validasi Server: Terdapat data yang tidak valid.
-                            Periksa peringatan di setiap baris.
+                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
+                            <AlertCircle className="h-5 w-5 shrink-0" />
+                            <div>
+                                Validasi Server: Terdapat data yang tidak valid.
+                                Periksa baris komponen di bawah.
+                            </div>
                         </div>
                     )}
 

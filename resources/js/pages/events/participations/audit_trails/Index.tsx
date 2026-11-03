@@ -94,8 +94,11 @@ export default function ParticipantAuditTrailIndex({
 
     const sidebarNav = isOfficialTeam
         ? getParticipationInnerNav(participation.public_id, event.public_id)
-        : getEventInnerNav(event.public_id, userRole, committeePosition || undefined);
-
+        : getEventInnerNav(
+              event.public_id,
+              userRole,
+              committeePosition || undefined,
+          );
     return (
         <InnerAppLayout sidebarNavItems={sidebarNav}>
             <Head title={`Log Penilaian - ${participation.team_name}`} />
@@ -129,7 +132,7 @@ export default function ParticipantAuditTrailIndex({
                         </p>
                     </div>
 
-                    {(!isOfficialTeam || event.is_result_visible) && (
+                    {(!isOfficialTeam || Boolean(event.is_result_visible)) && (
                         <div className="mt-2 flex items-center gap-2 sm:mt-0">
                             <Badge
                                 variant="secondary"

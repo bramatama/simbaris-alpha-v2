@@ -1,5 +1,6 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { PageProps } from '@inertiajs/core';
+import { useState } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import {
@@ -37,6 +38,7 @@ import {
     Ban,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 
 /* =========================================================
    TYPES
@@ -82,6 +84,12 @@ export default function TeamPenalty({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth.user.role;
     const committeePosition = auth.user.committee_position;
+
+    const [selectedPenaltyId, setSelectedPenaltyId] = useState<number | null>(
+        null,
+    );
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         event_penalty_id: '',
         occurrence_count: 1,
@@ -102,6 +110,7 @@ export default function TeamPenalty({
     const handleBack = () => {
         window.history.back();
     };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(submitUrl, {
@@ -111,19 +120,19 @@ export default function TeamPenalty({
         });
     };
 
-    const handleDelete = (penaltyId: number) => {
-        if (
-            confirm(
-                'Apakah Anda yakin ingin membatalkan/menghapus penalti ini?',
-            )
-        ) {
-            router.delete(
-                `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/penalties/${penaltyId}`,
-                {
-                    preserveScroll: true,
+    const confirmDeletePenalty = () => {
+        if (!selectedPenaltyId) return;
+        setIsDeleting(true);
+        router.delete(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/penalties/${selectedPenaltyId}`,
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsDeleting(false);
+                    setSelectedPenaltyId(null);
                 },
-            );
-        }
+            },
+        );
     };
 
     const totalDeductions = teamPenalties.reduce((sum, item) => {
@@ -133,7 +142,11 @@ export default function TeamPenalty({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Kelola Penalti - ${participation.team_name}`} />
 
@@ -191,9 +204,9 @@ export default function TeamPenalty({
                     </div>
                 </div>
 
-                {/* GRID 2 KOLOM (PROPORSI 4:8) */}
+                {/* GRID 2 KOLOM */}
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-                    {/* KOLOM KIRI: FORM INPUT PENALTI */}
+                    {/* KOLOM KIRI: FORM INPUT */}
                     <div className="lg:col-span-4">
                         <Card className="overflow-hidden border-t-4 border-t-destructive shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/20 pt-5 pb-4">
@@ -308,7 +321,7 @@ export default function TeamPenalty({
                                                 id="occurrence_count"
                                                 type="number"
                                                 disabled={isDisqualification}
-                                                placeholder='Min. 1'
+                                                placeholder="Min. 1"
                                                 value={data.occurrence_count}
                                                 onChange={(e) =>
                                                     setData(
@@ -516,7 +529,7 @@ export default function TeamPenalty({
                                                                         size="icon"
                                                                         className="h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
                                                                         onClick={() =>
-                                                                            handleDelete(
+                                                                            setSelectedPenaltyId(
                                                                                 pen.team_penalty_id,
                                                                             )
                                                                         }
@@ -556,6 +569,19 @@ export default function TeamPenalty({
                     </div>
                 </div>
             </div>
+
+            {/* CONFIRMATION DIALOG FOR DELETE PENALTY */}
+            <ConfirmationDialog
+                open={!!selectedPenaltyId}
+                onOpenChange={(open) => !open && setSelectedPenaltyId(null)}
+                title="Hapus Penalti Peserta?"
+                description="Apakah Anda yakin ingin membatalkan/menghapus penalti ini? Potongan nilai poin atau status diskualifikasi tim ini akan dikembalikan."
+                variant="destructive"
+                confirmText="Ya, Hapus Penalti"
+                cancelText="Batal"
+                isProcessing={isDeleting}
+                onConfirm={confirmDeletePenalty}
+            />
         </InnerAppLayout>
     );
 }

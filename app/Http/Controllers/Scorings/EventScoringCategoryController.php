@@ -247,7 +247,7 @@ class EventScoringCategoryController extends Controller
 
         return inertia('events/scorings/committee/Edit', [
             'event' => $event,
-            'eventLevel' => $scoringCategory->eventLevel, 
+            'eventLevel' => $scoringCategory->eventLevel,
             'scoringCategory' => $scoringCategory,
             'masterCategories' => $masterCategories,
         ]);
@@ -299,16 +299,21 @@ class EventScoringCategoryController extends Controller
                 $query->where('event_id', $event->event_id);
             })->firstOrFail();
 
-        $this->checkIfEditable($scoringCategory->scoring_category_id);
+        if ($this->hasScoresInputted($scoringCategory->scoring_category_id)) {
+            return redirect()->back()->with(
+                'error',
+                'Kategori penilaian tidak dapat dihapus karena juri sudah mulai memasukkan nilai.'
+            );
+        }
         
         if ($scoringCategory->judgeExpertises()->exists()) {
             return redirect()->back()->with(
                 'error',
-                'Kategori penilaian tidak dapat dihapus karena masih digunakan oleh satu atau lebih juri. Hapus atau ubah keterlibatan juri terlebih dahulu.'
+                'Kategori penilaian tidak dapat dihapus karena masih digunakan oleh penugasan juri. Hapus penugasan juri terlebih dahulu.'
             );
         }
-        $levelIdToRedirect = $scoringCategory->event_level_id;
-        $scoringCategory->delete();
+            $levelIdToRedirect = $scoringCategory->event_level_id;
+            $scoringCategory->delete();
 
         return redirect()->route('committee.events.scoring-categories.index', [
             'public_id' => $public_id,
@@ -319,6 +324,13 @@ class EventScoringCategoryController extends Controller
     // =========================================================================
     // PRIVATE HELPER METHODS
     // =========================================================================
+
+    private function hasScoresInputted($scoringCategoryId)
+    {
+        return TeamScoreDetail::whereHas('criterion', function($q) use ($scoringCategoryId) {
+            $q->where('scoring_category_id', $scoringCategoryId);
+        })->exists();
+    }
 
     /**
      * Memastikan konfigurasi penilaian masih dapat diubah.
@@ -479,9 +491,8 @@ class EventScoringCategoryController extends Controller
         })->exists();
 
         if ($hasScores) {
-            throw ValidationException::withMessages([
-                'error' => 'Kategori ini tidak dapat diubah atau dihapus karena juri sudah mulai memasukkan nilai.'
-            ]);
+            return back()->with('error', 'Kategori ini tidak dapat diubah atau dihapus karena juri sudah mulai memasukkan nilai.')->send();
+            // exit;
         }
     }
 }

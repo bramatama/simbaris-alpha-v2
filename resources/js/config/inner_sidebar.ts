@@ -19,6 +19,7 @@ import {
     Save,
     Timer,
     ClipboardCheck,
+    CreditCard,
 } from 'lucide-react';
 
 export const getMasterDataInnerNav = (): NavItem[] => {
@@ -93,6 +94,11 @@ export const getEventInnerNav = (
                     title: 'Manajemen Jenjang',
                     href: `/${role}/events/${eventPublicId}/levels`,
                     icon: DoorStairwell,
+                },
+                {
+                    title: 'Metode Pembayaran',
+                    href: `/${role}/events/${eventPublicId}/payment-methods`,
+                    icon: CreditCard,
                 },
                 {
                     title: 'Dokumen Lomba',
@@ -179,6 +185,11 @@ export const getEventInnerNav = (
                     title: 'Manajemen Jenjang',
                     href: `/${role}/events/${eventPublicId}/levels`,
                     icon: DoorStairwell,
+                },
+                {
+                    title: 'Metode Pembayaran',
+                    href: `/${role}/events/${eventPublicId}/payment-methods`,
+                    icon: CreditCard,
                 },
                 {
                     title: 'Dokumen Lomba',

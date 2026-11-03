@@ -8,6 +8,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { AlertCircle, HelpCircle } from 'lucide-react';
 
 interface ConfirmationDialogProps {
     open: boolean;
@@ -24,30 +26,47 @@ interface ConfirmationDialogProps {
 export function ConfirmationDialog({
     open,
     onOpenChange,
-    title = 'Confirm Action',
-    description = 'Are you sure you want to proceed?',
+    title = 'Konfirmasi Tindakan',
+    description = 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
     onConfirm,
     isProcessing = false,
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
+    confirmText = 'Ya, Lanjutkan',
+    cancelText = 'Batal',
     variant = 'default',
 }: ConfirmationDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className='max-w-md'>
-                <DialogHeader>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                    <div
+                        className={`mb-2 flex h-11 w-11 items-center justify-center rounded-full ${
+                            variant === 'destructive'
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-primary/10 text-primary'
+                        }`}
+                    >
+                        {variant === 'destructive' ? (
+                            <AlertCircle className="h-6 w-6" />
+                        ) : (
+                            <HelpCircle className="h-6 w-6" />
+                        )}
+                    </div>
                     <DialogTitle
                         className={
-                            variant === 'destructive' ? 'text-red-600' : ''
+                            variant === 'destructive'
+                                ? 'font-bold text-destructive'
+                                : 'font-bold'
                         }
                     >
                         {title}
                     </DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
+                    <DialogDescription className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        {description}
+                    </DialogDescription>
                 </DialogHeader>
-                <DialogFooter>
+                <DialogFooter className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <DialogClose asChild>
-                        <Button variant="ghost" disabled={isProcessing}>
+                        <Button variant="outline" disabled={isProcessing}>
                             {cancelText}
                         </Button>
                     </DialogClose>
@@ -55,7 +74,9 @@ export function ConfirmationDialog({
                         onClick={onConfirm}
                         disabled={isProcessing}
                         variant={variant}
+                        className="gap-2"
                     >
+                        {isProcessing && <Spinner className="h-4 w-4" />}
                         {confirmText}
                     </Button>
                 </DialogFooter>
