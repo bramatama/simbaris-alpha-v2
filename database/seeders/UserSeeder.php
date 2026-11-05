@@ -21,8 +21,8 @@ class UserSeeder extends Seeder
         // 1. Buat Akun Admin
         $adminUserId = DB::table('users')->insertGetId([
             'public_id' => Str::uuid(), 
-            'name' => 'Super Admin', 
-            'email' => 'admin@lomba.com', 
+            'name' => 'Super Admin',
+            'email' => 'bramatamar@gmail.com', 
             'role' => 'admin', 'password' => $password, 
             'created_at' => $now, 
             'updated_at' => $now,
