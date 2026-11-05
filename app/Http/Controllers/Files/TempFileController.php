@@ -10,7 +10,7 @@ class TempFileController extends Controller
     public function storeTemp(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB Maks (Sesuaikan)
+            'file' => 'required|file|max:10240',
         ]);
 
         // Simpan ke disk public, folder 'temp'

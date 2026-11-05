@@ -52,10 +52,10 @@ class EventChampionController extends Controller
                     'champion_category_id' => $catId,
                     'category_name' => $activeCat->championCategory->champion_category_name,
                     'champions' => isset($championsByCategory[$catId]) 
-                        ? $championsByCategory[$catId]->sortBy('rank_position')->values() // Sort by rank di event_champions
+                        ? $championsByCategory[$catId]->sortBy('rank_position')->values()
                         : [] 
                 ];
-            })->filter()->values();;
+            })->filter()->values();
 
             return [
                 'event_level_id' => $eventLevel->event_level_id,
@@ -77,7 +77,7 @@ class EventChampionController extends Controller
     public function create($public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventLevels = EventLevel::with([
             'level:level_id,level_name',
@@ -86,8 +86,6 @@ class EventChampionController extends Controller
         ->where('event_id', $event->event_id)
         ->get();
 
-        // Mengirimkan master kategori beserta daftar master pialanya
-        // agar frontend bisa menampilkan dropdown pilihan piala yang valid
         $masterChampionCategories = ChampionCategory::with(['champions' => function($q) {
                 $q->orderBy('champion_id', 'asc');
             }])
@@ -107,20 +105,16 @@ class EventChampionController extends Controller
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $this->validateChampionBuilder($request, false);
 
         DB::transaction(function () use ($validated, $event) {
-            
-            // 1. Pastikan Kategori Juara ini aktif di Event tersebut
             EventChampionCategory::firstOrCreate([
                 'event_id' => $event->event_id,
                 'champion_category_id' => $validated['champion_category_id'],
             ]);
 
-            // 2. Looping ke setiap jenjang yang dicentang panitia
             foreach ($validated['event_level_ids'] as $levelId) {
                 $eventLevel = EventLevel::with('level')->where('event_level_id', $levelId)->where('event_id', $event->event_id)->first();
                 
@@ -153,7 +147,7 @@ class EventChampionController extends Controller
     public function edit($public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventLevel = EventLevel::with('level:level_id,level_name')
             ->where('event_level_id', $event_level_id)
@@ -165,14 +159,13 @@ class EventChampionController extends Controller
             }])
             ->findOrFail($champion_category_id);
 
-        // Ambil data piala yang sudah ada untuk jenjang dan kategori ini
         $existingChampions = EventChampion::where('event_level_id', $eventLevel->event_level_id)
             ->whereHas('champion', function($q) use ($champion_category_id) {
                 $q->where('champion_category_id', $champion_category_id);
             })
             ->with('champion')
             ->get()
-            ->sortBy('rank_position') // Sort berdasarkan rank di event_champions
+            ->sortBy('rank_position')
             ->values();
 
         return inertia('events/champions/committee/Edit', [
@@ -189,7 +182,7 @@ class EventChampionController extends Controller
     public function update(Request $request, $public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventLevel = EventLevel::where('event_level_id', $event_level_id)
             ->where('event_id', $event->event_id)
@@ -213,15 +206,13 @@ class EventChampionController extends Controller
     public function destroy($public_id, $event_level_id, $champion_category_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
         
-        // Hapus piala yang berelasi dengan event_level dan champion_category ini
         EventChampion::where('event_level_id', $event_level_id)
             ->whereHas('champion', function($q) use ($champion_category_id) {
                 $q->where('champion_category_id', $champion_category_id);
             })->delete();
 
-        // Cek apakah kategori ini masih punya piala di jenjang lain pada event ini
         $isCategoryStillUsed = EventChampion::whereHas('eventLevel', function($q) use ($event) {
                 $q->where('event_id', $event->event_id);
             })
@@ -229,7 +220,6 @@ class EventChampionController extends Controller
                 $q->where('champion_category_id', $champion_category_id);
             })->exists();
 
-        // Jika sudah kosong melompong, hapus dari tabel pivot event_champion_categories
         if (!$isCategoryStillUsed) {
             EventChampionCategory::where('event_id', $event->event_id)
                 ->where('champion_category_id', $champion_category_id)
@@ -253,27 +243,38 @@ class EventChampionController extends Controller
 
         $rules = [
             'champions' => 'present|array',
-            'champions.*.champion_id' => 'required|exists:champions,champion_id', // Ambil dari pilihan Master
-            'champions.*.rank_position' => 'required|integer|min:1', // Peringkat spesifik event
+            'champions.*.champion_id' => 'required|exists:champions,champion_id',
+            'champions.*.rank_position' => 'required|integer|min:1',
             'champions.*.prize_money' => 'nullable|integer|min:0',
             'champions.*.certificate' => 'boolean',
             'champions.*.prize_descriptions' => 'nullable|string',
         ];
 
-        // Saat store, butuh memilih Kategori dan array Checkbox Level
+        $messages = [
+            'champion_category_id.required' => 'Kategori juara wajib dipilih.',
+            'event_level_ids.required' => 'Minimal pilih 1 jenjang perlombaan.',
+            'event_level_ids.min' => 'Minimal pilih 1 jenjang perlombaan.',
+            'champions.*.champion_id.required' => 'Nama piala wajib dipilih.',
+            'champions.*.rank_position.required' => 'Peringkat wajib diisi.',
+            'champions.*.rank_position.min' => 'Peringkat minimal angka 1.',
+            'champions.*.prize_money.integer' => 'Uang pembinaan harus berupa angka nominal.',
+            'champions.*.prize_money.min' => 'Uang pembinaan tidak boleh bernilai negatif.',
+        ];
+
         if (!$isUpdate) {
             $rules['champion_category_id'] = 'required|exists:champion_categories,champion_category_id';
             $rules['event_level_ids'] = 'required|array|min:1';
             $rules['event_level_ids.*'] = 'required|exists:event_levels,event_level_id';
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, $messages);
 
-        // Validasi unik rank_position agar tidak ada Juara Utama 1 ganda dalam satu form
         $rankPositions = [];
         foreach ($validated['champions'] as $index => $champion) {
             if (in_array($champion['rank_position'], $rankPositions)) {
-                throw ValidationException::withMessages(["champions.{$index}.rank_position" => 'Peringkat tidak boleh ada yang sama dalam satu kategori.']);
+                throw ValidationException::withMessages([
+                    "champions.{$index}.rank_position" => 'Peringkat tidak boleh ada yang sama dalam satu kategori.'
+                ]);
             }
             $rankPositions[] = $champion['rank_position'];
         }
@@ -287,8 +288,6 @@ class EventChampionController extends Controller
         $submittedChampionIds = [];
 
         foreach ($championsData as $data) {
-            
-            // Simpan / Update ke tabel event_champions dengan data referensi dari Master
             EventChampion::updateOrCreate(
                 [
                     'event_level_id' => $eventLevelId,
@@ -296,7 +295,7 @@ class EventChampionController extends Controller
                 ],
                 [
                     'rank_position' => $data['rank_position'],
-                    'prize_money' => $data['prize_money'] ?? null,
+                    'prize_money' => $data['prize_money'] !== '' && $data['prize_money'] !== null ? (int)$data['prize_money'] : null,
                     'certificate' => $data['certificate'] ?? false,
                     'prize_descriptions' => $data['prize_descriptions'] ?? null,
                 ]
@@ -305,7 +304,6 @@ class EventChampionController extends Controller
             $submittedChampionIds[] = $data['champion_id'];
         }
 
-        // Jika dipanggil dari Update (Edit Form Builder), hapus piala yang dibuang panitia
         if ($isSync) {
             EventChampion::where('event_level_id', $eventLevelId)
                 ->whereHas('champion', function($q) use ($championCategoryId) {

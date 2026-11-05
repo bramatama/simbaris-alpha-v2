@@ -36,7 +36,7 @@ export default function AddCommitteeDialog({
     existingCommittees,
 }: AddCommitteeDialogProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -111,7 +111,7 @@ export default function AddCommitteeDialog({
                         <Plus className="h-4 w-4" /> Assign New Member
                     </Button>
                 </DialogTrigger>
-                <DialogContent className='max-w-lg'>
+                <DialogContent className="max-w-lg">
                     <form onSubmit={submitAdd}>
                         <DialogHeader className="sticky top-0 bg-background/90 backdrop-blur-sm">
                             <DialogTitle>Add Committee Member</DialogTitle>

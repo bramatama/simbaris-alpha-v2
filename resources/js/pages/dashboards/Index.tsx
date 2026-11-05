@@ -9,7 +9,7 @@ import JudgeDashboard from './Partials/judge';
 
 export default function Dashboard({ stats }: { stats: any }) {
     const { auth } = usePage<PageProps>().props;
-    const role = auth.user.role;
+    const role = auth?.user?.role;
 
     return (
         <AppLayout>

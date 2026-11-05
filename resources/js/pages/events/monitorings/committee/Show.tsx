@@ -1,5 +1,5 @@
 import { Head, Link, usePage, router, useForm } from '@inertiajs/react';
-import { useState, useEffect, Fragment} from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import {
@@ -73,21 +73,72 @@ export default function MonitoringShow({
     session,
 }: MonitoringProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
-    const committeePosition = auth.user.committee_position;
+    const userRole = auth?.user?.role;
+    const committeePosition = auth?.user?.committee_position;
 
     const [auditTrails, setAuditTrails] = useState<any[]>([]);
     const [liveDuration, setLiveDuration] = useState<string>('00:00:00');
     const [isPolling, setIsPolling] = useState(false);
 
-    const [confirmDialog, setConfirmDialog] = useState<{
-        isOpen: boolean;
-        action: 'start' | 'finish' | null;
-    }>({ isOpen: false, action: null });
+    const [frozenEndTime, setFrozenEndTime] = useState<string | null>(null);
+
+    const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
     const isPaused = session.status === 'ongoing' && session.end_time !== null;
     const isRunning = session.status === 'ongoing' && session.end_time === null;
+
+    const parseSafeDate = (dateVal: string | number | null): Date | null => {
+        if (!dateVal) return null;
+
+        if (typeof dateVal === 'number') {
+            const date = new Date(dateVal);
+            return isNaN(date.getTime()) ? null : date;
+        }
+
+        let normalized = dateVal;
+
+        // Normalisasi format MySQL: YYYY-MM-DD HH:mm:ss
+        if (normalized.includes(' ') && !normalized.includes('T')) {
+            normalized = normalized.replace(' ', 'T');
+        }
+
+        // Jika tidak memiliki timezone, anggap sebagai WITA.
+        const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(normalized);
+
+        if (!hasTimezone) {
+            normalized += '+08:00';
+        }
+
+        const date = new Date(normalized);
+
+        return isNaN(date.getTime()) ? null : date;
+    };
+
+    const formatDateTimeLocal = (dateString: string | null): string => {
+        if (!dateString) return '';
+
+        const date = parseSafeDate(dateString);
+
+        if (!date) return '';
+
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Makassar',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hourCycle: 'h23',
+        }).formatToParts(date);
+
+        const values = Object.fromEntries(
+            parts.map((part) => [part.type, part.value]),
+        );
+
+        return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}`;
+    };
 
     const {
         data: manualData,
@@ -96,62 +147,72 @@ export default function MonitoringShow({
         processing: manualProcessing,
     } = useForm({
         status: session.status,
-        start_time: session.start_time
-            ? new Date(
-                  new Date(session.start_time).getTime() -
-                      new Date().getTimezoneOffset() * 60000,
-              )
-                  .toISOString()
-                  .slice(0, 16)
-            : '',
-        end_time: session.end_time
-            ? new Date(
-                  new Date(session.end_time).getTime() -
-                      new Date().getTimezoneOffset() * 60000,
-              )
-                  .toISOString()
-                  .slice(0, 16)
-            : '',
+        start_time: formatDateTimeLocal(session.start_time),
+        end_time: formatDateTimeLocal(session.end_time),
     });
 
-    const formatOnlyTime = (dateString: string) => {
+    const formatOnlyTime = (dateString: string | null) => {
+        const d = parseSafeDate(dateString);
+
+        if (!d) return '-';
+
         return new Intl.DateTimeFormat('id-ID', {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-        }).format(new Date(dateString));
+            hourCycle: 'h23',
+            timeZone: 'Asia/Makassar',
+        }).format(d);
     };
 
     // ==========================================
-    // LOGIKA TIMER REAL-TIME
+    // LOGIKA TIMER REAL-TIME (SOLUSI PERMANEN)
     // ==========================================
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
 
-        const updateTimer = () => {
-            if (!session.start_time) return;
-            const start = new Date(session.start_time).getTime();
-            const end = session.end_time
-                ? new Date(session.end_time).getTime()
-                : new Date().getTime();
-            const diff = Math.floor((end - start) / 1000);
+        const calculateAndSetDuration = () => {
+            const startDate = parseSafeDate(session.start_time);
+            if (!startDate) {
+                setLiveDuration('00:00:00');
+                return;
+            }
 
-            if (diff < 0) return;
+            const startMs = startDate.getTime();
+            let endMs: number;
+
+            if (session.status === 'finished' && session.end_time) {
+                const endDate = parseSafeDate(session.end_time);
+                endMs = endDate ? endDate.getTime() : new Date().getTime();
+            } else if (frozenEndTime) {
+                const frozenDate = parseSafeDate(frozenEndTime);
+                endMs = frozenDate
+                    ? frozenDate.getTime()
+                    : new Date().getTime();
+            } else if (isPaused && session.end_time) {
+                const pauseDate = parseSafeDate(session.end_time);
+                endMs = pauseDate ? pauseDate.getTime() : new Date().getTime();
+            } else {
+                endMs = new Date().getTime();
+            }
+
+            let diff = Math.floor((endMs - startMs) / 1000);
+
+            if (diff < 0) diff = 0;
+
             const hours = Math.floor(diff / 3600);
             const minutes = Math.floor((diff % 3600) / 60);
             const seconds = diff % 60;
+
             setLiveDuration(
                 `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
             );
         };
 
-        if (isRunning) {
-            updateTimer();
-            interval = setInterval(updateTimer, 1000);
-        } else if (isPaused || session.status === 'finished') {
-            updateTimer();
-        } else {
-            setLiveDuration('00:00:00');
+        calculateAndSetDuration();
+
+        if (isRunning && !frozenEndTime && session.status !== 'finished') {
+            interval = setInterval(calculateAndSetDuration, 1000);
         }
 
         return () => {
@@ -163,6 +224,7 @@ export default function MonitoringShow({
         session.end_time,
         isRunning,
         isPaused,
+        frozenEndTime,
     ]);
 
     // ==========================================
@@ -202,22 +264,34 @@ export default function MonitoringShow({
         };
     }, [session.status, event.public_id, participation.public_id, userRole]);
 
-    const executeAction = () => {
-        if (confirmDialog.action === 'start') {
-            router.post(
-                `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/start`,
-                {},
-                { preserveScroll: true },
-            );
-        } else if (confirmDialog.action === 'finish') {
-            const exactFinishTime = new Date().toISOString();
-            router.post(
-                `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/finish`,
-                { client_end_time: exactFinishTime },
-                { preserveScroll: true },
-            );
-        }
-        setConfirmDialog({ isOpen: false, action: null });
+    // ==========================================
+    // ACTION HANDLERS
+    // ==========================================
+    const handleStart = () => {
+        router.post(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/start`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => setIsStartDialogOpen(false),
+            },
+        );
+    };
+
+    const handleFinishDirect = () => {
+        const frozenTime = isPaused
+            ? session.end_time
+            : new Date().toISOString();
+
+        setFrozenEndTime(frozenTime);
+
+        router.post(
+            `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/finish`,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
     const handlePause = () =>
@@ -226,6 +300,7 @@ export default function MonitoringShow({
             {},
             { preserveScroll: true },
         );
+
     const handleResume = () =>
         router.post(
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/resume`,
@@ -246,7 +321,11 @@ export default function MonitoringShow({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Monitoring - ${participation.team_name}`} />
 
@@ -335,10 +414,7 @@ export default function MonitoringShow({
                                     <Button
                                         size="lg"
                                         onClick={() =>
-                                            setConfirmDialog({
-                                                isOpen: true,
-                                                action: 'start',
-                                            })
+                                            setIsStartDialogOpen(true)
                                         }
                                         className="h-14 w-full bg-emerald-600 text-sm shadow-lg shadow-primary/20 hover:bg-emerald-700 sm:h-16 sm:text-base"
                                     >
@@ -370,14 +446,10 @@ export default function MonitoringShow({
                                                 Lanjutkan
                                             </Button>
                                         )}
+                                        {/* KLIK LANGSUNG EKSEKUSI & BEKUKAN TIMER */}
                                         <Button
                                             size="lg"
-                                            onClick={() =>
-                                                setConfirmDialog({
-                                                    isOpen: true,
-                                                    action: 'finish',
-                                                })
-                                            }
+                                            onClick={handleFinishDirect}
                                             variant="destructive"
                                             className="h-14 w-full animate-in text-sm shadow-lg shadow-destructive/20 duration-300 fade-in zoom-in sm:h-16 sm:text-base"
                                         >
@@ -444,7 +516,7 @@ export default function MonitoringShow({
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        {/* 1. TAMPILAN MOBILE (Card Layout) */}
+                        {/* 1. TAMPILAN MOBILE */}
                         <div className="flex flex-col divide-y divide-border/50 sm:hidden">
                             {auditTrails.length > 0 ? (
                                 auditTrails.map((trail, idx) => {
@@ -521,7 +593,7 @@ export default function MonitoringShow({
                             )}
                         </div>
 
-                        {/* 2. TAMPILAN DESKTOP (Tabel Klasik) */}
+                        {/* 2. TAMPILAN DESKTOP */}
                         <div className="hidden max-h-125 w-full overflow-y-auto sm:block">
                             <Table className="relative min-w-full">
                                 <TableHeader className="sticky top-0 z-10 bg-muted/40 backdrop-blur-md">
@@ -655,33 +727,15 @@ export default function MonitoringShow({
                 </Card>
             </div>
 
+            {/* DIALOG HANYA UNTUK START */}
             <ConfirmationDialog
-                open={confirmDialog.isOpen}
-                onOpenChange={(open) =>
-                    setConfirmDialog({
-                        isOpen: open,
-                        action: open ? confirmDialog.action : null,
-                    })
-                }
-                title={
-                    confirmDialog.action === 'start'
-                        ? 'Mulai Penampilan'
-                        : 'Akhiri Penampilan'
-                }
-                description={
-                    confirmDialog.action === 'start'
-                        ? 'Apakah Anda yakin ingin memulai perhitungan waktu untuk tim ini?'
-                        : 'Apakah Anda yakin ingin mengakhiri sesi penampilan? Status akan dikunci menjadi Selesai.'
-                }
-                confirmText={
-                    confirmDialog.action === 'start'
-                        ? 'Ya, Mulai'
-                        : 'Ya, Akhiri'
-                }
-                variant={
-                    confirmDialog.action === 'start' ? 'default' : 'destructive'
-                }
-                onConfirm={executeAction}
+                open={isStartDialogOpen}
+                onOpenChange={setIsStartDialogOpen}
+                title="Mulai Penampilan"
+                description="Apakah Anda yakin ingin memulai perhitungan waktu untuk tim ini?"
+                confirmText="Ya, Mulai"
+                variant="default"
+                onConfirm={handleStart}
             />
 
             <Dialog

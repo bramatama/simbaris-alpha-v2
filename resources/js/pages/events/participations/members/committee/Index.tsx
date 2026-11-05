@@ -21,7 +21,7 @@ export default function CommitteeParticipationMembers({
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const members = participation.team_members || [];
@@ -47,11 +47,14 @@ export default function CommitteeParticipationMembers({
                 <div className="flex flex-col gap-4 p-4 sm:flex-row">
                     <div className="flex shrink-0 justify-center">
                         <div className="flex aspect-3/4 w-28 flex-col items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-                            {member.member_photo_path ? (
+                            {member.member_photo_path &&
+                            member.team_member_id ? (
                                 <img
                                     src={route(
                                         'participation-member-photo.file',
-                                        member,
+                                        {
+                                            teamMember: member.team_member_id,
+                                        },
                                     )}
                                     alt={member.member_name}
                                     className="h-full w-full object-cover"

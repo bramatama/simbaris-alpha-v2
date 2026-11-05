@@ -29,7 +29,7 @@ export default function CommitteeTable({
     onDeleteClick,
 }: CommitteeTableProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const canDeleteCommittee = (ec: any) =>
         (userRole === 'admin' ||
@@ -60,7 +60,7 @@ export default function CommitteeTable({
                                 <div className="flex items-center justify-between border-t border-border/50 pt-3">
                                     <div className="space-y-1">
                                         <div className="text-xs text-muted-foreground">
-                                            Department
+                                            Instansi / Departemen
                                         </div>
                                         <div className="text-sm font-medium">
                                             {ec.committee?.department}
@@ -68,7 +68,7 @@ export default function CommitteeTable({
                                     </div>
                                     <div className="space-y-1 text-right">
                                         <div className="text-xs text-muted-foreground">
-                                            Position
+                                            Posisi
                                         </div>
                                         <Badge
                                             variant="secondary"
@@ -78,24 +78,23 @@ export default function CommitteeTable({
                                         </Badge>
                                     </div>
                                 </div>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="w-full text-foreground hover:bg-destructive/50"
-                                        onClick={() =>
-                                            onDeleteClick(ec.event_committee_id)
-                                        }
-                                        disabled={!canDeleteCommittee(ec)}
-                                    >
-                                        <UserX className="mr-1.5 h-4 w-4" />{' '}
-                                        Remove
-                                    </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full text-foreground hover:bg-destructive/50"
+                                    onClick={() =>
+                                        onDeleteClick(ec.event_committee_id)
+                                    }
+                                    disabled={!canDeleteCommittee(ec)}
+                                >
+                                    <UserX className="mr-1.5 h-4 w-4" /> Hapus
+                                </Button>
                             </CardContent>
                         </Card>
                     ))
                 ) : (
                     <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                        No committee members assigned yet.
+                        Belum ada anggota panitia yang ditugaskan.
                     </div>
                 )}
             </div>
@@ -105,13 +104,11 @@ export default function CommitteeTable({
                 <Table className="min-w-max">
                     <TableHeader className="bg-muted/50">
                         <TableRow>
-                            <TableHead>Name & Email</TableHead>
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Department</TableHead>
-                            <TableHead>Position</TableHead>
-                            <TableHead className="text-right">
-                                Actions
-                            </TableHead>
+                            <TableHead>Nama & Email</TableHead>
+                            <TableHead>Kontak</TableHead>
+                            <TableHead>Instansi / Departemen</TableHead>
+                            <TableHead>Posisi</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -157,7 +154,7 @@ export default function CommitteeTable({
                                             disabled={!canDeleteCommittee(ec)}
                                         >
                                             <UserX className="mr-1.5 h-4 w-4" />{' '}
-                                            Remove
+                                            Hapus
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -168,7 +165,7 @@ export default function CommitteeTable({
                                     colSpan={4}
                                     className="h-32 text-center text-muted-foreground"
                                 >
-                                    No committee members assigned yet.
+                                    Belum ada anggota panitia yang ditugaskan.
                                 </TableCell>
                             </TableRow>
                         )}

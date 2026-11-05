@@ -32,6 +32,7 @@ import {
     LogIn,
     Info,
     Phone,
+    ImageOff,
 } from 'lucide-react';
 import { PageProps } from '@inertiajs/core';
 import { formatDate } from '@/config/date_datetime';
@@ -76,13 +77,22 @@ export default function EventShow({
                   (p: any) => p.event_level_id === selectedLevel,
               );
 
-    const totalQuota = (event.event_levels ?? []).reduce(
+    const eventLevels = event.event_levels ?? [];
+
+    const hasUnlimitedLevel = eventLevels.some(
+        (level: any) => level.quota === null || level.quota === 0,
+    );
+
+    const totalQuota = eventLevels.reduce(
         (total: number, level: any) => total + (Number(level.quota) || 0),
         0,
     );
 
     const registeredCount = event.participations_count || 0;
     const remainingQuota = totalQuota - registeredCount;
+
+    const isQuotaFull = !hasUnlimitedLevel && remainingQuota <= 0;
+
     const totalEventLevels = event.event_levels?.length || 0;
 
     const readinessChecklist = [
@@ -209,15 +219,6 @@ export default function EventShow({
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
                     Semua Event
                 </Link>
-
-                {isAuthorized && (
-                    <Link href={`/${userRole}/events/${event.public_id}/edit`}>
-                        <Button variant="default" size="sm">
-                            <Edit3 className="h-4 w-4" />
-                            Edit Event
-                        </Button>
-                    </Link>
-                )}
             </div>
 
             <div
@@ -253,10 +254,28 @@ export default function EventShow({
                                         />
                                     ) : (
                                         <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-                                            <ImagePlus className="h-10 w-10 opacity-40" />
-                                            <span className="text-sm font-medium">
-                                                Belum ada poster
-                                            </span>
+                                            <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-linear-to-br from-slate-800 via-slate-900 to-black p-4 text-center">
+                                                <div className="pointer-events-none absolute inset-0 opacity-10">
+                                                    <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full border-20 border-white" />
+                                                    <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full border-20 border-white" />
+                                                    <div className="absolute top-1/2 left-0 h-px w-full bg-white/50" />
+                                                </div>
+
+                                                <div className="relative z-10 flex flex-col items-center gap-3">
+                                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white shadow-lg">
+                                                        <ImageOff className="h-6 w-6" />
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <span className="block text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
+                                                            Poster Event
+                                                        </span>
+                                                        <span className="block text-[9px] font-medium text-white/40">
+                                                            Belum Tersedia
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -406,7 +425,7 @@ export default function EventShow({
                                                     </p>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                     <Users className="h-4 w-4" />
@@ -418,14 +437,26 @@ export default function EventShow({
                                                     </p>
 
                                                     <p className="text-sm font-semibold text-foreground">
-                                                        {remainingQuota.toLocaleString(
-                                                            'id-ID',
-                                                        )}{' '}
-                                                        /{' '}
-                                                        {totalQuota.toLocaleString(
-                                                            'id-ID',
-                                                        )}{' '}
-                                                        Tim
+                                                        {hasUnlimitedLevel ? (
+                                                            <span>
+                                                                Tanpa Batas
+                                                                Kuota
+                                                            </span>
+                                                        ) : (
+                                                            <span>
+                                                                {Math.max(
+                                                                    0,
+                                                                    remainingQuota,
+                                                                ).toLocaleString(
+                                                                    'id-ID',
+                                                                )}{' '}
+                                                                /{' '}
+                                                                {totalQuota.toLocaleString(
+                                                                    'id-ID',
+                                                                )}{' '}
+                                                                Tim
+                                                            </span>
+                                                        )}
                                                     </p>
                                                 </div>
                                             </div>
@@ -460,25 +491,33 @@ export default function EventShow({
                                                 </Button>
                                             ) : (
                                                 <Button
-                                                    asChild
+                                                    asChild={
+                                                        !isQuotaFull &&
+                                                        event.status ===
+                                                            'registration_open'
+                                                    }
                                                     className="w-full flex-1"
                                                     disabled={
-                                                        remainingQuota <= 0 ||
+                                                        isQuotaFull ||
                                                         event.status !==
                                                             'registration_open'
                                                     }
                                                 >
-                                                    <Link
-                                                        href={`/${userRole}/events/${event.public_id}/enroll`}
-                                                    >
-                                                        {remainingQuota <= 0
-                                                            ? 'Kuota Penuh'
-                                                            : event.status !==
-                                                                'registration_open'
-                                                              ? 'Pendaftaran Ditutup'
-                                                              : 'Daftar Sekarang'}
-                                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                                    </Link>
+                                                    {isQuotaFull ? (
+                                                        <span>Kuota Penuh</span>
+                                                    ) : event.status !==
+                                                      'registration_open' ? (
+                                                        <span>
+                                                            Pendaftaran Ditutup
+                                                        </span>
+                                                    ) : (
+                                                        <Link
+                                                            href={`/${userRole}/events/${event.public_id}/enroll`}
+                                                        >
+                                                            Daftar Sekarang
+                                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                                        </Link>
+                                                    )}
                                                 </Button>
                                             )}
                                         </div>

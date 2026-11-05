@@ -27,7 +27,7 @@ import {
 
 export default function ChampionsIndex({ event, groupedChampions }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     // Inisialisasi tab aktif berdasarkan query parameter (atau default jenjang pertama)
@@ -101,7 +101,11 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Manajemen Juara - ${event.event_name}`} />
 

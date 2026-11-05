@@ -12,7 +12,6 @@ import {
     CardHeader,
     CardTitle,
     CardDescription,
-    CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ import {
     Save,
     Trash2,
     AlertTriangle,
+    ShieldCheck,
 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -49,7 +49,7 @@ export default function ParticipationShow({
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const [viewDocument, setViewDocument] = useState<{
@@ -132,6 +132,7 @@ export default function ParticipationShow({
             <Head title={`Detail Tim - ${participation.team_name}`} />
 
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
+                {/* HEADER */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <Link
@@ -156,7 +157,7 @@ export default function ParticipationShow({
                         </p>
                     </div>
 
-                    {userRole === 'official_team' ? (
+                    {userRole === 'official_team' && (
                         <div className="flex items-center gap-3">
                             <Link
                                 href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/edit`}
@@ -167,23 +168,10 @@ export default function ParticipationShow({
                                 </Button>
                             </Link>
                         </div>
-                    ) : (
-                        <Button
-                            type="submit"
-                            form="verify"
-                            disabled={processing}
-                            className="gap-2"
-                        >
-                            {processing ? (
-                                <Spinner className="h-4 w-4" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
-                            Simpan Perubahan
-                        </Button>
                     )}
                 </div>
 
+                {/* BANNER ALASAN PENOLAKAN */}
                 {participation.status === 'rejected' &&
                     participation.status_message && (
                         <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
@@ -199,8 +187,10 @@ export default function ParticipationShow({
                         </div>
                     )}
 
+                {/* MAIN GRID INFORMASI */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">
+                        {/* KARTU INFORMASI */}
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10">
                                 <div className="flex items-center justify-between">
@@ -261,6 +251,7 @@ export default function ParticipationShow({
                             </CardContent>
                         </Card>
 
+                        {/* KARTU DOKUMEN */}
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50">
                                 <CardTitle className="text-lg">
@@ -330,6 +321,8 @@ export default function ParticipationShow({
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* KARTU BUKTI PEMBAYARAN */}
                     <div className="space-y-6 lg:col-span-1">
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader className="border-b border-border/50">
@@ -342,10 +335,10 @@ export default function ParticipationShow({
                                     <div className="space-y-3">
                                         <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
                                             <img
-                                                src={route(
+                                                src={`${route(
                                                     'participation-payment-proof.file',
                                                     participation,
-                                                )}
+                                                )}?t=${new Date().getTime()}`}
                                                 alt="Bukti Transfer"
                                                 className="max-h-75 w-full object-contain"
                                             />
@@ -375,140 +368,178 @@ export default function ParticipationShow({
                                 )}
                             </CardContent>
                         </Card>
+                    </div>
 
-                        {userRole === 'committee' && (
-                            <>
-                                <form id="verify" onSubmit={submitStatus}>
-                                    <Card className="border-primary/20 shadow-md">
-                                        <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
+                    {/* FORM VERIFIKASI PANITIA (MEMAKAN 3 KOLOM FULL) */}
+                    {userRole === 'committee' && (
+                        <div className="space-y-6 lg:col-span-3">
+                            <form id="verify" onSubmit={submitStatus}>
+                                <Card className="border-primary/20 shadow-md">
+                                    <CardHeader className="border-b border-border/50 bg-primary/5 pb-4">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="h-5 w-5 text-primary" />
                                             <CardTitle className="text-base text-primary">
-                                                Verifikasi Panitia
+                                                Verifikasi Kelayakan Tim
                                             </CardTitle>
-                                            <CardDescription className="text-xs">
-                                                Ubah status kelayakan tim ini.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4 pt-5">
-                                            <RadioGroup
-                                                value={data.status}
-                                                onValueChange={(value) => {
-                                                    setData('status', value);
-                                                    if (value === 'approved')
+                                        </div>
+                                        <CardDescription className="text-xs">
+                                            Tentukan status pendaftaran dan
+                                            berkas administratif tim ini.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 pt-5">
+                                        <RadioGroup
+                                            value={data.status}
+                                            onValueChange={(value) => {
+                                                setData('status', value);
+                                                if (value === 'approved')
+                                                    setData(
+                                                        'status_message',
+                                                        '',
+                                                    );
+                                            }}
+                                            className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                                        >
+                                            <Label
+                                                htmlFor="pending"
+                                                className="flex cursor-pointer items-center gap-3 rounded-lg border border-muted bg-transparent p-4 transition-colors hover:bg-muted has-data-[state=checked]:border-orange-500 has-data-[state=checked]:bg-orange-500/10"
+                                            >
+                                                <RadioGroupItem
+                                                    value="pending"
+                                                    id="pending"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold">
+                                                        Menunggu
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Perlu peninjauan ulang
+                                                    </span>
+                                                </div>
+                                            </Label>
+                                            <Label
+                                                htmlFor="approved"
+                                                className="flex cursor-pointer items-center gap-3 rounded-lg border border-muted bg-transparent p-4 transition-colors hover:bg-muted has-data-[state=checked]:border-emerald-500 has-data-[state=checked]:bg-emerald-500/10"
+                                            >
+                                                <RadioGroupItem
+                                                    value="approved"
+                                                    id="approved"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                                        Disetujui
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Berkas & bukti bayar
+                                                        valid
+                                                    </span>
+                                                </div>
+                                            </Label>
+                                            <Label
+                                                htmlFor="rejected"
+                                                className="flex cursor-pointer items-center gap-3 rounded-lg border border-muted bg-transparent p-4 transition-colors hover:bg-muted has-data-[state=checked]:border-destructive has-data-[state=checked]:bg-destructive/10"
+                                            >
+                                                <RadioGroupItem
+                                                    value="rejected"
+                                                    id="rejected"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-destructive">
+                                                        Ditolak
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        Tidak memenuhi syarat
+                                                    </span>
+                                                </div>
+                                            </Label>
+                                        </RadioGroup>
+                                        <InputError message={errors.status} />
+
+                                        {data.status === 'rejected' && (
+                                            <div className="animate-in space-y-2 pt-2 fade-in slide-in-from-top-2">
+                                                <Label
+                                                    htmlFor="status_message"
+                                                    className="text-xs font-semibold text-destructive"
+                                                >
+                                                    Alasan Penolakan (Wajib)
+                                                </Label>
+                                                <Textarea
+                                                    id="status_message"
+                                                    placeholder="Jelaskan alasan penolakan (misal: Bukti bayar buram atau dokumen kurang)..."
+                                                    value={data.status_message}
+                                                    onChange={(e) =>
                                                         setData(
                                                             'status_message',
-                                                            '',
-                                                        );
-                                                }}
-                                                className="flex flex-col gap-2"
-                                            >
-                                                <Label
-                                                    htmlFor="pending"
-                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-orange-500 has-data-[state=checked]:bg-orange-500/10"
-                                                >
-                                                    <RadioGroupItem
-                                                        value="pending"
-                                                        id="pending"
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">
-                                                            Menunggu
-                                                        </span>
-                                                    </div>
-                                                </Label>
-                                                <Label
-                                                    htmlFor="approved"
-                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-emerald-500 has-data-[state=checked]:bg-emerald-500/10"
-                                                >
-                                                    <RadioGroupItem
-                                                        value="approved"
-                                                        id="approved"
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">
-                                                            Disetujui
-                                                        </span>
-                                                    </div>
-                                                </Label>
-                                                <Label
-                                                    htmlFor="rejected"
-                                                    className="flex cursor-pointer items-center gap-3 rounded-md border border-muted bg-transparent p-3 hover:bg-muted has-data-[state=checked]:border-destructive has-data-[state=checked]:bg-destructive/10"
-                                                >
-                                                    <RadioGroupItem
-                                                        value="rejected"
-                                                        id="rejected"
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">
-                                                            Ditolak
-                                                        </span>
-                                                    </div>
-                                                </Label>
-                                            </RadioGroup>
-                                            <InputError
-                                                message={errors.status}
-                                            />
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="min-h-24 border-destructive/50 text-xs focus-visible:ring-destructive"
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors.status_message
+                                                    }
+                                                />
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
 
-                                            {data.status === 'rejected' && (
-                                                <div className="animate-in space-y-2 pt-2 fade-in slide-in-from-top-2">
-                                                    <Label
-                                                        htmlFor="status_message"
-                                                        className="text-xs text-destructive"
-                                                    >
-                                                        Alasan Penolakan (Wajib)
-                                                    </Label>
-                                                    <Textarea
-                                                        id="status_message"
-                                                        placeholder="Beritahu peserta apa yang salah..."
-                                                        value={
-                                                            data.status_message
-                                                        }
-                                                        onChange={(e) =>
-                                                            setData(
-                                                                'status_message',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="min-h-20 border-destructive/50 text-xs focus-visible:ring-destructive"
-                                                    />
-                                                    <InputError
-                                                        message={
-                                                            errors.status_message
-                                                        }
-                                                    />
-                                                </div>
+                                {/* STICKY ACTION BAR / TOMBOL SIMPAN */}
+                                <div className="sticky bottom-4 z-20 mt-6 flex items-center justify-between gap-4 rounded-xl border border-border/80 bg-background/95 p-4 shadow-lg backdrop-blur-md">
+                                    <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+                                        <Clock className="h-4 w-4" />
+                                        <span>
+                                            Pastikan perubahan status sudah
+                                            sesuai sebelum menyimpan.
+                                        </span>
+                                    </div>
+                                    <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
+                                        <Button
+                                            type="submit"
+                                            disabled={processing}
+                                            className="w-full gap-2 px-6 shadow-sm sm:w-auto"
+                                        >
+                                            {processing ? (
+                                                <Spinner className="h-4 w-4" />
+                                            ) : (
+                                                <Save className="h-4 w-4" />
                                             )}
-                                        </CardContent>
-                                    </Card>
-                                </form>
-                            </>
-                        )}
-                    </div>
-                    {userRole === 'committee' && (
-                        <Card className="border-destructive/30 bg-destructive/5 shadow-sm lg:col-span-3">
-                            <CardContent className="flex flex-col gap-4 sm:flex-row items-center sm:justify-between">
-                                <div className="flex flex-col items-center sm:items-start gap-1.5">
-                                    <CardTitle className="flex items-center gap-2 text-base text-destructive">
-                                        <AlertTriangle className="h-4 w-4 shrink-0" />
-                                        Hapus Pendaftaran
-                                    </CardTitle>
-
-                                    <CardDescription className="text-xs text-destructive/80">
-                                        Hapus data pendaftaran tim ini secara
-                                        permanen.
-                                    </CardDescription>
+                                            Simpan Perubahan Status
+                                        </Button>
+                                    </div>
                                 </div>
+                            </form>
 
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="w-fit shrink-0 gap-2 font-semibold shadow-sm"
-                                    onClick={() => setShowDeleteDialog(true)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    Hapus Pendaftaran
-                                </Button>
-                            </CardContent>
-                        </Card>
+                            {/* ZONA BAHAYA (HAPUS PENDAFTARAN) */}
+                            <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
+                                <CardContent className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:justify-between">
+                                    <div className="flex flex-col items-center gap-1.5 sm:items-start">
+                                        <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                                            Hapus Pendaftaran
+                                        </CardTitle>
+
+                                        <CardDescription className="text-xs text-destructive/80">
+                                            Hapus data pendaftaran tim ini
+                                            secara permanen.
+                                        </CardDescription>
+                                    </div>
+
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="w-fit shrink-0 gap-2 font-semibold shadow-sm"
+                                        onClick={() =>
+                                            setShowDeleteDialog(true)
+                                        }
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Hapus Pendaftaran
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
                     )}
                 </div>
 
@@ -517,7 +548,7 @@ export default function ParticipationShow({
                     onClose={() => setViewDocument(null)}
                 />
 
-                {/* CONFIRMATION DIALOG HAPUS PANITIA */}
+                {/* CONFIRMATION DIALOG HAPUS */}
                 <ConfirmationDialog
                     open={showDeleteDialog}
                     onOpenChange={setShowDeleteDialog}

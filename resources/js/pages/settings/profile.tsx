@@ -39,6 +39,21 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
 
     const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
 
+    const getTranslatedRoleLabel = (role: string) => {
+        switch (role) {
+            case 'admin':
+                return 'Administrator';
+            case 'official_team':
+                return 'Tim Official';
+            case 'judge':
+                return 'Juri';
+            case 'committee':
+                return 'Panitia';
+            default:
+                return role;
+        }
+    };
+
     const profileForm = useForm({
         name: user.name,
         contact_info: user.contact_info || '',
@@ -218,7 +233,12 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                     className="space-y-4"
                                 >
                                     <div className="space-y-2 lg:max-w-md">
-                                        <Label requirement='required' htmlFor="name">Full Name</Label>
+                                        <Label
+                                            requirement="required"
+                                            htmlFor="name"
+                                        >
+                                            Full Name
+                                        </Label>
                                         <Input
                                             id="name"
                                             value={profileForm.data.name}
@@ -237,12 +257,15 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                     </div>
 
                                     <div className="space-y-2 lg:max-w-md">
-                                        <Label requirement='optional' htmlFor="contact_info">
+                                        <Label
+                                            requirement="optional"
+                                            htmlFor="contact_info"
+                                        >
                                             Contact Information
                                         </Label>
                                         <Input
                                             id="contact_info"
-                                            type='number'
+                                            type="number"
                                             value={
                                                 profileForm.data.contact_info
                                             }
@@ -274,7 +297,7 @@ export default function ProfileEdit({ user, status }: ProfilePageProps) {
                                             Account Role
                                         </Label>
                                         <div className="w-fit rounded-md bg-muted p-3 px-4 text-sm font-medium capitalize">
-                                            {user.role.replace(/_/g, ' ')}
+                                            {getTranslatedRoleLabel(user.role)}
                                         </div>
                                     </div>
 

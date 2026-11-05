@@ -80,12 +80,24 @@ const getLocation = (user: User) => {
         return '-';
     }
 
-    return [
-        user.official_team.city,
-        user.official_team.province,
-    ]
+    return [user.official_team.city, user.official_team.province]
         .filter(Boolean)
         .join(', ');
+};
+
+const getRoleLabel = (userRole: string) => {
+    switch (userRole) {
+        case 'admin':
+            return 'Admin';
+        case 'judge':
+            return 'Juri';
+        case 'committee':
+            return 'Panitia';
+        case 'official_team':
+            return 'Tim Official';
+        default:
+            return userRole;
+    }
 };
 
 /**
@@ -141,7 +153,7 @@ export function UserMobileCard({
                             <span
                                 className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${getRoleBadgeClass(user.role)}`}
                             >
-                                {user.role.replace('_', ' ')}
+                                {getRoleLabel(user.role)}
                             </span>
                         )}
                     </div>
@@ -177,7 +189,7 @@ export function UserMobileCard({
                                 <Building className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
 
                                 <span>
-                                    Departemen:{' '}
+                                    Instansi / Departemen:{' '}
                                     <strong className="font-medium text-foreground">
                                         {user.committee?.department || '-'}
                                     </strong>
@@ -194,7 +206,7 @@ export function UserMobileCard({
                                 <span
                                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${getRoleBadgeClass(user.role)}`}
                                 >
-                                    {user.role.replace('_', ' ')}
+                                    {getRoleLabel(user.role)}
                                 </span>
                             </div>
                         )}
@@ -250,11 +262,9 @@ export function UserTableRow({
 }: UserTableRowProps) {
     const nameAndEmail = (
         <div className="flex min-w-0 flex-col gap-1">
-            <span className="font-medium text-foreground">
-                {user.name}
-            </span>
+            <span className="font-medium text-foreground">{user.name}</span>
 
-            <span className="break-all text-xs text-muted-foreground">
+            <span className="text-xs break-all text-muted-foreground">
                 {user.email}
             </span>
         </div>
@@ -273,7 +283,7 @@ export function UserTableRow({
         </Button>
     );
 
-    console.log(user.official_team)
+    console.log(user.official_team);
 
     return (
         <TableRow
@@ -292,9 +302,7 @@ export function UserTableRow({
             </TableCell>
 
             {/* Nama dan email */}
-            <TableCell className="min-w-50">
-                {nameAndEmail}
-            </TableCell>
+            <TableCell className="min-w-50">{nameAndEmail}</TableCell>
 
             {/* Kolom khusus official team */}
             {role === 'official_team' && (
@@ -322,9 +330,9 @@ export function UserTableRow({
 
                     <TableCell>
                         <span
-                            className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${getRoleBadgeClass(user.role)}`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap uppercase ${getRoleBadgeClass(user.role)}`}
                         >
-                            {user.role.replace('_', ' ')}
+                            {getRoleLabel(user.role)}
                         </span>
                     </TableCell>
 
@@ -339,9 +347,9 @@ export function UserTableRow({
                 <>
                     <TableCell>
                         <span
-                            className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${getRoleBadgeClass(user.role)}`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap uppercase ${getRoleBadgeClass(user.role)}`}
                         >
-                            {user.role.replace('_', ' ')}
+                            {getRoleLabel(user.role)}
                         </span>
                     </TableCell>
 
@@ -357,9 +365,7 @@ export function UserTableRow({
 
             {/* Aksi */}
             <TableCell className="w-20 text-right">
-                <div className="flex justify-end">
-                    {deleteButton}
-                </div>
+                <div className="flex justify-end">{deleteButton}</div>
             </TableCell>
         </TableRow>
     );

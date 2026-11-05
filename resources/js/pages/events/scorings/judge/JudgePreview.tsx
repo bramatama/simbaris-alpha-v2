@@ -1,6 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { getEvaluationInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageProps } from '@inertiajs/core';
 import { Calculator, CheckSquare, ListFilter } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function JudgePreviewForm({
     scoringCategories,
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const defaultValue =
         scoringCategories?.map(
@@ -352,7 +352,7 @@ export default function JudgePreviewForm({
                 title={`Preview Form - ${activeEventLevel?.level?.level_name || 'Juri'}`}
             />
             <InnerAppLayout
-                sidebarNavItems={getEventInnerNav(event.public_id, userRole)}
+                sidebarNavItems={getEvaluationInnerNav(event.public_id)}
             >
                 {pageContent}
             </InnerAppLayout>

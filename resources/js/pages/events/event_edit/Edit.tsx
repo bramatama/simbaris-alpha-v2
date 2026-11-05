@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,10 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import {
     ArrowLeft,
-    Calendar,
-    ImagePlus,
-    UserCheck,
     Eye,
     ClipboardCheck,
     Calculator,
@@ -29,6 +25,9 @@ import {
     CalendarDays,
     Clock,
     Users,
+    ImageOff,
+    AlertCircle,
+    CheckCircle2,
 } from 'lucide-react';
 import {
     Select,
@@ -56,9 +55,14 @@ const formatDateTime = (dateString: string | null) => {
 
 export default function EventEdit({ event }: { event: any }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // State pratinjau poster (diinisialisasi dengan poster saat ini dari server jika ada)
+    const [posterPreview, setPosterPreview] = useState<string | null>(
+        event.poster_path ? `/storage/${event.poster_path}` : null,
+    );
 
     const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
@@ -76,6 +80,32 @@ export default function EventEdit({ event }: { event: any }) {
         temp_poster_path: null as string | null,
     });
 
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            const errorBanner = document.querySelector('.is-error-banner');
+
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                let targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors]);
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsDialogOpen(true);
@@ -88,9 +118,26 @@ export default function EventEdit({ event }: { event: any }) {
         });
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Edit: ${event.event_name}`} />
 
@@ -99,7 +146,7 @@ export default function EventEdit({ event }: { event: any }) {
                     <div>
                         <Link
                             href={`/${userRole}/events/${event.public_id}/information`}
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke
                             Event
@@ -123,6 +170,30 @@ export default function EventEdit({ event }: { event: any }) {
                     </Badge>
                 </div>
 
+                {Object.keys(errors).length > 0 && (
+                    <div className="is-error-banner mb-6 flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Pengisian Form Belum Lengkap / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
                     <div className="space-y-6 xl:col-span-8">
                         <form
@@ -130,7 +201,6 @@ export default function EventEdit({ event }: { event: any }) {
                             onSubmit={submit}
                             className="space-y-6"
                         >
-                            {/* KARTU 1: DETAIL DASAR & POSTER */}
                             <Card className="overflow-hidden rounded-xl border-border/60 shadow-sm">
                                 <CardHeader className="flex flex-row items-center gap-3 border-b border-border/50 bg-muted/20 px-4 py-4 sm:px-5">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -151,32 +221,58 @@ export default function EventEdit({ event }: { event: any }) {
                                 <CardContent className="space-y-5 p-4 sm:p-5">
                                     <div className="space-y-6">
                                         <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
-                                            <Label
-                                                requirement="optional"
-                                                className="mb-1 text-base"
-                                            >
-                                                Event Poster
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label
+                                                    requirement="optional"
+                                                    className="mb-1 text-base"
+                                                >
+                                                    Poster Event
+                                                </Label>
+                                                {renderErrorBadge(
+                                                    errors.temp_poster_path as string,
+                                                )}
+                                            </div>
                                             <p className="mb-4 text-sm text-muted-foreground">
                                                 Format file: JPG, JPEG, PNG
                                                 (Maks 5MB). Rasio
                                                 direkomendasikan 3:4.
                                             </p>
+
                                             <div className="flex flex-col items-start gap-6 sm:flex-row">
-                                                {event.poster_path ? (
+                                                {posterPreview ? (
                                                     <div className="group relative aspect-3/4 w-full shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted shadow-sm sm:w-40">
                                                         <img
-                                                            src={`/storage/${event.poster_path}`}
-                                                            alt="Current Poster"
+                                                            src={posterPreview}
+                                                            alt="Pratinjau Poster"
                                                             className="h-full w-full object-cover"
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <div className="flex aspect-3/4 w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground">
-                                                        <ImagePlus className="mb-3 h-12 w-12 opacity-40" />
-                                                        <span className="text-sm font-medium">
-                                                            Belum ada poster
-                                                        </span>
+                                                    <div className="flex aspect-3/4 w-full max-w-60 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 text-muted-foreground sm:w-40">
+                                                        <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-linear-to-br from-slate-800 via-slate-900 to-black p-4 text-center">
+                                                            <div className="pointer-events-none absolute inset-0 opacity-10">
+                                                                <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full border-20 border-white" />
+                                                                <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full border-20 border-white" />
+                                                                <div className="absolute top-1/2 left-0 h-px w-full bg-white/50" />
+                                                            </div>
+
+                                                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white shadow-lg">
+                                                                    <ImageOff className="h-6 w-6" />
+                                                                </div>
+
+                                                                <div className="space-y-1">
+                                                                    <span className="block text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
+                                                                        Poster
+                                                                        Event
+                                                                    </span>
+                                                                    <span className="block text-[9px] font-medium text-white/40">
+                                                                        Belum
+                                                                        Tersedia
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
 
@@ -187,42 +283,51 @@ export default function EventEdit({ event }: { event: any }) {
                                                         maxSizeMB={5}
                                                         multiple={false}
                                                         onUploadSuccess={(
-                                                            fileId,
+                                                            _fileId,
                                                             path,
                                                         ) => {
                                                             setData(
                                                                 'temp_poster_path',
                                                                 path,
                                                             );
+                                                            setPosterPreview(
+                                                                `/storage/${path}`,
+                                                            );
                                                             clearErrors(
                                                                 'temp_poster_path',
                                                             );
                                                         }}
-                                                        onRemove={() =>
+                                                        onRemove={() => {
                                                             setData(
                                                                 'temp_poster_path',
                                                                 null,
-                                                            )
-                                                        }
-                                                    />
-                                                    <InputError
-                                                        message={
-                                                            errors.temp_poster_path as string
-                                                        }
-                                                        className="mt-2"
+                                                            );
+                                                            // Revert pratinjau ke poster asli server jika ada
+                                                            setPosterPreview(
+                                                                event.poster_path
+                                                                    ? `/storage/${event.poster_path}`
+                                                                    : null,
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                            <div className="grid gap-2">
-                                                <Label
-                                                    requirement="required"
-                                                    htmlFor="event_name"
-                                                >
-                                                    Event Name
-                                                </Label>
+                                            {/* NAMA EVENT */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="event_name"
+                                                    >
+                                                        Nama Event
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.event_name,
+                                                    )}
+                                                </div>
                                                 <Input
                                                     id="event_name"
                                                     value={data.event_name}
@@ -232,20 +337,25 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    placeholder="Contoh: Lomba Paskibra Pandawa Vol IV 2026"
+                                                    className={`h-10 ${errors.event_name ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={errors.event_name}
                                                 />
                                             </div>
 
-                                            <div className="grid gap-2">
-                                                <Label
-                                                    requirement="required"
-                                                    htmlFor="location"
-                                                >
-                                                    Location
-                                                </Label>
+                                            {/* LOKASI */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="location"
+                                                    >
+                                                        Lokasi
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.location,
+                                                    )}
+                                                </div>
                                                 <Input
                                                     id="location"
                                                     value={data.location}
@@ -255,17 +365,22 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    placeholder="Contoh: GOR Segiri Samarinda"
+                                                    className={`h-10 ${errors.location ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={errors.location}
                                                 />
                                             </div>
 
-                                            <div className="grid gap-2 md:col-span-2">
-                                                <Label htmlFor="status">
-                                                    Event Status
-                                                </Label>
+                                            {/* STATUS EVENT */}
+                                            <div className="space-y-2 md:col-span-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label htmlFor="status">
+                                                        Status Event
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.status,
+                                                    )}
+                                                </div>
                                                 <Select
                                                     value={data.status}
                                                     onValueChange={(value) =>
@@ -276,7 +391,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                         id="status"
                                                         className="w-full"
                                                     >
-                                                        <SelectValue placeholder="Select status" />
+                                                        <SelectValue placeholder="Pilih status" />
                                                     </SelectTrigger>
                                                     <SelectContent position="popper">
                                                         <SelectGroup>
@@ -292,7 +407,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                             </SelectItem>
                                                             <SelectItem value="ongoing">
                                                                 Sedang
-                                                                berlangsung
+                                                                Berlangsung
                                                             </SelectItem>
                                                             <SelectItem value="finished">
                                                                 Selesai
@@ -302,13 +417,19 @@ export default function EventEdit({ event }: { event: any }) {
                                                 </Select>
                                             </div>
 
-                                            <div className="grid gap-2 pt-1 md:col-span-2">
-                                                <Label
-                                                    requirement="optional"
-                                                    htmlFor="description"
-                                                >
-                                                    Description
-                                                </Label>
+                                            {/* DESKRIPSI */}
+                                            <div className="space-y-2 pt-1 md:col-span-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="optional"
+                                                        htmlFor="description"
+                                                    >
+                                                        Deskripsi
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.description,
+                                                    )}
+                                                </div>
                                                 <Textarea
                                                     id="description"
                                                     value={data.description}
@@ -318,6 +439,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    placeholder="Tuliskan deskripsi kompetisi..."
                                                     rows={4}
                                                     className="resize-none"
                                                 />
@@ -326,7 +448,8 @@ export default function EventEdit({ event }: { event: any }) {
                                     </div>
                                 </CardContent>
                             </Card>
-                            {/* KARTU: PENJADWALAN */}
+
+                            {/* KARTU 2: PENJADWALAN */}
                             <Card className="overflow-hidden rounded-xl border-border/60 shadow-sm">
                                 <CardHeader className="flex flex-row items-center gap-3 border-b border-border/50 bg-muted/20 px-4 py-4 sm:px-5">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
@@ -345,7 +468,7 @@ export default function EventEdit({ event }: { event: any }) {
                                 </CardHeader>
 
                                 <CardContent className="space-y-4 p-4 sm:p-5">
-                                    {/* Periode Pendaftaran */}
+                                    {/* PERIODE PENDAFTARAN */}
                                     <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
                                         <h3 className="flex items-center gap-2 text-sm font-semibold">
                                             <CalendarDays className="h-4 w-4 text-primary" />
@@ -353,11 +476,20 @@ export default function EventEdit({ event }: { event: any }) {
                                         </h3>
 
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div className="grid gap-2">
-                                                <Label requirement="required">
-                                                    Tanggal Buka
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="registration_start_time"
+                                                    >
+                                                        Tanggal Buka
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.registration_start_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="registration_start_time"
                                                     type="datetime-local"
                                                     value={
                                                         data.registration_start_time
@@ -368,14 +500,25 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.registration_start_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
                                                 />
                                             </div>
-                                            <div className="grid gap-2">
-                                                <Label requirement="required">
-                                                    Penutupan Pendaftaran
-                                                </Label>
+
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="registration_end_time"
+                                                    >
+                                                        Penutupan Pendaftaran
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.registration_end_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="registration_end_time"
                                                     type="datetime-local"
                                                     value={
                                                         data.registration_end_time
@@ -386,12 +529,14 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.registration_end_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
+                                    {/* HARI PELAKSANAAN */}
                                     <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
                                         <h3 className="flex items-center gap-2 text-sm font-semibold">
                                             <Clock className="h-4 w-4 text-orange-500" />
@@ -399,11 +544,20 @@ export default function EventEdit({ event }: { event: any }) {
                                         </h3>
 
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div className="grid gap-2">
-                                                <Label requirement="required">
-                                                    Tanggal Mulai
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="start_time"
+                                                    >
+                                                        Tanggal Mulai
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.start_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="start_time"
                                                     type="datetime-local"
                                                     value={data.start_time}
                                                     onChange={(e) =>
@@ -412,14 +566,25 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.start_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
                                                 />
                                             </div>
-                                            <div className="grid gap-2">
-                                                <Label requirement="required">
-                                                    Tanggal Berakhir
-                                                </Label>
+
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="end_time"
+                                                    >
+                                                        Tanggal Berakhir
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.end_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="end_time"
                                                     type="datetime-local"
                                                     value={data.end_time}
                                                     onChange={(e) =>
@@ -428,6 +593,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.end_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
                                                 />
                                             </div>
@@ -435,7 +601,8 @@ export default function EventEdit({ event }: { event: any }) {
                                     </div>
                                 </CardContent>
                             </Card>
-                            {/* KARTU BARU: PENGATURAN VISIBILITAS HASIL & LEADERBOARD */}
+
+                            {/* KARTU 3: PENGATURAN VISIBILITAS HASIL & LEADERBOARD */}
                             {userRole === 'committee' && (
                                 <Card className="overflow-hidden rounded-xl border-border/60 shadow-sm">
                                     <CardHeader className="flex flex-row items-center gap-3 border-b border-border/50 bg-muted/20 px-4 py-4 sm:px-5">
@@ -546,8 +713,10 @@ export default function EventEdit({ event }: { event: any }) {
                     <ConfirmationDialog
                         open={isDialogOpen}
                         onOpenChange={setIsDialogOpen}
-                        title="Confirm Changes"
-                        description="Are you sure you want to save these changes to the event?"
+                        title="Konfirmasi Perubahan"
+                        description="Apakah Anda yakin ingin menyimpan perubahan pada event ini?"
+                        confirmText="Simpan Perubahan"
+                        cancelText="Batal"
                         onConfirm={confirmSubmit}
                         isProcessing={processing}
                     />
@@ -563,10 +732,10 @@ export default function EventEdit({ event }: { event: any }) {
 
                                         <div className="space-y-0.5">
                                             <CardTitle className="text-base">
-                                                Committees
+                                                Panitia Ditugaskan
                                             </CardTitle>
                                             <CardDescription className="text-xs">
-                                                Daftar panitia event.
+                                                Daftar panitia pengelola event.
                                             </CardDescription>
                                         </div>
                                     </div>
@@ -586,7 +755,8 @@ export default function EventEdit({ event }: { event: any }) {
                                             <div className="flex flex-col items-center gap-2 p-8 text-center">
                                                 <Users className="h-8 w-8 text-muted-foreground/40" />
                                                 <p className="text-sm text-muted-foreground">
-                                                    No committees assigned.
+                                                    Belum ada panitia yang
+                                                    ditugaskan.
                                                 </p>
                                             </div>
                                         ) : (
@@ -610,7 +780,7 @@ export default function EventEdit({ event }: { event: any }) {
                                                                 {ec.committee
                                                                     ?.user
                                                                     ?.name ??
-                                                                    'Unknown User'}
+                                                                    'Pengguna Tidak Diketahui'}
                                                             </p>
 
                                                             <p className="truncate text-xs text-muted-foreground">
@@ -633,25 +803,28 @@ export default function EventEdit({ event }: { event: any }) {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <div className="flex items-center justify-end gap-4 pt-2">
+
+                            <div className="flex items-center justify-end gap-3 pt-2">
                                 <Button
                                     type="button"
-                                    variant="ghost"
+                                    variant="outline"
                                     onClick={() => window.history.back()}
                                 >
-                                    Cancel
+                                    Batal
                                 </Button>
                                 <Button
                                     type="submit"
                                     form="event-edit-form"
                                     size="lg"
                                     disabled={processing}
-                                    className="px-8"
+                                    className="px-8 shadow-sm"
                                 >
-                                    {processing && (
+                                    {processing ? (
                                         <Spinner className="mr-2 h-4 w-4" />
+                                    ) : (
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
                                     )}
-                                    Save Changes
+                                    Simpan Perubahan
                                 </Button>
                             </div>
                         </div>

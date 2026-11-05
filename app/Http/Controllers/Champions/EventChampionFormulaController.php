@@ -37,23 +37,22 @@ class EventChampionFormulaController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        // AMBIL SEMUA kategori juara di event ini (termasuk yang baru ditambahkan)
         $championCategories = EventChampionCategory::where('event_id', $event->event_id)
             ->with('championCategory:champion_category_id,champion_category_name')
             ->get();
 
-        $scoringCategories = $activeLevel?ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
+        $scoringCategories = $activeLevel ? ScoringCategory::where('event_level_id', $activeLevel->event_level_id)
             ->with('masterCategory:master_category_id,category_name')
-            ->get():collect();
+            ->get() : collect();
 
-        $existingFormulas = $activeLevel?EventChampionFormula::where('event_level_id', $activeLevel->event_level_id)
+        $existingFormulas = $activeLevel ? EventChampionFormula::where('event_level_id', $activeLevel->event_level_id)
             ->get()
             ->map(function ($formula) use ($scoringCategories) {
                 $scoringCategory = $scoringCategories->firstWhere('scoring_category_id', $formula->scoring_category_id);
                 $formula->master_category_id = $scoringCategory?->master_category_id;
                 return $formula;
             })
-            ->groupBy('event_champion_category_id'):collect();
+            ->groupBy('event_champion_category_id') : collect();
 
         return inertia('events/champion_formulas/committee/Index', [
             'event' => $event,
@@ -71,9 +70,9 @@ class EventChampionFormulaController extends Controller
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
-        $this->validateEventAccess($event, ['administration'],['committee']);
+        $this->validateEventAccess($event, ['administration'], ['committee']);
 
-        $validated = $request->validate([
+        $rules = [
             'event_level_id' => [
                 'required', 
                 'integer', 
@@ -88,7 +87,19 @@ class EventChampionFormulaController extends Controller
             'formulas.*.components' => ['present', 'array'],
             'formulas.*.components.*.master_category_id' => ['required', 'integer', 'exists:master_scoring_categories,master_category_id'],
             'formulas.*.components.*.weight_multiplier' => ['required', 'numeric', 'gt:0', 'decimal:0,4'],
-        ]);
+        ];
+
+        $messages = [
+            'event_level_id.required' => 'Jenjang perlombaan wajib dipilih.',
+            'event_level_id.exists' => 'Jenjang perlombaan tidak valid.',
+            'formulas.*.components.*.master_category_id.required' => 'Kategori sumber nilai wajib dipilih.',
+            'formulas.*.components.*.master_category_id.exists' => 'Kategori sumber nilai tidak valid.',
+            'formulas.*.components.*.weight_multiplier.required' => 'Nilai bobot wajib diisi.',
+            'formulas.*.components.*.weight_multiplier.numeric' => 'Nilai bobot harus berupa angka.',
+            'formulas.*.components.*.weight_multiplier.gt' => 'Nilai bobot harus lebih besar dari 0.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         // Validasi Duplikasi Kustom per Piala
         foreach ($validated['formulas'] as $index => $formulaData) {
@@ -106,7 +117,6 @@ class EventChampionFormulaController extends Controller
             $levelId = $validated['event_level_id'];
 
             foreach ($validated['formulas'] as $formulaData) {
-                // Sync akan memperbarui yang berubah, dan membiarkan yang tidak berubah
                 $this->syncFormulaComponents($levelId, $formulaData['event_champion_category_id'], $formulaData['components'] ?? []);
             }
         });
@@ -120,7 +130,6 @@ class EventChampionFormulaController extends Controller
     /** Menyelaraskan komponen bobot dengan kategori penilaian event. */
     private function syncFormulaComponents($levelId, $championCategoryId, $components)
     {
-        // Jika panitia menghapus semua komponen dari piala ini, hapus dari database
         if (count($components) === 0) {
             EventChampionFormula::where('event_level_id', $levelId)
                 ->where('event_champion_category_id', $championCategoryId)
@@ -151,7 +160,6 @@ class EventChampionFormulaController extends Controller
             );
         }
 
-        // Hapus komponen yang tidak lagi ada di form untuk piala ini
         EventChampionFormula::where('event_level_id', $levelId)
             ->where('event_champion_category_id', $championCategoryId)
             ->whereNotIn('scoring_category_id', $validScoringCategoryIds)

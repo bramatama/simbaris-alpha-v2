@@ -31,7 +31,7 @@ class DashboardController extends Controller
             // Ambil event yang sedang dikelola panitia ini
             $activeEvents = Event::whereHas('eventCommittees', function($q) use ($committeeId) {
                 $q->where('committee_id', $committeeId);
-            })->whereIn('status', ['registration_open', 'active', 'ongoing'])->get();
+            })->latest()->get();
 
             $stats = [
                 'managed_events_count' => $activeEvents->count(),

@@ -43,14 +43,24 @@ class ParticipationOrderController extends Controller
             ? $eventLevels->where('event_level_id', $activeLevelId)->first() 
             : $eventLevels->first();
 
-        // Ambil peserta yang disetujui, urutkan berdasarkan appearance_order (null di bawah)
-        $participations = $activeLevel? Participation::select('participation_id','public_id', 'team_name', 'pic_name','pic_phone_number', 'appearance_order', 'status')
-            ->where('event_id', $event->event_id)
-            ->where('event_level_id', $activeLevel->event_level_id)
-            ->where('status', 'approved')
-            ->orderByRaw('ISNULL(appearance_order), appearance_order ASC')
-            ->orderBy('created_at', 'ASC')
-            ->get():collect();
+        $participations = $activeLevel ? Participation::select(
+            'participation_id',
+            'public_id',
+            'team_name',
+            'pic_name',
+            'pic_phone_number',
+            'appearance_order',
+            'status'
+        )
+        ->with([
+            'evaluationSession:session_id,participation_id,status'
+        ])
+        ->where('event_id', $event->event_id)
+        ->where('event_level_id', $activeLevel->event_level_id)
+        ->where('status', 'approved')
+        ->orderByRaw('ISNULL(appearance_order), appearance_order ASC')
+        ->orderBy('created_at', 'ASC')
+        ->get() : collect();
 
         return inertia('events/participations/orders/committee/Index', [
             'event' => $event,

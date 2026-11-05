@@ -46,18 +46,36 @@ class TeamMemberController extends Controller
      */
     public function sync(Request $request, Event $event, $public_id)
     {
-        $participation = Participation::where('public_id', $public_id)->firstOrFail();
+        $participation = Participation::with([
+            'event:event_id,public_id,event_name',
+            'teamMembers' => function($query) {
+                $query->orderBy('member_role', 'asc')->latest();
+            }
+        ])->where('public_id', $public_id)->firstOrFail();
 
         $this->validateEventAccess($event, [], ['official_team'], $participation);
 
-        $validated = $request->validate([
+        $rules = [
             'members' => 'nullable|array',
             'members.*.team_member_id' => 'nullable|exists:team_members,team_member_id',
             'members.*.member_name' => 'required|string|max:255',
             'members.*.member_role' => 'required|in:commander,member,reserve',
             'members.*.member_position' => 'nullable|string|max:255',
             'members.*.photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
+        ];
+
+        $messages = [
+            'members.*.member_name.required' => 'Nama lengkap anggota wajib diisi.',
+            'members.*.member_name.max' => 'Nama lengkap anggota tidak boleh lebih dari 255 karakter.',
+            'members.*.member_role.required' => 'Peran anggota wajib dipilih.',
+            'members.*.member_role.in' => 'Pilihan peran anggota tidak valid.',
+            'members.*.member_position.max' => 'Keterangan posisi tidak boleh lebih dari 255 karakter.',
+            'members.*.photo.image' => 'Berkas foto harus berupa gambar.',
+            'members.*.photo.mimes' => 'Format foto anggota harus JPG, JPEG, PNG, atau WEBP.',
+            'members.*.photo.max' => 'Ukuran foto anggota tidak boleh melebihi 2 MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         try {
             DB::transaction(function () use ($request, $validated, $participation) {
@@ -131,6 +149,11 @@ class TeamMemberController extends Controller
             throw $e;
         }
 
-        return redirect()->back()->with('success', 'Data seluruh anggota tim berhasil disinkronisasi!');
+        return redirect()->route(
+            'official_team.participations.members.index',
+            [
+                'event' => $event,
+                'participation' => $participation
+            ])->with('success', 'Data seluruh anggota tim berhasil disinkronisasi!');
     }
 }

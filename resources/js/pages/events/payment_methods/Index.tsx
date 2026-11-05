@@ -61,7 +61,7 @@ export default function CommitteePaymentMethodsIndex({
     paymentMethods: any[];
 }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     // State untuk data API Bank Publik

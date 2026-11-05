@@ -30,6 +30,41 @@ import {
 } from 'lucide-react';
 import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
 
+const renderEvaluationStatusBadge = (evaluationSession: any) => {
+    const status = evaluationSession?.status;
+
+    switch (status) {
+        case 'ongoing':
+            return (
+                <Badge
+                    variant="outline"
+                    className="animate-pulse border-amber-500/30 bg-amber-500/10 text-[10px] font-semibold text-amber-600"
+                >
+                    Sedang Tampil
+                </Badge>
+            );
+        case 'finished':
+            return (
+                <Badge
+                    variant="outline"
+                    className="border-emerald-500/30 bg-emerald-500/10 text-[10px] font-semibold text-emerald-600"
+                >
+                    Selesai Dinilai
+                </Badge>
+            );
+        case 'waiting':
+        default:
+            return (
+                <Badge
+                    variant="outline"
+                    className="border-slate-300 bg-slate-100 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                >
+                    Menunggu Giliran
+                </Badge>
+            );
+    }
+};
+
 export default function ParticipationOrderIndex({
     event,
     eventLevels = [],
@@ -38,7 +73,7 @@ export default function ParticipationOrderIndex({
     committeePosition = '',
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
@@ -74,7 +109,11 @@ export default function ParticipationOrderIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Nomor Urut Tampil - ${event.event_name}`} />
 
@@ -124,19 +163,19 @@ export default function ParticipationOrderIndex({
                                             <RotateCcw className="h-4 w-4 shrink-0" />{' '}
                                             Reset Nomor
                                         </Button>
-                                        <Link
-                                            href={`/${userRole}/events/${event.public_id}/participation-orders/levels/${activeLevel.event_level_id}/edit`}
-                                            className="w-full sm:w-auto"
+                                        <Button
+                                            size="sm"
+                                            className="h-10 w-full gap-1.5 shadow-sm sm:h-9 sm:w-auto"
+                                            disabled={isAuditor}
+                                            onClick={() =>
+                                                router.visit(
+                                                    `/${userRole}/events/${event.public_id}/participation-orders/levels/${activeLevel.event_level_id}/edit`,
+                                                )
+                                            }
                                         >
-                                            <Button
-                                                size="sm"
-                                                className="h-10 w-full gap-1.5 shadow-sm sm:h-9 sm:w-auto"
-                                                disabled={isAuditor}
-                                            >
-                                                <Settings2 className="h-4 w-4 shrink-0" />{' '}
-                                                Atur Nomor Urut
-                                            </Button>
-                                        </Link>
+                                            <Settings2 className="h-4 w-4 shrink-0" />
+                                            Atur Nomor Urut
+                                        </Button>
                                     </div>
                                 )}
                             </div>
@@ -214,11 +253,16 @@ export default function ParticipationOrderIndex({
                                                                     )}
                                                                 </div>
                                                                 <div className="flex min-w-0 flex-col gap-0.5">
-                                                                    <span className="truncate font-bold text-foreground">
-                                                                        {
-                                                                            p.team_name
-                                                                        }
-                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="truncate font-bold text-foreground">
+                                                                            {
+                                                                                p.team_name
+                                                                            }
+                                                                        </span>
+                                                                        {renderEvaluationStatusBadge(
+                                                                            p.evaluation_session,
+                                                                        )}
+                                                                    </div>
                                                                     <span className="truncate text-xs text-muted-foreground">
                                                                         PIC:{' '}
                                                                         {
@@ -315,17 +359,20 @@ export default function ParticipationOrderIndex({
                                                 <Table className="min-w-150">
                                                     <TableHeader className="bg-muted/40">
                                                         <TableRow>
-                                                            <TableHead className="w-24 text-center font-bold">
+                                                            <TableHead className="w-20 text-center font-bold">
                                                                 No. Urut
                                                             </TableHead>
                                                             <TableHead className="font-bold">
                                                                 Nama Tim /
                                                                 Instansi
                                                             </TableHead>
-                                                            <TableHead className="w-48 font-bold">
+                                                            <TableHead className="w-36 text-center font-bold">
+                                                                Status Penilaian
+                                                            </TableHead>
+                                                            <TableHead className="w-40 font-bold">
                                                                 Nama PIC
                                                             </TableHead>
-                                                            <TableHead className="w-48 font-bold">
+                                                            <TableHead className="w-36 font-bold">
                                                                 Nomor PIC
                                                             </TableHead>
                                                             <TableHead className="w-80 text-right font-bold">
@@ -363,6 +410,11 @@ export default function ParticipationOrderIndex({
                                                                         {
                                                                             p.team_name
                                                                         }
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        {renderEvaluationStatusBadge(
+                                                                            p.evaluation_session,
+                                                                        )}
                                                                     </TableCell>
                                                                     <TableCell className="text-muted-foreground">
                                                                         {

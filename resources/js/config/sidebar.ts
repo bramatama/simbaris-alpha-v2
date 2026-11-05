@@ -20,12 +20,12 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
     if (userRole === 'admin') {
         items.push(
             {
-                title: 'User Management',
+                title: 'Manajemen Pengguna',
                 href: '/admin/users',
                 icon: FolderGit2,
             },
             {
-                title: 'Event Management',
+                title: 'Manajemen Event',
                 href: '/events',
                 icon: CalendarCheckIcon,
             },
@@ -34,7 +34,7 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
 
     if (userRole == 'committee') {
         items.push({
-            title: 'Hosted Events',
+            title: 'Event Saya',
             href: '/committee/my-events',
             icon: CalendarClockIcon,
         });
@@ -43,12 +43,12 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
     if (userRole == 'official_team') {
         items.push(
             {
-                title: 'Events',
+                title: 'Event',
                 href: '/events',
                 icon: CalendarCheckIcon,
             },
             {
-                title: 'My Participations',
+                title: 'Partisipasi Saya',
                 href: '/official_team/my-participations',
                 icon: CalendarClockIcon,
             },
@@ -57,7 +57,7 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
 
     if (userRole == 'judge') {
         items.push({
-            title: 'Assigned Events',
+            title: 'Event Penugasan',
             href: '/judge/assigned-events',
             icon: CalendarClockIcon,
         });

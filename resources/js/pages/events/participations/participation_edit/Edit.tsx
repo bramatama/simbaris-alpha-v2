@@ -1,6 +1,6 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import InputError from '@/components/input-error';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { PageProps } from '@inertiajs/core';
@@ -27,6 +26,7 @@ import {
     ImagePlus,
     Trash2,
     AlertTriangle,
+    AlertCircle,
 } from 'lucide-react';
 
 export default function OfficialTeamParticipationEdit({
@@ -36,8 +36,8 @@ export default function OfficialTeamParticipationEdit({
     event: any;
     participation: any;
 }) {
-    const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const { auth, errors: pageErrors } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
     const isApproved = participation.status === 'approved';
 
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -51,6 +51,47 @@ export default function OfficialTeamParticipationEdit({
         temp_payment_proof_path: null as string | null,
         temp_team_logo_path: null as string | null,
     });
+
+    // ==========================================
+    // LOGIKA SCROLL TO ERROR (Metode 3)
+    // ==========================================
+    useEffect(() => {
+        if (Object.keys(errors).length > 0 || pageErrors?.error) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                const targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors, pageErrors]);
+
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,6 +156,36 @@ export default function OfficialTeamParticipationEdit({
                     </div>
                 </div>
 
+                {/* ERROR BANNER ATAS (Metode 3) */}
+                {(Object.keys(errors).length > 0 || pageErrors?.error) && (
+                    <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Perubahan Belum Dapat Disimpan / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {pageErrors?.error && (
+                                    <li className="leading-relaxed">
+                                        {pageErrors.error as string}
+                                    </li>
+                                )}
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={submit}>
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         <div className="space-y-6 lg:col-span-4">
@@ -144,12 +215,14 @@ export default function OfficialTeamParticipationEdit({
                                     )}
 
                                     <div className="w-full min-w-0 flex-1">
-                                        <Label
-                                            requirement="optional"
-                                            className="mb-2"
-                                        >
-                                            Logo Tim
-                                        </Label>
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <Label requirement="optional">
+                                                Logo Tim
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.temp_team_logo_path,
+                                            )}
+                                        </div>
                                         <FileUploader
                                             variant="image"
                                             endpoint="/upload-temp-file"
@@ -174,10 +247,6 @@ export default function OfficialTeamParticipationEdit({
                                         <p className="mt-2 text-xs text-muted-foreground">
                                             Format JPG/PNG, rasio 1:1, maks 2MB.
                                         </p>
-                                        <InputError
-                                            message={errors.temp_team_logo_path}
-                                            className="mt-1"
-                                        />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -193,71 +262,101 @@ export default function OfficialTeamParticipationEdit({
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     <div className="grid grid-cols-1 gap-4">
+                                        {/* NAMA TIM */}
                                         <div className="space-y-2">
-                                            <Label
-                                                requirement="required"
-                                                htmlFor="team_name"
-                                            >
-                                                Nama Tim / Pangkalan
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label
+                                                    requirement="required"
+                                                    htmlFor="team_name"
+                                                >
+                                                    Nama Tim / Pangkalan
+                                                </Label>
+                                                {renderErrorBadge(
+                                                    errors.team_name,
+                                                )}
+                                            </div>
                                             <Input
                                                 id="team_name"
                                                 value={data.team_name}
-                                                onChange={(e) =>
+                                                onChange={(e) => {
                                                     setData(
                                                         'team_name',
                                                         e.target.value,
-                                                    )
+                                                    );
+                                                    clearErrors('team_name');
+                                                }}
+                                                className={
+                                                    errors.team_name
+                                                        ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                        : ''
                                                 }
-                                            />
-                                            <InputError
-                                                message={errors.team_name}
                                             />
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            {/* NAMA PIC */}
                                             <div className="space-y-2">
-                                                <Label
-                                                    requirement="required"
-                                                    htmlFor="pic_name"
-                                                >
-                                                    Nama PIC
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="pic_name"
+                                                    >
+                                                        Nama PIC
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.pic_name,
+                                                    )}
+                                                </div>
                                                 <Input
                                                     id="pic_name"
                                                     value={data.pic_name}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
                                                         setData(
                                                             'pic_name',
                                                             e.target.value,
-                                                        )
+                                                        );
+                                                        clearErrors('pic_name');
+                                                    }}
+                                                    className={
+                                                        errors.pic_name
+                                                            ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                            : ''
                                                     }
                                                 />
-                                                <InputError
-                                                    message={errors.pic_name}
-                                                />
                                             </div>
+
+                                            {/* NO HP PIC */}
                                             <div className="space-y-2">
-                                                <Label
-                                                    requirement="required"
-                                                    htmlFor="pic_phone_number"
-                                                >
-                                                    No. HP / WA
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="pic_phone_number"
+                                                    >
+                                                        No. HP / WA
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.pic_phone_number,
+                                                    )}
+                                                </div>
                                                 <Input
                                                     id="pic_phone_number"
+                                                    type="tel"
+                                                    inputMode="numeric"
                                                     value={
                                                         data.pic_phone_number
                                                     }
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
                                                         setData(
                                                             'pic_phone_number',
                                                             e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                                <InputError
-                                                    message={
+                                                        );
+                                                        clearErrors(
+                                                            'pic_phone_number',
+                                                        );
+                                                    }}
+                                                    className={
                                                         errors.pic_phone_number
+                                                            ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                            : ''
                                                     }
                                                 />
                                             </div>
@@ -283,10 +382,7 @@ export default function OfficialTeamParticipationEdit({
                                                 </Label>
                                                 <div className="aspect-3/4 w-full max-w-2xs overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
                                                     <img
-                                                        src={route(
-                                                            'participation-payment-proof.file',
-                                                            participation,
-                                                        )}
+                                                        src={`${route('participation-payment-proof.file', participation)}?t=${new Date().getTime()}`}
                                                         alt="Bukti Bayar Saat Ini"
                                                         className="h-full w-full object-cover"
                                                     />
@@ -317,9 +413,14 @@ export default function OfficialTeamParticipationEdit({
                                         )}
                                         {!isApproved && (
                                             <div className="col-span-1 space-y-2">
-                                                <Label requirement="optional">
-                                                    Unggah Bukti Baru
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label requirement="optional">
+                                                        Unggah Bukti Baru
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.temp_payment_proof_path,
+                                                    )}
+                                                </div>
                                                 <FileUploader
                                                     variant="image"
                                                     endpoint="/upload-temp-file"
@@ -342,11 +443,6 @@ export default function OfficialTeamParticipationEdit({
                                                             'temp_payment_proof_path',
                                                             null,
                                                         )
-                                                    }
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.temp_payment_proof_path
                                                     }
                                                 />
                                             </div>

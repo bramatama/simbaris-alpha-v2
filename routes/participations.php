@@ -9,7 +9,7 @@ use App\Http\Controllers\Participations\ParticipationOrderController;
 Route::middleware(['auth', 'verified'])->group(function (){
     Route::get('/participations/{participation}/payment-proof',[ViewDocumentController::class,'showPaymentProof'])->name('participation-payment-proof.file');
     Route::get('/participations/{document}/file',[ViewDocumentController::class,'showRegistrationDocs'])->name('participation-document.file');
-    Route::get('/participations/{member}/member-photo', [ViewDocumentController::class, 'showMemberPhoto'])->name('participation-member-photo.file');
+    Route::get('/participations/{teamMember}/member-photo', [ViewDocumentController::class, 'showMemberPhoto'])->name('participation-member-photo.file');
 });
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function () {

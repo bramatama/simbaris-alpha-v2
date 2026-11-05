@@ -56,7 +56,6 @@ export default function EventCard({ event }: EventCardProps) {
     };
 
     return (
-        /* PERBAIKAN: Tambahkan h-full agar semua kartu berukuran sama tinggi */
         <div className="group flex h-full w-full max-w-60 flex-col overflow-hidden rounded-xl border border-border/70 bg-card font-sans text-card-foreground shadow-xs transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
             {/* POSTER & STATUS */}
             <div className="relative aspect-3/4 w-full overflow-hidden bg-muted">

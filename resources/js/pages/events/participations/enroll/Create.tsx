@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import InputError from '@/components/input-error';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { PageProps } from '@inertiajs/core';
 
@@ -48,6 +47,7 @@ import {
     Copy,
     Check,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TeamForm {
     event_level_id: string;
@@ -65,8 +65,8 @@ export default function OfficialTeamParticipationCreate({
     eventLevels: any[];
     paymentMethods: any[];
 }) {
-    const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const { auth, errors: pageErrors } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
 
     const [step, setStep] = useState<1 | 2>(1);
     const [isValidating, setIsValidating] = useState(false);
@@ -104,6 +104,23 @@ export default function OfficialTeamParticipationCreate({
         ] as TeamForm[],
         temp_payment_proof_path: null as string | null,
     });
+
+    // ==========================================
+    // LOGIKA SCROLL TO ERROR (Metode 3)
+    // ==========================================
+    useEffect(() => {
+        if (Object.keys(errors).length > 0 || pageErrors?.error) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                scrollToError();
+            }
+        }
+    }, [errors, pageErrors]);
 
     // ==========================================
     // CALCULATIONS & FILTERS
@@ -161,6 +178,19 @@ export default function OfficialTeamParticipationCreate({
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     // ==========================================
     // TEAM FORM
     // ==========================================
@@ -179,7 +209,6 @@ export default function OfficialTeamParticipationCreate({
 
     const removeTeam = (index: number) => {
         const newTeams = data.teams.filter((_, i) => i !== index);
-
         setData('teams', newTeams);
     };
 
@@ -307,7 +336,6 @@ export default function OfficialTeamParticipationCreate({
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-
             unsubscribe();
         };
     }, [isDirty, forceLeave]);
@@ -344,6 +372,36 @@ export default function OfficialTeamParticipationCreate({
                 </div>
 
                 <div ref={formTopRef} className="scroll-mt-24" />
+
+                {/* ERROR BANNER ATAS (Metode 3) */}
+                {(Object.keys(errors).length > 0 || pageErrors?.error) && (
+                    <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Pendaftaran Belum Dapat Diproses / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {pageErrors?.error && (
+                                    <li className="leading-relaxed">
+                                        {pageErrors.error as string}
+                                    </li>
+                                )}
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 {/* STEPPER */}
                 <div className="rounded-xl border bg-card p-4 sm:p-5">
@@ -414,250 +472,269 @@ export default function OfficialTeamParticipationCreate({
                     {/* STEP 1 - TEAM INFORMATION */}
                     {step === 1 && (
                         <div className="animate-in space-y-5 duration-300 fade-in slide-in-from-left-4">
-                            {errors.teams &&
-                                typeof errors.teams === 'string' && (
-                                    <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-
-                                        <div>
-                                            <p className="font-semibold">
-                                                Pendaftaran tidak dapat
-                                                dilanjutkan
-                                            </p>
-                                            <p className="mt-1 leading-relaxed">
-                                                {errors.teams}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
                             <div className="space-y-4">
-                                {data.teams.map((team, index) => (
-                                    <Card
-                                        key={index}
-                                        className="overflow-hidden border-border/70 shadow-sm"
-                                    >
-                                        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4 sm:px-6">
-                                            <div className="flex min-w-0 items-center gap-3">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                    <Users className="h-5 w-5" />
+                                {data.teams.map((team, index) => {
+                                    const levelErr = (errors as any)[
+                                        `teams.${index}.event_level_id`
+                                    ];
+                                    const nameErr = (errors as any)[
+                                        `teams.${index}.team_name`
+                                    ];
+                                    const picNameErr = (errors as any)[
+                                        `teams.${index}.pic_name`
+                                    ];
+                                    const picPhoneErr = (errors as any)[
+                                        `teams.${index}.pic_phone_number`
+                                    ];
+
+                                    return (
+                                        <Card
+                                            key={index}
+                                            className="overflow-hidden border-border/70 shadow-sm"
+                                        >
+                                            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4 sm:px-6">
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                        <Users className="h-5 w-5" />
+                                                    </div>
+
+                                                    <div className="min-w-0 space-y-0.5">
+                                                        <CardTitle className="text-base">
+                                                            Tim {index + 1}
+                                                        </CardTitle>
+
+                                                        <CardDescription className="text-xs">
+                                                            Informasi tim dan
+                                                            penanggung jawab
+                                                        </CardDescription>
+                                                    </div>
                                                 </div>
 
-                                                <div className="min-w-0 space-y-0.5">
-                                                    <CardTitle className="text-base">
-                                                        Tim {index + 1}
-                                                    </CardTitle>
-
-                                                    <CardDescription className="text-xs">
-                                                        Informasi tim dan
-                                                        penanggung jawab
-                                                    </CardDescription>
-                                                </div>
-                                            </div>
-
-                                            {index > 0 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                                    onClick={() =>
-                                                        removeTeam(index)
-                                                    }
-                                                    title="Hapus Tim"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </CardHeader>
-
-                                        <CardContent className="space-y-5 p-4 sm:p-6">
-                                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                                <div className="space-y-2 md:col-span-2">
-                                                    <Label
-                                                        htmlFor={`level-${index}`}
-                                                        requirement="required"
-                                                    >
-                                                        Kategori / Jenjang Lomba
-                                                    </Label>
-
-                                                    <select
-                                                        id={`level-${index}`}
-                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={
-                                                            team.event_level_id
+                                                {index > 0 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() =>
+                                                            removeTeam(index)
                                                         }
-                                                        onChange={(e) =>
-                                                            updateTeam(
-                                                                index,
-                                                                'event_level_id',
-                                                                e.target.value,
-                                                            )
-                                                        }
+                                                        title="Hapus Tim"
                                                     >
-                                                        <option
-                                                            value=""
-                                                            disabled
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </CardHeader>
+
+                                            <CardContent className="space-y-5 p-4 sm:p-6">
+                                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                                    {/* JENJANG LOMBA */}
+                                                    <div className="space-y-2 md:col-span-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label
+                                                                htmlFor={`level-${index}`}
+                                                                requirement="required"
+                                                            >
+                                                                Kategori /
+                                                                Jenjang Lomba
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                levelErr,
+                                                            )}
+                                                        </div>
+
+                                                        <Select
+                                                            value={
+                                                                team.event_level_id
+                                                            }
+                                                            onValueChange={(
+                                                                val,
+                                                            ) =>
+                                                                updateTeam(
+                                                                    index,
+                                                                    'event_level_id',
+                                                                    val,
+                                                                )
+                                                            }
                                                         >
-                                                            Pilih jenjang lomba
-                                                        </option>
-
-                                                        {eventLevels.map(
-                                                            (level) => (
-                                                                <option
-                                                                    key={
-                                                                        level.event_level_id
-                                                                    }
-                                                                    value={
-                                                                        level.event_level_id
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        level
-                                                                            .level
-                                                                            .level_name
-                                                                    }{' '}
-                                                                    —{' '}
-                                                                    {formatCurrency(
-                                                                        Number(
-                                                                            level.registration_fees,
-                                                                        ),
-                                                                    )}{' '}
-                                                                    (
-                                                                    {level.quota ||
-                                                                        'Tanpa batas'}{' '}
-                                                                    kuota)
-                                                                </option>
-                                                            ),
-                                                        )}
-                                                    </select>
-
-                                                    <InputError
-                                                        message={
-                                                            (errors as any)[
-                                                                `teams.${index}.event_level_id`
-                                                            ]
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2 md:col-span-2">
-                                                    <Label
-                                                        htmlFor={`team_name-${index}`}
-                                                        requirement="required"
-                                                    >
-                                                        Nama Tim / Pangkalan
-                                                    </Label>
-
-                                                    <Input
-                                                        id={`team_name-${index}`}
-                                                        value={team.team_name}
-                                                        onChange={(e) =>
-                                                            updateTeam(
-                                                                index,
-                                                                'team_name',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Contoh: Pasukan Garuda Muda"
-                                                    />
-
-                                                    <InputError
-                                                        message={
-                                                            (errors as any)[
-                                                                `teams.${index}.team_name`
-                                                            ]
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label
-                                                        htmlFor={`pic_name-${index}`}
-                                                        requirement="required"
-                                                    >
-                                                        Nama PIC
-                                                    </Label>
-
-                                                    <Input
-                                                        id={`pic_name-${index}`}
-                                                        value={team.pic_name}
-                                                        onChange={(e) =>
-                                                            updateTeam(
-                                                                index,
-                                                                'pic_name',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Nama penanggung jawab"
-                                                    />
-
-                                                    <InputError
-                                                        message={
-                                                            (errors as any)[
-                                                                `teams.${index}.pic_name`
-                                                            ]
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label
-                                                        htmlFor={`pic_phone-${index}`}
-                                                        requirement="required"
-                                                    >
-                                                        Nomor HP / WhatsApp
-                                                    </Label>
-
-                                                    <Input
-                                                        id={`pic_phone-${index}`}
-                                                        type="tel"
-                                                        inputMode="numeric"
-                                                        maxLength={15}
-                                                        value={
-                                                            team.pic_phone_number
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateTeam(
-                                                                index,
-                                                                'pic_phone_number',
-                                                                e.target.value
-                                                                    .replace(
-                                                                        /\D/g,
-                                                                        '',
-                                                                    )
-                                                                    .slice(
-                                                                        0,
-                                                                        15,
+                                                            <SelectTrigger
+                                                                id={`level-${index}`}
+                                                                className={`w-full bg-background ${
+                                                                    levelErr
+                                                                        ? 'border-destructive bg-destructive/5 focus:ring-destructive'
+                                                                        : ''
+                                                                }`}
+                                                            >
+                                                                <SelectValue placeholder="Pilih jenjang lomba" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {eventLevels.map(
+                                                                    (level) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                level.event_level_id
+                                                                            }
+                                                                            value={level.event_level_id.toString()}
+                                                                        >
+                                                                            {
+                                                                                level
+                                                                                    .level
+                                                                                    .level_name
+                                                                            }{' '}
+                                                                            —{' '}
+                                                                            {formatCurrency(
+                                                                                Number(
+                                                                                    level.registration_fees,
+                                                                                ),
+                                                                            )}{' '}
+                                                                            (
+                                                                            {level.quota
+                                                                                ? `${level.quota} kuota`
+                                                                                : 'Tanpa batas kuota'}
+                                                                            )
+                                                                        </SelectItem>
                                                                     ),
-                                                            )
-                                                        }
-                                                        placeholder="081234567890"
-                                                    />
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
 
-                                                    {team.pic_phone_number &&
-                                                        !isValidPhone(
-                                                            team.pic_phone_number,
-                                                        ) && (
-                                                            <p className="text-xs text-destructive">
-                                                                Nomor HP harus
-                                                                terdiri dari
-                                                                12–15 digit.
-                                                            </p>
-                                                        )}
+                                                    {/* NAMA TIM */}
+                                                    <div className="space-y-2 md:col-span-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label
+                                                                htmlFor={`team_name-${index}`}
+                                                                requirement="required"
+                                                            >
+                                                                Nama Tim /
+                                                                Pangkalan
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                nameErr,
+                                                            )}
+                                                        </div>
 
-                                                    <InputError
-                                                        message={
-                                                            (errors as any)[
-                                                                `teams.${index}.pic_phone_number`
-                                                            ]
-                                                        }
-                                                    />
+                                                        <Input
+                                                            id={`team_name-${index}`}
+                                                            value={
+                                                                team.team_name
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateTeam(
+                                                                    index,
+                                                                    'team_name',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Contoh: Pasukan Garuda Muda"
+                                                            className={
+                                                                nameErr
+                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                    : ''
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    {/* NAMA PIC */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label
+                                                                htmlFor={`pic_name-${index}`}
+                                                                requirement="required"
+                                                            >
+                                                                Nama PIC
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                picNameErr,
+                                                            )}
+                                                        </div>
+
+                                                        <Input
+                                                            id={`pic_name-${index}`}
+                                                            value={
+                                                                team.pic_name
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateTeam(
+                                                                    index,
+                                                                    'pic_name',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Nama penanggung jawab"
+                                                            className={
+                                                                picNameErr
+                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                    : ''
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    {/* NOMOR HP PIC */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label
+                                                                htmlFor={`pic_phone-${index}`}
+                                                                requirement="required"
+                                                            >
+                                                                Nomor HP /
+                                                                WhatsApp
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                picPhoneErr,
+                                                            )}
+                                                        </div>
+
+                                                        <Input
+                                                            id={`pic_phone-${index}`}
+                                                            type="tel"
+                                                            inputMode="numeric"
+                                                            maxLength={15}
+                                                            value={
+                                                                team.pic_phone_number
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateTeam(
+                                                                    index,
+                                                                    'pic_phone_number',
+                                                                    e.target.value
+                                                                        .replace(
+                                                                            /\D/g,
+                                                                            '',
+                                                                        )
+                                                                        .slice(
+                                                                            0,
+                                                                            15,
+                                                                        ),
+                                                                )
+                                                            }
+                                                            placeholder="081234567890"
+                                                            className={
+                                                                picPhoneErr
+                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                    : ''
+                                                            }
+                                                        />
+
+                                                        {team.pic_phone_number &&
+                                                            !isValidPhone(
+                                                                team.pic_phone_number,
+                                                            ) && (
+                                                                <p className="text-xs text-destructive">
+                                                                    Nomor HP
+                                                                    harus
+                                                                    terdiri dari
+                                                                    12–15 digit.
+                                                                </p>
+                                                            )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
 
                             <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -980,13 +1057,18 @@ export default function OfficialTeamParticipationCreate({
                                 <CardContent className="p-4 sm:p-6">
                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                                         <div className="min-w-0 space-y-2">
-                                            <Label requirement="required">
-                                                Unggah Bukti Transfer
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label requirement="required">
+                                                    Unggah Bukti Transfer
+                                                </Label>
+                                                {renderErrorBadge(
+                                                    errors.temp_payment_proof_path,
+                                                )}
+                                            </div>
 
                                             <FileUploader
                                                 variant="image"
-                                                endpoint="/api/upload-temp"
+                                                endpoint="/upload-temp-file"
                                                 maxSizeMB={2}
                                                 multiple={false}
                                                 onUploadSuccess={(
@@ -1008,12 +1090,6 @@ export default function OfficialTeamParticipationCreate({
                                                         null,
                                                     );
                                                 }}
-                                            />
-
-                                            <InputError
-                                                message={
-                                                    errors.temp_payment_proof_path
-                                                }
                                             />
                                         </div>
 
@@ -1066,44 +1142,6 @@ export default function OfficialTeamParticipationCreate({
                                                     </p>
                                                 </div>
                                             </div>
-
-                                            {Object.keys(errors).filter(
-                                                (key) =>
-                                                    key !==
-                                                    'temp_payment_proof_path',
-                                            ).length > 0 && (
-                                                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-                                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-destructive">
-                                                        <AlertCircle className="h-4 w-4" />
-                                                        Periksa Kembali Data
-                                                    </div>
-
-                                                    <ul className="list-disc space-y-1 pl-5 text-xs text-destructive">
-                                                        {Object.entries(errors)
-                                                            .filter(
-                                                                ([key]) =>
-                                                                    key !==
-                                                                    'temp_payment_proof_path',
-                                                            )
-                                                            .map(
-                                                                ([
-                                                                    key,
-                                                                    err,
-                                                                ]) => (
-                                                                    <li
-                                                                        key={
-                                                                            key
-                                                                        }
-                                                                    >
-                                                                        {String(
-                                                                            err,
-                                                                        )}
-                                                                    </li>
-                                                                ),
-                                                            )}
-                                                    </ul>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
@@ -1115,7 +1153,6 @@ export default function OfficialTeamParticipationCreate({
                                         className="w-full gap-2 sm:w-auto"
                                         onClick={() => {
                                             setStep(1);
-
                                             window.scrollTo({
                                                 top: 0,
                                                 behavior: 'smooth',

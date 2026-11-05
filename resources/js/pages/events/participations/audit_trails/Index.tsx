@@ -59,7 +59,7 @@ export default function ParticipantAuditTrailIndex({
     auditTrails = [],
 }: AuditTrailProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const isOfficialTeam = userRole === 'official_team';
 

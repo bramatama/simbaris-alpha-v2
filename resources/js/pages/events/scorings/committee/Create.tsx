@@ -54,13 +54,21 @@ import {
     SortableCriteriaRow,
 } from '@/components/form-builder/sortable-scoring-components';
 
+const toTitleCase = (str: string) => {
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
 export default function DynamicScoringBuilderCreate({
     event,
     eventLevels,
     masterCategories,
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const [isMounted, setIsMounted] = useState(false);
@@ -190,7 +198,7 @@ export default function DynamicScoringBuilderCreate({
             ...globalRubrics,
             {
                 id: Math.random().toString(36).substring(7),
-                name: newRubricName,
+                name: toTitleCase(newRubricName.trim()),
                 expected_count: Number(newRubricCount),
             },
         ]);

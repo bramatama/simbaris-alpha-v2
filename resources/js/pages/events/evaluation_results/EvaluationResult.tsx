@@ -55,7 +55,7 @@ export default function EvaluationResult({
     isVisible = true,
 }: EvaluationResultProps) {
     const { auth, url } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const [isUnlockDialogOpen, setIsUnlockDialogOpen] = useState(false);

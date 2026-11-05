@@ -10,6 +10,22 @@ import { Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+const formatEventStatus = (status: string): string => {
+    switch (status) {
+        case 'draft':
+            return 'Draf';
+        case 'registration_open':
+            return 'Pendaftaran Dibuka';
+        case 'active':
+        case 'ongoing':
+            return 'Sedang Berlangsung';
+        case 'finished':
+            return 'Selesai';
+        default:
+            return 'Berjalan';
+    }
+};
+
 export default function CommitteeDashboard({ stats }: { stats: any }) {
     const activeEvents = stats.active_events || [];
 
@@ -116,7 +132,7 @@ export default function CommitteeDashboard({ stats }: { stats: any }) {
                                 <span className="text-xs font-medium text-muted-foreground">
                                     Status:{' '}
                                     <strong className="text-foreground capitalize">
-                                        {event.status || 'Berjalan'}
+                                        {formatEventStatus(event.status)}{' '}
                                     </strong>
                                 </span>
                                 <Button

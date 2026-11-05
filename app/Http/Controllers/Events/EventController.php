@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use App\Concerns\HasEventAccess;
-
+use Illuminate\Auth\Events\Registered;
 class EventController extends Controller
 {
     use HasEventAccess;
@@ -98,16 +98,21 @@ class EventController extends Controller
             'status' => 'required|in:draft,registration_open,active,finished',
             'registration_start_time' => 'required|date',
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
-            'start_time' => 'required|date',
+            'start_time' => 'required|date|after_or_equal:registration_end_time',
             'end_time' => 'required|date|after_or_equal:start_time',
-
             'committees' => 'required|array|min:1',
             'committees.*.name' => 'required|string|max:255',
             'committees.*.email' => 'required|email',
             'committees.*.department' => 'required|string|max:255',
             'committees.*.position' => 'required|string|max:255',
-
-            'force_create' => 'nullable|boolean',
+        ], [
+            'registration_end_time.after_or_equal' => 'Batas pendaftaran harus sama atau setelah waktu mulai.',
+            'start_time.after_or_equal' => 'Waktu mulai harus sama atau setelah pendaftaran ditutup.',
+            'end_time.after_or_equal' => 'Waktu selesai harus sama atau setelah waktu mulai event.',
+            'registration_start_time.required' => 'Waktu mulai pendaftaran wajib diisi.',
+            'registration_end_time.required' => 'Batas akhir pendaftaran wajib diisi.',
+            'start_time.required' => 'Waktu pelaksanaan wajib diisi.',
+            'end_time.required' => 'Waktu selesai pelaksanaan wajib diisi.',
         ]);
 
         $existingCommittees = [];
@@ -118,7 +123,7 @@ class EventController extends Controller
 
             if ($user) {
                 if ($user->role !== 'committee') {
-                    $validationErrors["committees.$index.email"] = "Email already used by another account.";
+                    $validationErrors["committees.$index.email"] = "Email sudah terdaftar di akun dengan peran lain";
                 } else {
                     $committee = Committee::where('user_id', $user->user_id)->first();
                     $existingCommittees[] = $user->name . ' (' . $committee->department . ')';
@@ -157,15 +162,19 @@ class EventController extends Controller
                 ]);
 
                 foreach ($validated['committees'] as $committeeData) {
-                    $user = User::firstOrCreate(
-                        ['email' => $committeeData['email']],
-                        [
+                    $user = User::where('email', $committeeData['email'])->first();
+                    $isNewUser = false;
+
+                    if (!$user) {
+                        $user = User::create([
                             'public_id' => Str::uuid(),
                             'name' => $committeeData['name'],
+                            'email' => $committeeData['email'],
                             'role' => 'committee',
-                            'password' => Hash::make('password123'),
-                        ]
-                    );
+                            'password' => Hash::make('password123'), // Generate password acak yang aman
+                        ]);
+                        $isNewUser = true;
+                    }
 
                     $committee = Committee::firstOrCreate(
                         ['user_id' => $user->user_id],
@@ -177,6 +186,10 @@ class EventController extends Controller
                         'committee_id' => $committee->committee_id,
                         'position' => $committeeData['position'],
                     ]);
+
+                    if ($isNewUser) {
+                        event(new Registered($user));
+                    }
                 }
             });
         } catch (\Exception $e){
@@ -186,7 +199,7 @@ class EventController extends Controller
             throw $e;
         }
 
-        return redirect()->route('events.index')->with('success', 'Event created successfully!');
+        return redirect()->route('events.index')->with('success', 'Event berhasil dibuat!');
     }
 
     /** Menampilkan detail event dan status kesiapan pengelolaannya. */
@@ -259,7 +272,7 @@ class EventController extends Controller
 
         $readinessChecks = [
             'has_documents' => ($event->event_documents_count ?? 0) > 0,
-            'has_levels' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => $l->quota > 0 && $l->registration_fees !== null),
+            'has_levels' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => $l->registration_fees !== null),
             'has_scoring_categories' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => ($l->scoring_categories_count ?? 0) > 0),
             'has_judges' => ($event->event_judges_count ?? 0) > 0,
             'has_champion_categories' => ($event->event_champion_categories_count ?? 0) > 0,
@@ -308,11 +321,37 @@ class EventController extends Controller
             'temp_poster_path' => 'nullable|string',
             'registration_start_time' => 'required|date',
             'registration_end_time' => 'required|date|after_or_equal:registration_start_time',
-            'start_time' => 'required|date',
+            'start_time' => 'required|date|after_or_equal:registration_end_time',
             'end_time' => 'required|date|after_or_equal:start_time',
-            'is_result_visible' => 'nullable|boolean', // Tambahkan validasi flag visibilitas hasil tim
-            'is_recap_visibile' => 'nullable|boolean', // Tambahkan validasi flag visibilitas leaderboard
-            'is_leaderboard_visible' => 'nullable|boolean', // Tambahkan validasi flag visibilitas leaderboard
+            'is_result_visible' => 'nullable|boolean',
+            'is_recap_visible' => 'nullable|boolean',
+            'is_leaderboard_visible' => 'nullable|boolean',
+        ], [
+            'event_name.required' => 'Nama event wajib diisi.',
+            'event_name.max' => 'Nama event tidak boleh lebih dari 255 karakter.',
+            'location.required' => 'Lokasi event wajib diisi.',
+            'location.max' => 'Lokasi tidak boleh lebih dari 255 karakter.',
+            
+            'status.required' => 'Status event wajib dipilih.',
+            'status.in' => 'Pilihan status event tidak valid.',
+
+            'registration_start_time.required' => 'Waktu mulai pendaftaran wajib diisi.',
+            'registration_start_time.date' => 'Format waktu mulai pendaftaran tidak valid.',
+            'registration_end_time.required' => 'Waktu penutupan pendaftaran wajib diisi.',
+            'registration_end_time.date' => 'Format waktu penutupan pendaftaran tidak valid.',
+            'registration_end_time.after_or_equal' => 'Batas penutupan pendaftaran harus sama atau setelah waktu mulai.',
+
+            'start_time.required' => 'Waktu mulai pelaksanaan event wajib diisi.',
+            'start_time.date' => 'Format waktu mulai pelaksanaan tidak valid.',
+            'start_time.after_or_equal' => 'Waktu mulai harus sama atau setelah pendaftaran ditutup',
+            'end_time.required' => 'Waktu berakhir pelaksanaan event wajib diisi.',
+            'end_time.date' => 'Format waktu berakhir pelaksanaan tidak valid.',
+            'end_time.after_or_equal' => 'Waktu berakhir harus sama atau setelah waktu mulai pelaksanaan.',
+
+            'temp_poster_path.string' => 'Berkas poster tidak valid.',
+            'is_result_visible.boolean' => 'Format visibilitas hasil tidak valid.',
+            'is_recap_visible.boolean' => 'Format visibilitas rekap tidak valid.',
+            'is_leaderboard_visible.boolean' => 'Format visibilitas papan peringkat tidak valid.',
         ]);
 
         if ($request->filled('temp_poster_path')) {

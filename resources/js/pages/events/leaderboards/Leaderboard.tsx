@@ -83,7 +83,7 @@ export default function Leaderboard({
     isVisible,
 }: LeaderboardProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const isChampion = filters.type === 'champion';
     const currentFilterValue = `${filters.type}-${filters.id}`;
@@ -456,7 +456,7 @@ export default function Leaderboard({
                                                 {/* Header Card: Peringkat & Nama Tim */}
                                                 <div className="flex items-start gap-3 border-b border-border/50 pb-3">
                                                     <div
-                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${getRankClassName(Number(   ))}`}
+                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${getRankClassName(Number())}`}
                                                     >
                                                         {visualRowNumber}
                                                     </div>

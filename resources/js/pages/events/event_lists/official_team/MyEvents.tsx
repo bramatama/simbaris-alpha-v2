@@ -3,10 +3,9 @@ import AppLayout from '@/layouts/app-layout';
 import EventCard, { EventData } from '@/components/event-card';
 import type { PageProps } from '@inertiajs/core';
 
-
 export default function EventIndex({ events }: { events: EventData[] }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     return (
         <AppLayout>
             <Head title="Event Management" />

@@ -48,7 +48,6 @@ class JudgeEvaluationController extends Controller
             abort(403, 'Anda belum memiliki penugasan kategori penilaian di acara ini.');
         }
 
-        // PERBAIKAN: Kelompokkan tugas kategori spesifik ke masing-masing Jenjang
         $assignedCategoriesByLevel = [];
         foreach ($eventJudge->judgeExpertises as $expertise) {
             $levelId = $expertise->scoringCategory->event_level_id;
@@ -74,7 +73,6 @@ class JudgeEvaluationController extends Controller
             ->get()
             ->map(function ($participation) use ($judge, $assignedCategoriesByLevel) {
                 
-                // Ambil daftar kategori HANYA untuk jenjang tim yang sedang diloop
                 $levelCategoryIds = $assignedCategoriesByLevel[$participation->event_level_id] ?? [];
                 $totalAssignedCategories = count($levelCategoryIds);
 
@@ -91,7 +89,6 @@ class JudgeEvaluationController extends Controller
 
                 $lockedCount = $scores->where('evaluation_status', 'locked')->count();
 
-                // Logika Validasi yang sudah presisi per jenjang
                 if (in_array('needs_review', $statuses)) {
                     $evalStatus = 'needs_review';
                 } elseif ($totalAssignedCategories > 0 && $lockedCount === $totalAssignedCategories) {
@@ -145,12 +142,11 @@ class JudgeEvaluationController extends Controller
             abort(403, 'Kategori ini bukan wewenang Anda.');
         }
 
-        // Jika sudah dilock atau butuh review, cegah masuk ke mode edit
-        if (in_array($categoryExists->category_status, ['locked', 'needs_review'])) {
-            return redirect()->route('events.participants.show', [
+        if ($categoryExists->category_status === 'locked') {
+            return redirect()->route('judge.events.participants.show', [
                 'event' => $event->public_id,
                 'participation' => $participation->public_id
-            ])->with('error', 'Kategori ini telah dikunci dan tidak dapat diubah.');
+            ])->with('error', 'Kategori ini telah dikunci dan tidak dapat diisi ulang.');
         }
 
         // Fokuskan data ke 1 kategori saja untuk props frontend
@@ -163,10 +159,7 @@ class JudgeEvaluationController extends Controller
     /**
      * Menyimpan sementara perubahan nilai dari formulir juri.
      */
-    /**
- * Menyimpan sementara perubahan nilai dari formulir juri.
- */
-public function autosave(Request $request, Participation $participation)
+    public function autosave(Request $request, Participation $participation)
     {
         $user = auth()->user();
 
@@ -193,6 +186,19 @@ public function autosave(Request $request, Participation $participation)
             abort(403, 'Profil juri Anda tidak ditemukan.');
         }
         $judgeId = $judge->judge_id;
+
+        $isLocked = TeamScore::where('participation_id', $participation->participation_id)
+            ->where('scoring_category_id', $validated['category_id'])
+            ->where('judge_id', $judgeId)
+            ->where('evaluation_status', 'locked')
+            ->exists();
+
+        if ($isLocked) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal autosave. Kategori penilaian ini sudah dikunci.'
+            ], 403);
+        }
 
         DB::transaction(function () use ($validated, $participation, $judgeId, $request) {
             
@@ -240,35 +246,47 @@ public function autosave(Request $request, Participation $participation)
     /**
      * Menyimpan nilai akhir kategori dari juri.
      */
-    public function submitCategory(Request $request, 
+    public function submitCategory(
+        Request $request, 
         Event $event, 
         Participation $participation, 
         ScoringCategory $scoringCategory,
-        ScoreRecapService $recapService)
-    {
+        ScoreRecapService $recapService
+    ) {
         abort_if(!in_array(auth()->user()?->role, ['judge', 'admin']), 403, 'Akses khusus untuk dewan juri.');
         $this->validateEventAccess($event, [], ['judge']);
+
+        $judgeId = auth()->user()->judge->judge_id;
+
+        $isLocked = TeamScore::where('participation_id', $participation->participation_id)
+            ->where('scoring_category_id', $scoringCategory->scoring_category_id)
+            ->where('judge_id', $judgeId)
+            ->where('evaluation_status', 'locked')
+            ->exists();
+
+        if ($isLocked) {
+            return redirect()->route('judge.events.participants.show', [
+                'event' => $event->public_id,
+                'participation' => $participation->public_id
+            ])->with('error', 'Kategori ini sudah dikunci dan nilainya tidak dapat diubah lagi.');
+        }
 
         $validated = $request->validate([
             'scores' => 'present|array',
             'scores.*.criteria_id' => 'required|exists:assessment_criteria,criteria_id',
             'scores.*.rubric_score_id' => 'required|exists:rubric_scores,rubric_score_id',
             'scores.*.score_value' => 'required|numeric',
-            'scores.*.clicked_at' => 'required|date', // 1. Tambahkan validasi clicked_at
+            'scores.*.clicked_at' => 'required|date',
         ]);
-
-        $judgeId = auth()->user()->judge->judge_id;
 
         DB::transaction(function () use ($validated, $participation, $scoringCategory, $judgeId, $request) {
             
-            // Ambil semua kriteria dasar yang ada di kategori ini
             $categoryCriteriaIds = AssessmentCriteria::where('scoring_category_id', $scoringCategory->scoring_category_id)
                 ->pluck('criteria_id')
                 ->toArray();
 
             $incomingCriteriaIds = collect($validated['scores'])->pluck('criteria_id')->toArray();
 
-            // Hapus detail kriteria yang dikosongkan secara sengaja oleh juri saat submit
             TeamScoreDetail::where('participation_id', $participation->participation_id)
                 ->where('judge_id', $judgeId)
                 ->whereIn('criteria_id', $categoryCriteriaIds)
@@ -282,14 +300,13 @@ public function autosave(Request $request, Participation $participation)
                     ['rubric_score_id' => $score['rubric_score_id'], 'score_value' => $score['score_value']]
                 );
 
-                // 2. TAMBAHAN: Catat Audit Trail saat final submit dieksekusi
                 AuditTrail::create([
                     'participation_id' => $participation->participation_id,
                     'judge_id' => $judgeId,
                     'criteria_id' => $score['criteria_id'],
                     'rubric_score_id' => $score['rubric_score_id'],
                     'score_value' => $score['score_value'],
-                    'clicked_at' => $score['clicked_at'], // Mutator di model otomatis mengubah ini dari UTC ke Makassar
+                    'clicked_at' => $score['clicked_at'],
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ]);
@@ -297,7 +314,6 @@ public function autosave(Request $request, Participation $participation)
                 $totalScore += $score['score_value'];
             }
 
-            // Simpan total kalkulasi ke team_scores dengan status 'draft'
             TeamScore::updateOrCreate(
                 ['participation_id' => $participation->participation_id, 'scoring_category_id' => $scoringCategory->scoring_category_id, 'judge_id' => $judgeId],
                 ['total_score' => $totalScore, 'evaluation_status' => 'draft']
@@ -400,9 +416,6 @@ public function autosave(Request $request, Participation $participation)
             ->where('judge_id', $judge->judge_id)
             ->get();
 
-        // -------------------------------------------------------------
-        // LOGIKA STATUS PER KATEGORI & KESELURUHAN TIM
-        // -------------------------------------------------------------
         $isAnyNeedsReview = false;
         $allLocked = true; 
         $isAnyDrafting = false; 
@@ -430,7 +443,6 @@ public function autosave(Request $request, Participation $participation)
             }
         }
 
-        // Status keseluruhan tim (Disuntikkan ke object participation)
         if ($isAnyNeedsReview) {
             $participation->evaluation_status = 'needs_review';
         } elseif ($allLocked && $scoringCategories->isNotEmpty()) {

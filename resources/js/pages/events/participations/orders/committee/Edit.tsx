@@ -95,7 +95,7 @@ export default function ParticipationOrderEdit({
     participations = [],
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.rolele;
     const committeePosition = auth.user.committee_position;
 
     // State lokal untuk mengatur urutan Drag & Drop
@@ -147,7 +147,11 @@ export default function ParticipationOrderEdit({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Atur Nomor Urut - ${event.event_name}`} />
 
