@@ -28,6 +28,7 @@ import {
     ImageOff,
     AlertCircle,
     CheckCircle2,
+    Trash2,
 } from 'lucide-react';
 import {
     Select,
@@ -39,7 +40,9 @@ import {
     SelectLabel,
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { FormDialog } from '@/components/dialogs/form-dialog';
 import { FileUploader } from '@/components/ui/file-uploader';
+import InputError from '@/components/input-error';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import type { PageProps } from '@inertiajs/core';
 
@@ -58,8 +61,8 @@ export default function EventEdit({ event }: { event: any }) {
     const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-    // State pratinjau poster (diinisialisasi dengan poster saat ini dari server jika ada)
     const [posterPreview, setPosterPreview] = useState<string | null>(
         event.poster_path ? `/storage/${event.poster_path}` : null,
     );
@@ -78,6 +81,10 @@ export default function EventEdit({ event }: { event: any }) {
         is_leaderboard_visible: Boolean(event.is_leaderboard_visible),
         is_recap_visible: Boolean(event.is_recap_visible),
         temp_poster_path: null as string | null,
+    });
+
+    const deleteForm = useForm({
+        password: '',
     });
 
     useEffect(() => {
@@ -115,6 +122,24 @@ export default function EventEdit({ event }: { event: any }) {
         setIsDialogOpen(false);
         post(`/${userRole}/events/${event.public_id}`, {
             preserveScroll: true,
+        });
+    };
+
+    // Handler Hapus Event dengan Error Handling (Metode 2 & 3)
+    const submitDelete = (e: React.FormEvent) => {
+        e.preventDefault();
+        deleteForm.delete(`/${userRole}/events/${event.public_id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteOpen(false);
+                deleteForm.reset();
+                deleteForm.clearErrors();
+            },
+            onError: () => {
+                // METODE 2: Reset password input & Auto-focus
+                deleteForm.reset('password');
+                document.getElementById('delete_confirm_password')?.focus();
+            },
         });
     };
 
@@ -302,7 +327,6 @@ export default function EventEdit({ event }: { event: any }) {
                                                                 'temp_poster_path',
                                                                 null,
                                                             );
-                                                            // Revert pratinjau ke poster asli server jika ada
                                                             setPosterPreview(
                                                                 event.poster_path
                                                                     ? `/storage/${event.poster_path}`
@@ -602,7 +626,6 @@ export default function EventEdit({ event }: { event: any }) {
                                 </CardContent>
                             </Card>
 
-                            {/* KARTU 3: PENGATURAN VISIBILITAS HASIL & LEADERBOARD */}
                             {userRole === 'committee' && (
                                 <Card className="overflow-hidden rounded-xl border-border/60 shadow-sm">
                                     <CardHeader className="flex flex-row items-center gap-3 border-b border-border/50 bg-muted/20 px-4 py-4 sm:px-5">
@@ -622,7 +645,6 @@ export default function EventEdit({ event }: { event: any }) {
                                     </CardHeader>
 
                                     <CardContent className="divide-y divide-border/50 px-4 py-1">
-                                        {/* Hasil Penilaian */}
                                         <div className="flex items-center gap-3 py-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                                 <ClipboardCheck className="h-4 w-4" />
@@ -649,7 +671,6 @@ export default function EventEdit({ event }: { event: any }) {
                                             />
                                         </div>
 
-                                        {/* Rekap Perhitungan */}
                                         <div className="flex items-center gap-3 py-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                                 <Calculator className="h-4 w-4" />
@@ -676,7 +697,6 @@ export default function EventEdit({ event }: { event: any }) {
                                             />
                                         </div>
 
-                                        {/* Leaderboard */}
                                         <div className="flex items-center gap-3 py-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                                                 <Podium className="h-4 w-4" />
@@ -723,6 +743,7 @@ export default function EventEdit({ event }: { event: any }) {
 
                     <div className="space-y-6 xl:col-span-4">
                         <div className="space-y-6 xl:sticky xl:top-6">
+                            {/* KARTU PANITIA */}
                             <Card className="overflow-hidden rounded-xl border-border/60 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 bg-muted/20 px-4 py-4">
                                     <div className="flex items-center gap-3">
@@ -804,6 +825,7 @@ export default function EventEdit({ event }: { event: any }) {
                                 </CardContent>
                             </Card>
 
+                            {/* TOMBOL SIMPAN EDIT */}
                             <div className="flex items-center justify-end gap-3 pt-2">
                                 <Button
                                     type="button"
@@ -826,6 +848,111 @@ export default function EventEdit({ event }: { event: any }) {
                                     )}
                                     Simpan Perubahan
                                 </Button>
+                            </div>
+
+                            <div className="space-y-3 pt-4">
+                                <h3 className="text-sm font-semibold text-red-600 dark:text-red-500">
+                                    Area Berbahaya
+                                </h3>
+                                <div className="divide-y divide-red-100 overflow-hidden rounded-xl border border-red-200 bg-red-50/50 dark:divide-red-900/50 dark:border-red-900/50 dark:bg-red-950/20">
+                                    <div className="flex flex-col gap-4 p-4">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">
+                                                Hapus Event Ini
+                                            </h4>
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                Tindakan ini tidak dapat
+                                                dibatalkan. Seluruh data
+                                                pendaftaran, tim, dan hasil
+                                                nilai akan dihapus secara
+                                                permanen.
+                                            </p>
+                                        </div>
+
+                                        <FormDialog
+                                            trigger={
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/80 dark:text-red-400 dark:hover:bg-red-900/50"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    Hapus Event
+                                                </Button>
+                                            }
+                                            open={isDeleteOpen}
+                                            onOpenChange={(open) => {
+                                                setIsDeleteOpen(open);
+                                                if (!open) deleteForm.reset();
+                                                deleteForm.clearErrors();
+                                            }}
+                                            onSubmit={submitDelete}
+                                            title="Hapus Event Ini Secara Permanen?"
+                                            titleClass="text-red-600"
+                                            description={`Anda akan menghapus "${event.event_name}". Masukkan kata sandi Anda untuk mengonfirmasi tindakan ini.`}
+                                            submitText="Hapus Event"
+                                            submitVariant="destructive"
+                                            isProcessing={deleteForm.processing}
+                                            isDisabled={
+                                                !deleteForm.data.password
+                                            }
+                                        >
+                                            {deleteForm.hasErrors && (
+                                                <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+                                                    <AlertCircle className="h-4 w-4 shrink-0" />
+                                                    Gagal menghapus event.
+                                                    Periksa kembali kata sandi
+                                                    Anda.
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label htmlFor="delete_confirm_password">
+                                                        Konfirmasi Kata Sandi
+                                                    </Label>
+                                                    {deleteForm.errors
+                                                        .password && (
+                                                        <span className="flex items-center gap-1 text-xs font-medium text-destructive">
+                                                            <AlertCircle className="h-3 w-3" />
+                                                            {
+                                                                deleteForm
+                                                                    .errors
+                                                                    .password
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <Input
+                                                    id="delete_confirm_password"
+                                                    type="password"
+                                                    value={
+                                                        deleteForm.data.password
+                                                    }
+                                                    onChange={(e) =>
+                                                        deleteForm.setData(
+                                                            'password',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Masukkan kata sandi akun Anda"
+                                                    required
+                                                    className={
+                                                        deleteForm.errors
+                                                            .password
+                                                            ? 'border-destructive focus-visible:ring-destructive'
+                                                            : ''
+                                                    }
+                                                />
+                                                <InputError
+                                                    message={
+                                                        deleteForm.errors
+                                                            .password
+                                                    }
+                                                />
+                                            </div>
+                                        </FormDialog>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

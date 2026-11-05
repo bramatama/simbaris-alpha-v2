@@ -105,6 +105,8 @@ class EventController extends Controller
             'committees.*.email' => 'required|email',
             'committees.*.department' => 'required|string|max:255',
             'committees.*.position' => 'required|string|max:255',
+
+            'force_create' => 'sometimes|boolean',
         ], [
             'registration_end_time.after_or_equal' => 'Batas pendaftaran harus sama atau setelah waktu mulai.',
             'start_time.after_or_equal' => 'Waktu mulai harus sama atau setelah pendaftaran ditutup.',
@@ -135,9 +137,11 @@ class EventController extends Controller
             throw ValidationException::withMessages($validationErrors);
         }
 
-        if ($existingCommittees && empty($validated['force_create'])) {
+        if ($existingCommittees && !$request->boolean('force_create')) {
             throw ValidationException::withMessages([
-                'confirmation' => 'Existing committee found: ' . implode(', ', $existingCommittees) . '. Continue?',
+                'confirmation' => 'Akun Panitia ditemukan: '
+                    . implode(', ', $existingCommittees)
+                    . '. Lanjutkan?',
             ]);
         }
         
@@ -406,7 +410,7 @@ class EventController extends Controller
             Storage::disk('public')->delete($poster_path);
         }
 
-        return redirect()->back()
-            ->with('message', 'Event deleted successfully.');
+        return redirect()->route('events.index')
+            ->with('message', 'Event Berhasil Dihapus.');
     }
 }

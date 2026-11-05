@@ -213,25 +213,28 @@ export default function EventShow({
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
             <div className="mb-2 flex flex-row items-center justify-between gap-4">
                 <Link
-                    href={isAuthorized ? `/${userRole}/my-events` : '/events'}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        window.history.back();
+                    }}
                     className="flex items-center text-muted-foreground transition-colors hover:text-primary"
                 >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
-                    Semua Event
+                    Kembali
                 </Link>
             </div>
 
             <div
                 className={
-                    isAuthorized
+                    userRole === 'committee'
                         ? 'grid grid-cols-1 gap-6 lg:grid-cols-12'
                         : 'flex flex-col gap-6'
                 }
             >
                 <div
                     className={
-                        isAuthorized
-                            ? 'space-y-6 lg:col-span-8'
+                        userRole === 'committee'
+                            ? 'min-w-0 space-y-6 lg:col-span-8'
                             : 'w-full space-y-6'
                     }
                 >
@@ -1034,7 +1037,7 @@ export default function EventShow({
                 </div>
 
                 {/* SIDEBAR CHECKLIST KESIAPAN EVENT */}
-                {isAuthorized && (
+                {userRole === 'committee' && (
                     <div className="space-y-6 lg:col-span-4">
                         <Card className="sticky top-6 border-border/50">
                             <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 px-5 py-4">
@@ -1103,15 +1106,11 @@ export default function EventShow({
                 <LandingPageLayout>{pageContent}</LandingPageLayout>
             ) : isAuthorized ? (
                 <InnerAppLayout
-                    sidebarNavItems={
-                        userRole === 'admin'
-                            ? getMasterDataInnerNav()
-                            : getEventInnerNav(
-                                  event.public_id,
-                                  userRole,
-                                  committeePosition || undefined,
-                              )
-                    }
+                    sidebarNavItems={getEventInnerNav(
+                        event.public_id,
+                        userRole,
+                        committeePosition || undefined,
+                    )}
                 >
                     {pageContent}
                 </InnerAppLayout>

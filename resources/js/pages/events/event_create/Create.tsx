@@ -55,7 +55,7 @@ export default function EventCreate({
             registration_end_time: '',
             start_time: '',
             end_time: '',
-            poster: null as File | null,
+            poster_path: null as File | null,
             committees: [{ name: '', email: '', department: '', position: '' }],
         });
 
@@ -96,7 +96,7 @@ export default function EventCreate({
     const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setData('poster', file);
+            setData('poster_path', file);
             if (posterPreview) {
                 URL.revokeObjectURL(posterPreview);
             }
@@ -105,7 +105,7 @@ export default function EventCreate({
     };
 
     const removePoster = () => {
-        setData('poster', null);
+        setData('poster_path', null);
         if (posterPreview) {
             URL.revokeObjectURL(posterPreview);
             setPosterPreview(null);
@@ -299,7 +299,7 @@ export default function EventCreate({
                                             </Label>
                                             <div className="flex items-center gap-2">
                                                 {renderErrorBadge(
-                                                    errors.poster as string,
+                                                    errors.poster_path as string,
                                                 )}
                                                 <span className="text-[11px] text-muted-foreground">
                                                     JPG / PNG

@@ -14,10 +14,10 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
-import {Auth} from '@/types';
+import { PageProps } from '@inertiajs/core';
 
 export function NavUser() {
-    const { props } = usePage<{ auth: Auth }>();
+    const { auth } = usePage<PageProps>().props;
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
@@ -31,7 +31,7 @@ export function NavUser() {
                             className="group text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent"
                             data-test="sidebar-menu-button"
                         >
-                            <UserInfo user={props.auth.user} />
+                            <UserInfo user={auth.user} />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -46,7 +46,7 @@ export function NavUser() {
                                   : 'bottom'
                         }
                     >
-                        <UserMenuContent user={props.auth.user} />
+                        <UserMenuContent user={auth.user} />
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
