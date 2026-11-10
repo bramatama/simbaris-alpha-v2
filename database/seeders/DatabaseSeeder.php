@@ -35,9 +35,9 @@ class DatabaseSeeder extends Seeder
             LevelSeeder::class,
             ScoringSeeder::class,
             ChampionSeeder::class,
-            // UserSeeder::class,
-            // EventSeeder::class,
-            // ParticipationSeeder::class,
+            UserSeeder::class,
+            EventSeeder::class,
+            ParticipationSeeder::class,
         ]);
     }
 }

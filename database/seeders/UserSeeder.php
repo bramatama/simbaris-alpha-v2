@@ -19,16 +19,16 @@ class UserSeeder extends Seeder
         $password = Hash::make('password123'); // Password default untuk semua akun testing
 
         // 1. Buat Akun Admin
-        $adminUserId = DB::table('users')->insertGetId([
-            'public_id' => Str::uuid(), 
-            'name' => 'Super Admin', 
-            'email' => 'admin@lomba.com', 
-            'role' => 'admin', 'password' => $password, 
-            'created_at' => $now, 
-            'updated_at' => $now,
-            'email_verified_at' => $now
-        ]);
-        DB::table('admins')->insert(['user_id' => $adminUserId]);
+        // $adminUserId = DB::table('users')->insertGetId([
+        //     'public_id' => Str::uuid(), 
+        //     'name' => 'Super Admin', 
+        //     'email' => 'admin@lomba.com', 
+        //     'role' => 'admin', 'password' => $password, 
+        //     'created_at' => $now, 
+        //     'updated_at' => $now,
+        //     'email_verified_at' => $now
+        // ]);
+        // DB::table('admins')->insert(['user_id' => $adminUserId]);
 
         // 2. Buat Akun Juri (3 Orang)
         for ($i = 1; $i <= 3; $i++) {
