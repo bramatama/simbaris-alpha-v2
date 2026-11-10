@@ -174,8 +174,6 @@ export default function EventShow({
                     icon: <CheckCircle2 className="h-4 w-4" />,
                     text: 'Pendaftaran Dibuka',
                 };
-
-            case 'active':
             case 'ongoing':
                 return {
                     color: 'bg-blue-500/10 text-blue-600 border border-blue-500/20',

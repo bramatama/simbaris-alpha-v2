@@ -1,9 +1,10 @@
+
 <?php
 
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('confirm password screen can be rendered', function () {
+test('halaman konfirmasi kata sandi dapat ditampilkan', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)->get(route('password.confirm'));
@@ -15,7 +16,7 @@ test('confirm password screen can be rendered', function () {
     );
 });
 
-test('password confirmation requires authentication', function () {
+test('konfirmasi kata sandi memerlukan autentikasi', function () {
     $response = $this->get(route('password.confirm'));
 
     $response->assertRedirect(route('login'));

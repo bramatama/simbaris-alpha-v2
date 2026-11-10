@@ -19,7 +19,7 @@ class DashboardController extends Controller
         if ($role === 'admin') {
             $stats = [
                 'total_events' => Event::count(),
-                'active_events' => Event::where('status', 'active')->count(),
+                'active_events' => Event::where('status', 'ongoing')->count(),
                 'total_teams' => Participation::count(),
                 'total_users' => \App\Models\User::count(),
             ];

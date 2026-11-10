@@ -42,7 +42,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
         switch (status) {
             case 'registration_open':
                 return 'bg-success text-success-foreground hover:bg-success/80';
-            case 'active':
+            case 'ongoing':
                 return 'bg-info text-info-foreground hover:bg-info/80';
             case 'finished':
                 return 'bg-muted text-muted-foreground hover:bg-muted/80';

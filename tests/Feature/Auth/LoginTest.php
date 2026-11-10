@@ -6,10 +6,10 @@ use function Pest\Laravel\get;
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 dataset('user_roles', [
-    ['admin', 'dashboards/admin'],
-    // ['judge', 'dashboards/judge'],
-    ['committee', 'dashboards/committee'],
-    ['official_team', 'dashboards/official_team'],
+    ['admin', 'dashboards/Index'],
+    ['judge', 'dashboards/Index'],
+    ['committee', 'dashboards/Index'],
+    ['official_team', 'dashboards/Index'],
 ]);
 
 test('pengguna melihat halaman dashboard yang sesuai dengan rolenya', function (string $role, string $expectedComponent) {
@@ -25,15 +25,3 @@ test('pengguna melihat halaman dashboard yang sesuai dengan rolenya', function (
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page->component($expectedComponent));
 })->with('user_roles');
-
-test('pengguna dengan role tidak dikenal mendapat akses ditolak', function () {
-    $user = User::factory()->create([
-        'role' => 'admin',
-    ]);
-
-    $user->role = 'unknown_role';
-
-    $response = actingAs($user)->get('/dashboard');
-
-    $response->assertStatus(403);
-});

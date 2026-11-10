@@ -47,8 +47,6 @@ export default function VerifyEmail({ status }: { status?: string }) {
                             variant="secondary"
                             onClick={() => {
                                 if (countdown === 0) {
-                                    // Gunakan setTimeout agar form sempat melakukan submit (event terpicu)
-                                    // sebelum tombol di-disable oleh perubahan state countdown
                                     setTimeout(() => setCountdown(30), 500);
                                 }
                             }}

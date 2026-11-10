@@ -95,7 +95,7 @@ export default function ParticipationOrderEdit({
     participations = [],
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth?.user?.rolele;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     // State lokal untuk mengatur urutan Drag & Drop

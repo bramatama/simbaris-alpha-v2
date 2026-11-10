@@ -190,7 +190,8 @@ class ParticipationController extends Controller
                 $eventLevels = [];
 
                 foreach ($sortedLevelIds as $levelId) {
-                    $level = EventLevel::where('event_level_id', $levelId)
+                    $level = EventLevel::with('level')
+                        ->where('event_level_id', $levelId)
                         ->where('event_id', $event->event_id)
                         ->lockForUpdate() 
                         ->firstOrFail();

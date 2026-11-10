@@ -45,7 +45,7 @@ export default function EventCard({ event }: EventCardProps) {
         switch (currentStatus) {
             case 'registration_open':
                 return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
-            case 'active':
+            case 'ongoing':
             case 'ongoing':
                 return 'bg-blue-500/10 text-blue-600 border border-blue-500/20';
             case 'finished':
@@ -99,7 +99,7 @@ export default function EventCard({ event }: EventCardProps) {
                     >
                         {event.status === 'registration_open'
                             ? 'Pendaftaran'
-                            : event.status === 'active' ||
+                            : event.status === 'ongoing' ||
                                 event.status === 'ongoing'
                               ? 'Berlangsung'
                               : event.status === 'finished'

@@ -38,7 +38,7 @@ Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_
     Route::get('/events/{event:public_id}/participations/{participation:public_id}/evaluation-result', [EvaluationResultController::class, 'showMyResult'])
     ->name('participations.Myresult');
 
-    Route::get('events/{public_id}/participations/{participation_public_id}/audit-logs',[EvaluationMonitoringController::class, 'showAuditTrail'])->name('official_team.participations.audit-logs');
+    Route::get('events/{public_id}/participations/{participation_public_id}/audit-logs',[EvaluationMonitoringController::class, 'showAuditTrail'])->name('participations.audit-logs');
 });
 
 

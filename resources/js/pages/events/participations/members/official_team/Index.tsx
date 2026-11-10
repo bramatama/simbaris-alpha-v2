@@ -53,7 +53,7 @@ export default function OfficialTeamParticipationMembers({
     participation: any;
 }) {
     const { auth, errors: pageErrors } = usePage<PageProps>().props;
-    const userRole = auth?.user?.rolele;
+    const userRole = auth?.user?.role;
 
     const isApproved = participation.status === 'approved';
 

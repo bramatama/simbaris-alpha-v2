@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
         $adminUserId = DB::table('users')->insertGetId([
             'public_id' => Str::uuid(), 
             'name' => 'Super Admin',
-            'email' => 'bramatamar@gmail.com', 
+            'email' => 'admin@lomba.com', 
             'role' => 'admin', 'password' => $password, 
             'created_at' => $now, 
             'updated_at' => $now,

@@ -11,7 +11,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import { store as registerStore } from '@/routes/register';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 type Props = {
     status?: string;
@@ -28,6 +28,7 @@ export default function Login({
 }: Props) {
     const [email, setEmail] = useState('');
     const [isRemembered, setIsRemembered] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         const savedEmail = localStorage.getItem('last_login_email');
@@ -48,7 +49,7 @@ export default function Login({
         <AuthLayout
             title="Masuk ke Akun Anda"
             description="Masukkan email dan password untuk masuk ke akun Anda"
-            className='max-w-md'
+            className="max-w-md"
         >
             <Head title="Log in" />
 
@@ -62,7 +63,7 @@ export default function Login({
                         <div className="grid gap-4">
                             <div className="grid gap-2">
                                 <InputError
-                                    className="flex  justify-center"
+                                    className="flex justify-center"
                                     message={errors.email}
                                 />
                                 <Label htmlFor="email">Email</Label>
@@ -93,15 +94,37 @@ export default function Login({
                                         </TextLink>
                                     )}
                                 </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={
+                                            showPassword ? 'text' : 'password'
+                                        }
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="Password"
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowPassword(!showPassword)
+                                        }
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-hidden"
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                        <span className="sr-only">
+                                            Toggle password visibility
+                                        </span>
+                                    </button>
+                                </div>
                                 <InputError message={errors.password} />
                             </div>
 
