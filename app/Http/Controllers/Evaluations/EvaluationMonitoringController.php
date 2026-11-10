@@ -9,6 +9,7 @@ use App\Models\EvaluationSession;
 use App\Models\AuditTrail;
 use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class EvaluationMonitoringController extends Controller
 {
@@ -19,8 +20,7 @@ class EvaluationMonitoringController extends Controller
      */
     public function show(Event $event, Participation $participation)
     {
-        // Validaasi Akses: Khusus Panitia posisi 'auditor' atau Admin
-        $this->validateEventAccess($event, ['auditor'],['committee']);
+        $this->validateEventAccess($event, ['auditor'], ['committee']);
 
         $session = EvaluationSession::firstOrCreate(
             ['participation_id' => $participation->participation_id],
@@ -46,7 +46,7 @@ class EvaluationMonitoringController extends Controller
             ->where('event_id', $event->event_id)
             ->firstOrFail();
 
-        $this->validateEventAccess($event, [],['official_team'] ,$participation);
+        $this->validateEventAccess($event, [], ['official_team'], $participation);
 
         $participation->load('eventLevel.level');
 
@@ -121,7 +121,7 @@ class EvaluationMonitoringController extends Controller
             $diffInSeconds = $session->end_time->diffInSeconds(now());
             
             $session->update([
-                'start_time' => \Carbon\Carbon::parse($session->start_time)->addSeconds($diffInSeconds),
+                'start_time' => Carbon::parse($session->start_time)->addSeconds($diffInSeconds),
                 'end_time' => null
             ]);
         }
@@ -130,7 +130,7 @@ class EvaluationMonitoringController extends Controller
     }
 
     /**
-     * Mengakhiri sesi penampilan peserta.
+     * Mengakhiri sesi penampilan peserta secara langsung saat tombol diklik.
      */
     public function finish(Request $request, Event $event, Participation $participation)
     {
@@ -142,40 +142,61 @@ class EvaluationMonitoringController extends Controller
             return redirect()->back()->with('error', 'Sesi belum dimulai atau sudah diakhiri.');
         }
 
-        $clientTime = $request->input('client_end_time');
-        $endTime = $session->end_time ?? ($clientTime ? \Carbon\Carbon::parse($clientTime) : now());
+        $endTime = $session->end_time ?? now();
+
 
         $session->update([
             'status' => 'finished',
-            'end_time' => $endTime
+            'end_time' => $endTime,
         ]);
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Sesi penampilan berhasil diakhiri.');
     }
 
     /**
      * Memperbarui status atau waktu sesi secara manual.
      */
-    public function manualUpdate(Request $request, Event $event, Participation $participation)
-    {
-        $this->validateEventAccess($event, ['auditor'],['committee']);
+    public function manualUpdate(
+    Request $request,
+    Event $event,
+    Participation $participation
+) {
+    $this->validateEventAccess(
+        $event,
+        ['auditor'],
+        ['committee']
+    );
 
-        $session = EvaluationSession::where('participation_id', $participation->participation_id)->firstOrFail();
+    $session = EvaluationSession::where(
+        'participation_id',
+        $participation->participation_id
+    )->firstOrFail();
 
-        $validated = $request->validate([
-            'status' => 'required|in:waiting,ongoing,finished',
-            'start_time' => 'nullable|date',
-            'end_time' => 'nullable|date',
-        ]);
+    $validated = $request->validate([
+        'status' => 'required|in:waiting,ongoing,finished',
+        'start_time' => 'nullable|date',
+        'end_time' => 'nullable|date',
+    ]);
 
-        $session->update([
-            'status' => $validated['status'],
-            'start_time' => $validated['start_time'] ? \Carbon\Carbon::parse($validated['start_time']) : null,
-            'end_time' => $validated['end_time'] ? \Carbon\Carbon::parse($validated['end_time']) : null,
-        ]);
+    $timezone = 'Asia/Makassar';
 
-        return redirect()->back()->with('success', 'Data sesi berhasil diperbarui secara manual.');
-    }
+    $session->update([
+        'status' => $validated['status'],
+
+        'start_time' => !empty($validated['start_time'])
+            ? Carbon::parse($validated['start_time'], $timezone)
+            : null,
+
+        'end_time' => !empty($validated['end_time'])
+            ? Carbon::parse($validated['end_time'], $timezone)
+            : null,
+    ]);
+
+    return redirect()->back()->with(
+        'success',
+        'Data sesi berhasil diperbarui secara manual.'
+    );
+}
 
     /**
      * Mengambil riwayat audit penilaian dalam format JSON.

@@ -114,15 +114,16 @@ class ParticipationController extends Controller
                 ->where('event_id', $event->event_id)
                 ->firstOrFail();
 
-            if (!empty($level->quota) && $level->quota > 0) {
+            if (!is_null($level->quota) && (int)$level->quota > 0) {
                 $currentParticipations = Participation::where('event_level_id', $level->event_level_id)->count();
 
                 if (($currentParticipations + $requestedQuota) > $level->quota) {
+                    $remaining = max(0, $level->quota - $currentParticipations);
                     return response()->json([
-                        'message' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: " . ($level->quota - $currentParticipations)
+                        'message' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: {$remaining}"
                     ], 422); 
                 }
-            }
+        }
         }
 
         return response()->json(['message' => 'Kuota tersedia.']);
@@ -139,15 +140,30 @@ class ParticipationController extends Controller
 
         $officialTeamId = auth()->user()->officialTeam->official_team_id ?? null;
 
-        $validated = $request->validate([
+        $rules = [
             'teams' => 'required|array|min:1',
             'teams.*.event_level_id' => 'required|exists:event_levels,event_level_id',
             'teams.*.team_name' => 'required|string|max:255',
             'teams.*.pic_name' => 'required|string|max:255',
             'teams.*.pic_phone_number' => 'required|string|regex:/^[0-9]{12,15}$/',
             'temp_payment_proof_path' => 'required|string',
-        ]);
+        ];
 
+        $messages = [
+            'teams.required' => 'Minimal daftarkan 1 tim.',
+            'teams.min' => 'Minimal daftarkan 1 tim.',
+            'teams.*.event_level_id.required' => 'Kategori / Jenjang lomba wajib dipilih.',
+            'teams.*.event_level_id.exists' => 'Pilihan jenjang lomba tidak valid.',
+            'teams.*.team_name.required' => 'Nama tim / pangkalan wajib diisi.',
+            'teams.*.team_name.max' => 'Nama tim maksimal 255 karakter.',
+            'teams.*.pic_name.required' => 'Nama PIC wajib diisi.',
+            'teams.*.pic_name.max' => 'Nama PIC maksimal 255 karakter.',
+            'teams.*.pic_phone_number.required' => 'Nomor HP / WhatsApp PIC wajib diisi.',
+            'teams.*.pic_phone_number.regex' => 'Nomor HP harus berupa angka 12 hingga 15 digit.',
+            'temp_payment_proof_path.required' => 'Bukti pembayaran wajib diunggah.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         $paymentProofPath = null;
 
@@ -164,26 +180,31 @@ class ParticipationController extends Controller
                 $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
                 $paymentProofPath = 'payment_proofs/' . Str::random(20) . '.' . $extension;
 
-                Storage::disk('local')->move($tempPath, $paymentProofPath);
+                $fileStream = Storage::disk('public')->readStream($tempPath);
+                Storage::disk('local')->writeStream($paymentProofPath, $fileStream);
+
+                Storage::disk('public')->delete($tempPath);
 
                 $levelCounts = collect($validated['teams'])->countBy('event_level_id');
                 $sortedLevelIds = $levelCounts->keys()->sort();
                 $eventLevels = [];
 
                 foreach ($sortedLevelIds as $levelId) {
-                    $level = EventLevel::where('event_level_id', $levelId)
+                    $level = EventLevel::with('level')
+                        ->where('event_level_id', $levelId)
                         ->where('event_id', $event->event_id)
                         ->lockForUpdate() 
                         ->firstOrFail();
 
                     $requestedQuota = $levelCounts[$levelId];
 
-                    if (!empty($level->quota) && $level->quota > 0) {
+                    if (!is_null($level->quota) && (int)$level->quota > 0) {
                         $currentParticipations = Participation::where('event_level_id', $level->event_level_id)->count();
 
                         if (($currentParticipations + $requestedQuota) > $level->quota) {
+                            $remaining = max(0, $level->quota - $currentParticipations);
                             throw ValidationException::withMessages([
-                                'teams' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: " . ($level->quota - $currentParticipations),
+                                'teams' => "Mohon maaf, sisa kuota untuk jenjang {$level->level->level_name} tidak mencukupi. Sisa slot: {$remaining}",
                             ]);
                         }
                     }
@@ -272,36 +293,57 @@ class ParticipationController extends Controller
 
         $this->validateEventAccess($event, [], ['official_team'], $participation);
 
-        $validated = $request->validate([
+        $rules = [
             'team_name' => 'required|string|max:255',
             'pic_name' => 'required|string|max:255',
-            'pic_phone_number' => 'required|string|max:20',
+            'pic_phone_number' => 'required|string|regex:/^[0-9]{12,15}$/',
             'temp_payment_proof_path' => 'nullable|string',
-            'temp_team_logo_path' => 'nullable|string'
-        ]);
+            'temp_team_logo_path' => 'nullable|string',
+        ];
+
+        $messages = [
+            'team_name.required' => 'Nama tim / pangkalan wajib diisi.',
+            'team_name.max' => 'Nama tim tidak boleh lebih dari 255 karakter.',
+            'pic_name.required' => 'Nama PIC penanggung jawab wajib diisi.',
+            'pic_name.max' => 'Nama PIC tidak boleh lebih dari 255 karakter.',
+            'pic_phone_number.required' => 'Nomor HP / WhatsApp PIC wajib diisi.',
+            'pic_phone_number.regex' => 'Nomor HP harus terdiri dari 12 hingga 15 digit angka.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         if ($participation->status !== 'approved' && $request->filled('temp_payment_proof_path')) {
             $tempPayment = $request->input('temp_payment_proof_path');
-            if (Storage::disk('public')->exists($tempPayment)){
+
+            if (Storage::disk('public')->exists($tempPayment)) {
                 if ($participation->payment_proof_path && Storage::disk('local')->exists($participation->payment_proof_path)) {
                     Storage::disk('local')->delete($participation->payment_proof_path);
                 }
-                $newPaymentPath = 'payment_proofs/' . Str::random(20) . '.' . pathinfo($tempPayment, PATHINFO_EXTENSION);   
-                Storage::disk('local')->move($tempPayment, $newPaymentPath);
-                
+
+                $extension = pathinfo($tempPayment, PATHINFO_EXTENSION);
+                $newPaymentPath = 'payment_proofs/' . Str::random(20) . '.' . $extension;
+
+                $fileStream = Storage::disk('public')->readStream($tempPayment);
+                Storage::disk('local')->writeStream($newPaymentPath, $fileStream);
+
+                Storage::disk('public')->delete($tempPayment);
+
                 $validated['payment_proof_path'] = $newPaymentPath;
             }
-        } 
+        }
         unset($validated['temp_payment_proof_path']);
 
         if ($request->filled('temp_team_logo_path')) {
             $tempLogo = $request->input('temp_team_logo_path');
-            if (Storage::disk('public')->exists($tempLogo)){
+
+            if (Storage::disk('public')->exists($tempLogo)) {
                 if ($participation->team_logo_path && Storage::disk('public')->exists($participation->team_logo_path)) {
                     Storage::disk('public')->delete($participation->team_logo_path);
                 }
 
-                $newLogoPath = 'team_logos/' . Str::random(20) . '.' . pathinfo($tempLogo, PATHINFO_EXTENSION);
+                $extension = pathinfo($tempLogo, PATHINFO_EXTENSION);
+                $newLogoPath = 'team_logos/' . Str::random(20) . '.' . $extension;
+
                 Storage::disk('public')->move($tempLogo, $newLogoPath);
                 $validated['team_logo_path'] = $newLogoPath;
             }

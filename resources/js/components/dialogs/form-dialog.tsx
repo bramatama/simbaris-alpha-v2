@@ -21,7 +21,8 @@ interface FormDialogProps {
     description?: string | ReactNode;
     children: ReactNode;
     submitText: string;
-    submitVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+    submitVariant?:
+        'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
     isProcessing?: boolean;
     isDisabled?: boolean;
     cancelText?: string;
@@ -40,24 +41,38 @@ export function FormDialog({
     submitVariant = 'default',
     isProcessing = false,
     isDisabled = false,
-    cancelText = 'Cancel',
+    cancelText = 'Batal',
 }: FormDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent className='max-w-lg'>
+            <DialogContent className="max-w-lg">
                 <form onSubmit={onSubmit}>
                     <DialogHeader>
-                        <DialogTitle className={titleClass}>{title}</DialogTitle>
-                        {description && <DialogDescription>{description}</DialogDescription>}
+                        <DialogTitle className={titleClass}>
+                            {title}
+                        </DialogTitle>
+                        {description && (
+                            <DialogDescription>{description}</DialogDescription>
+                        )}
                     </DialogHeader>
                     <div className="space-y-4 py-6">{children}</div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             {cancelText}
                         </Button>
-                        <Button type="submit" variant={submitVariant} disabled={isDisabled || isProcessing}>
-                            {isProcessing && <Spinner className="mr-2 h-4 w-4" />}
+                        <Button
+                            type="submit"
+                            variant={submitVariant}
+                            disabled={isDisabled || isProcessing}
+                        >
+                            {isProcessing && (
+                                <Spinner className="mr-2 h-4 w-4" />
+                            )}
                             {submitText}
                         </Button>
                     </DialogFooter>

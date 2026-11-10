@@ -33,7 +33,7 @@ export default function ScoringForm({
     existingScores,
 }: ScoringProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const [localScores, setLocalScores] = useState<Record<number, LocalScore>>(
         {},
@@ -116,6 +116,26 @@ export default function ScoringForm({
             window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [saveStatus]);
 
+    useEffect(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }, [activeCategory.scoring_category_id]);
+
+    useEffect(() => {
+        const handlePageShow = (event: PageTransitionEvent) => {
+            if (event.persisted) {
+                router.reload();
+            }
+        };
+
+        window.addEventListener('pageshow', handlePageShow);
+        return () => {
+            window.removeEventListener('pageshow', handlePageShow);
+        };
+    }, []);
+
     /* ==========================================
        HANDLER INTERAKSI KLIK NILAI
     ========================================== */
@@ -174,7 +194,7 @@ export default function ScoringForm({
             submitCategoryUrl,
             { scores: finalScores.map((score) => ({ ...score })) },
             {
-                preserveScroll: true,
+                preserveScroll: false,
                 onStart: () => setSaveStatus('saving'),
                 onFinish: () => {
                     setSaveStatus('idle');

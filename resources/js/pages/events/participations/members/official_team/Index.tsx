@@ -1,5 +1,6 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import { useEffect } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getParticipationInnerNav } from '@/config/inner_sidebar';
 import {
@@ -25,6 +26,7 @@ import {
     ShieldAlert,
     Users,
     UserCheck,
+    AlertCircle,
 } from 'lucide-react';
 import {
     Select,
@@ -50,8 +52,8 @@ export default function OfficialTeamParticipationMembers({
     event: any;
     participation: any;
 }) {
-    const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const { auth, errors: pageErrors } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
 
     const isApproved = participation.status === 'approved';
 
@@ -63,9 +65,12 @@ export default function OfficialTeamParticipationMembers({
                   member_role: m.member_role,
                   member_position: m.member_position || '',
                   photo: null,
-                  preview_url: m.member_photo_path
-                      ? route('participation-member-photo.file', m)
-                      : null,
+                  preview_url:
+                      m.member_photo_path && m.team_member_id
+                          ? route('participation-member-photo.file', {
+                                teamMember: m.team_member_id,
+                            })
+                          : null,
               }))
             : [];
 
@@ -78,7 +83,7 @@ export default function OfficialTeamParticipationMembers({
             photo: null,
             preview_url: null,
         });
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 3; i++) {
             initialMembers.push({
                 team_member_id: null,
                 member_name: '',
@@ -94,6 +99,31 @@ export default function OfficialTeamParticipationMembers({
         _method: 'post',
         members: initialMembers,
     });
+
+    useEffect(() => {
+        if (Object.keys(errors).length > 0 || pageErrors?.error) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                const targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors, pageErrors]);
 
     const commanderCount = data.members.filter(
         (m) => m.member_role === 'commander',
@@ -159,15 +189,35 @@ export default function OfficialTeamParticipationMembers({
         }
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     const renderMemberCard = (
         member: MemberForm,
         absoluteIndex: number,
         section: string,
     ) => {
+        const nameErr = (errors as any)[`members.${absoluteIndex}.member_name`];
+        const photoErr = (errors as any)[`members.${absoluteIndex}.photo`];
+
         return (
             <div
                 key={absoluteIndex}
-                className="relative overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all hover:border-primary/30"
+                className={`relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:border-primary/30 ${
+                    nameErr || photoErr
+                        ? 'border-destructive/60 bg-destructive/5'
+                        : 'border-border/50'
+                }`}
             >
                 <Button
                     type="button"
@@ -180,7 +230,7 @@ export default function OfficialTeamParticipationMembers({
                     <Trash2 className="h-3.5 w-3.5" />
                 </Button>
                 <div className="flex flex-col gap-4 p-4">
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center gap-1.5">
                         <input
                             type="file"
                             id={`photo-${absoluteIndex}`}
@@ -192,7 +242,11 @@ export default function OfficialTeamParticipationMembers({
                         />
                         <Label
                             htmlFor={`photo-${absoluteIndex}`}
-                            className="group relative flex aspect-3/4 w-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border/70 bg-muted/30 transition-colors hover:border-primary/50 hover:bg-muted/50"
+                            className={`group relative flex aspect-3/4 w-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
+                                photoErr
+                                    ? 'border-destructive bg-destructive/10'
+                                    : 'border-border/70 bg-muted/30 hover:border-primary/50 hover:bg-muted/50'
+                            }`}
                         >
                             {member.preview_url ? (
                                 <>
@@ -219,16 +273,23 @@ export default function OfficialTeamParticipationMembers({
                     </div>
                     <div className="w-full min-w-0 space-y-4">
                         <div className="space-y-1.5">
-                            <Label
-                                htmlFor={`name-${absoluteIndex}`}
-                                className="text-xs"
-                                requirement="required"
-                            >
-                                Nama Lengkap
-                            </Label>
+                            <div className="flex items-center justify-between">
+                                <Label
+                                    htmlFor={`name-${absoluteIndex}`}
+                                    className="text-xs"
+                                    requirement="required"
+                                >
+                                    Nama Lengkap
+                                </Label>
+                                {renderErrorBadge(nameErr)}
+                            </div>
                             <Input
                                 id={`name-${absoluteIndex}`}
-                                className="h-9 w-full min-w-0 text-sm"
+                                className={`h-9 w-full min-w-0 text-sm ${
+                                    nameErr
+                                        ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                        : ''
+                                }`}
                                 placeholder="Masukkan nama lengkap..."
                                 value={member.member_name}
                                 onChange={(e) =>
@@ -238,14 +299,6 @@ export default function OfficialTeamParticipationMembers({
                                         e.target.value,
                                     )
                                 }
-                            />
-                            <InputError
-                                message={
-                                    (errors as any)[
-                                        `members.${absoluteIndex}.member_name`
-                                    ]
-                                }
-                                className="text-[10px]"
                             />
                         </div>
                         {section === 'reserve' ? (
@@ -309,14 +362,6 @@ export default function OfficialTeamParticipationMembers({
                                 />
                             </div>
                         )}
-                        <InputError
-                            message={
-                                (errors as any)[
-                                    `members.${absoluteIndex}.photo`
-                                ]
-                            }
-                            className="text-[10px]"
-                        />
                     </div>
                 </div>
             </div>
@@ -369,7 +414,44 @@ export default function OfficialTeamParticipationMembers({
                             </p>
                         </div>
                     </div>
+
+                    {/* ERROR BANNER ATAS (Metode 3 - Unique Errors) */}
+                    {(Object.keys(errors).length > 0 || pageErrors?.error) && (
+                        <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <h4 className="text-sm font-bold">
+                                    Penyimpanan Data Anggota Gagal:
+                                </h4>
+                                <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                    {pageErrors?.error && (
+                                        <li className="leading-relaxed">
+                                            {pageErrors.error as string}
+                                        </li>
+                                    )}
+
+                                    {/* DEDUPLIKASI ERROR MENGGUNAKAN SET */}
+                                    {Array.from(
+                                        new Set(
+                                            Object.values(errors).map(
+                                                (err) => err as string,
+                                            ),
+                                        ),
+                                    ).map((errMessage, idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {errMessage}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={submit} className="space-y-8">
+                        {/* CARD KOMANDAN PASUKAN */}
                         <Card className="border-t-4 border-border/50 border-t-emerald-500 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                                 <div className="flex items-center justify-between">
@@ -419,6 +501,8 @@ export default function OfficialTeamParticipationMembers({
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* CARD PASUKAN INTI */}
                         <Card className="border-t-4 border-border/50 border-t-primary shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                                 <div className="flex items-center justify-between">
@@ -468,6 +552,8 @@ export default function OfficialTeamParticipationMembers({
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* CARD PELATIH & OFFICIAL */}
                         <Card className="border-t-4 border-border/50 border-t-orange-500 shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
                                 <div className="flex items-center justify-between">
@@ -515,15 +601,8 @@ export default function OfficialTeamParticipationMembers({
                                 )}
                             </CardContent>
                         </Card>
-                        {Object.keys(errors).length > 0 &&
-                            !Object.keys(errors).some((k) =>
-                                k.startsWith('members.'),
-                            ) && (
-                                <div className="rounded-md bg-destructive/10 p-4 text-sm font-semibold text-destructive">
-                                    Terjadi kesalahan. Pastikan semua data wajib
-                                    terisi dan format foto benar.
-                                </div>
-                            )}
+
+                        {/* BARIS TOMBOL STICKY */}
                         <div className="sticky bottom-6 z-20 flex justify-end rounded-xl border border-border/50 bg-background/80 p-4 shadow-lg backdrop-blur-md">
                             <Button
                                 type="submit"

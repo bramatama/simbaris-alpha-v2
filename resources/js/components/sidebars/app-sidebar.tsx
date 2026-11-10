@@ -33,7 +33,7 @@ export function AppSidebar() {
     const { appearance, updateAppearance } = useAppearance();
     const footerNavItems = [
         {
-            title: 'Dark Theme',
+            title: 'Tema Gelap',
             icon: appearance === 'dark' ? Moon : Sun,
             isSwitch: true,
             switchChecked: appearance === 'dark',

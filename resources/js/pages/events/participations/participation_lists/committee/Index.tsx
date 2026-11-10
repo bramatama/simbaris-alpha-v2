@@ -30,7 +30,7 @@ export default function CommitteeParticipationIndex({
     participations: any[];
 }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const [searchTerm, setSearchTerm] = useState('');

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Concerns\HasEventAccess; // atau App\Traits\HasEventAccess
+use App\Concerns\HasEventAccess;
 
 class EventPenaltyController extends Controller
 {
@@ -36,7 +36,6 @@ class EventPenaltyController extends Controller
             ->latest()
             ->get();
 
-        // Data master dikirim HANYA untuk dijadikan opsi Select/Dropdown di frontend
         $masterPenalties = MasterPenalty::orderBy('penalty_name', 'asc')->get();
 
         $championCategories = EventChampionCategory::where('event_id', $event->event_id)
@@ -58,14 +57,12 @@ class EventPenaltyController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        // Validasi Akses Panitia Administrasi / Admin
         $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $this->validatePenaltyForm($request, null, $event->event_id);
 
         DB::transaction(function () use ($validated, $event) {
             
-            // Cek apakah penalti master ini sudah pernah ditambahkan ke event ini
             $exists = EventPenalty::where('event_id', $event->event_id)
                 ->where('master_penalty_id', $validated['master_penalty_id'])
                 ->exists();
@@ -103,7 +100,6 @@ class EventPenaltyController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        // Validasi Akses Panitia Administrasi / Admin
         $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
@@ -141,7 +137,6 @@ class EventPenaltyController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        // Validasi Akses Panitia Administrasi / Admin
         $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
@@ -163,7 +158,6 @@ class EventPenaltyController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
 
-        // Validasi Akses Panitia Administrasi / Admin
         $this->validateEventAccess($event, ['administration'], ['committee']);
         
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)
@@ -182,11 +176,26 @@ class EventPenaltyController extends Controller
             'master_penalty_id' => 'required|exists:master_penalties,master_penalty_id',
             'description' => 'nullable|string', 
             'penalty_action' => ['required', Rule::in(['deduction', 'disqualification'])],
-            'penalty_value' => ['nullable','required_if:penalty_action,deduction','numeric','min:0'],
-            'calculation_type' => ['required','required_if:penalty_action,deduction', Rule::in(['fixed', 'per_occurrence', 'per_second'])],
+            'penalty_value' => ['nullable', 'required_if:penalty_action,deduction', 'numeric', 'min:0'],
+            'calculation_type' => ['required', 'required_if:penalty_action,deduction', Rule::in(['fixed', 'per_occurrence', 'per_second'])],
             'is_active' => 'boolean',
             'event_champion_category_ids' => 'required|array|min:1',
             'event_champion_category_ids.*' => 'exists:event_champion_categories,event_champion_category_id',
+        ];
+
+        $messages = [
+            'master_penalty_id.required' => 'Jenis penalti wajib dipilih.',
+            'master_penalty_id.exists' => 'Jenis penalti tidak valid.',
+            'master_penalty_id.unique' => 'Aturan penalti ini sudah ada di dalam event.',
+            'penalty_action.required' => 'Tindakan hukuman wajib dipilih.',
+            'penalty_action.in' => 'Pilihan tindakan hukuman tidak valid.',
+            'penalty_value.required_if' => 'Nilai potongan wajib diisi jika tindakan berupa pengurangan nilai.',
+            'penalty_value.numeric' => 'Nilai potongan harus berupa angka.',
+            'penalty_value.min' => 'Nilai potongan minimal bernilai 0.',
+            'calculation_type.required_if' => 'Tipe kalkulasi wajib dipilih jika tindakan berupa pengurangan nilai.',
+            'calculation_type.in' => 'Tipe kalkulasi tidak valid.',
+            'event_champion_category_ids.required' => 'Minimal pilih 1 kategori juara yang terdampak.',
+            'event_champion_category_ids.min' => 'Minimal pilih 1 kategori juara yang terdampak.',
         ];
 
         if ($ignoreEventPenaltyId) {
@@ -199,7 +208,7 @@ class EventPenaltyController extends Controller
             ];
         }
 
-        return $request->validate($rules);
+        return $request->validate($rules, $messages);
     }
 
     /** Menyelaraskan kategori penghargaan yang menjadi sasaran penalti. */

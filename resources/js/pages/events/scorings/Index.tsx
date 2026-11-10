@@ -54,7 +54,7 @@ export default function ScoringCategoryIndex({
     scoringCategories = [],
 }: ScoringIndexProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const isCommittee = ['committee', 'admin'].includes(userRole);
@@ -74,7 +74,11 @@ export default function ScoringCategoryIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Kategori Penilaian - ${event.event_name}`} />
             <div className="grid w-full min-w-0 grid-cols-1">

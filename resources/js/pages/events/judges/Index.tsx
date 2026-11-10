@@ -70,7 +70,7 @@ export default function JudgeIndex({
     expertises = [],
 }: JudgeIndexProps) {
     const { auth } = usePage<PageProps & { auth: Auth }>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -104,7 +104,11 @@ export default function JudgeIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Daftar Juri - ${event.event_name}`} />
 

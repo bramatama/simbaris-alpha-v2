@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Combobox,
     ComboboxInput,
@@ -18,8 +19,8 @@ import {
     ComboboxGroup,
 } from '@/components/ui/combobox';
 import InputError from '@/components/input-error';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { PageProps } from '@inertiajs/core';
 
 export default function ChampionsCreate({
@@ -27,18 +28,18 @@ export default function ChampionsCreate({
     eventLevels,
     masterChampionCategories,
 }: any) {
-
-    const {auth}= usePage<PageProps>().props;
+    const { auth } = usePage<PageProps>().props;
     const userRole = auth?.user?.role;
     const committeePosition = auth?.user?.committee_position;
-    const { data, setData, post, processing, errors } = useForm({
+
+    const { data, setData, post, processing, errors, transform } = useForm({
         champion_category_id: '',
-        champion_category_name_ui: '', // Menyimpan teks UI kategori
+        champion_category_name_ui: '',
         event_level_ids: [] as number[],
         champions: [
             {
                 champion_id: '',
-                champion_name_ui: '', // Menyimpan teks UI piala per baris
+                champion_name_ui: '',
                 rank_position: 1,
                 prize_money: '',
                 certificate: false,
@@ -55,6 +56,44 @@ export default function ChampionsCreate({
 
     const [categorySearch, setCategorySearch] = useState('');
     const [champSearch, setChampSearch] = useState<Record<number, string>>({});
+
+    // Formatter Rupiah dengan titik
+    const formatNumberWithDots = (val: string | number) => {
+        if (!val && val !== 0) return '';
+        const raw = val.toString().replace(/\D/g, '');
+        if (!raw) return '';
+        return new Intl.NumberFormat('id-ID').format(parseInt(raw, 10));
+    };
+
+    const parseNumberFromDots = (val: string) => {
+        return val.replace(/\D/g, '');
+    };
+
+    // Smooth Scroll to Error (Metode 3)
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                const targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors]);
 
     const filteredCategories = masterChampionCategories.filter((mc: any) =>
         mc.champion_category_name
@@ -125,14 +164,40 @@ export default function ChampionsCreate({
         );
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        transform((currentData) => ({
+            ...currentData,
+            champions: currentData.champions.map((c) => ({
+                ...c,
+                prize_money: parseNumberFromDots(c.prize_money),
+            })),
+        }));
+
         post(`/committee/events/${event.public_id}/champions`);
     };
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Tambah Penghargaan - ${event.event_name}`} />
 
@@ -155,19 +220,48 @@ export default function ChampionsCreate({
                     </div>
                 </div>
 
+                {Object.keys(errors).length > 0 && (
+                    <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Pengisian Form Belum Lengkap / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 <form
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12"
                 >
-                    <div className="top-6 flex flex-col space-y-4 lg:sticky order-1 lg:col-span-4">
+                    <div className="top-6 order-1 flex flex-col space-y-4 lg:sticky lg:col-span-4">
                         <h3 className="text-lg font-bold">Konfigurasi Umum</h3>
                         <Card className="border-border/60 shadow-sm">
                             <CardContent className="space-y-5 p-5">
                                 {/* Kategori Master Combobox */}
                                 <div className="space-y-2">
-                                    <Label requirement="required">
-                                        Kategori Juara
-                                    </Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label requirement="required">
+                                            Kategori Juara
+                                        </Label>
+                                        {renderErrorBadge(
+                                            errors.champion_category_id,
+                                        )}
+                                    </div>
                                     <Combobox
                                         value={data.champion_category_name_ui}
                                         onValueChange={(val: any) => {
@@ -204,9 +298,15 @@ export default function ChampionsCreate({
                                         }
                                     >
                                         <ComboboxInput
+                                            id="champion_category_id"
                                             placeholder="Cari kategori piala..."
                                             showClear={
                                                 !!data.champion_category_name_ui
+                                            }
+                                            className={
+                                                errors.champion_category_id
+                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                    : ''
                                             }
                                         />
                                         <ComboboxContent>
@@ -246,10 +346,21 @@ export default function ChampionsCreate({
                                 </div>
 
                                 {/* Checkbox Jenjang */}
-                                <div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-4">
-                                    <Label requirement="required">
-                                        Terapkan Pada Jenjang
-                                    </Label>
+                                <div
+                                    className={`space-y-3 rounded-lg border p-4 ${
+                                        errors.event_level_ids
+                                            ? 'border-destructive/60 bg-destructive/5'
+                                            : 'border-border/50 bg-muted/10'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <Label requirement="required">
+                                            Terapkan Pada Jenjang
+                                        </Label>
+                                        {renderErrorBadge(
+                                            errors.event_level_ids,
+                                        )}
+                                    </div>
                                     <div className="grid grid-cols-1 gap-3">
                                         {!data.champion_category_id && (
                                             <p className="w-full py-2 text-center text-xs text-muted-foreground italic">
@@ -280,7 +391,11 @@ export default function ChampionsCreate({
                                                         />
                                                         <label
                                                             htmlFor={`level-${level.event_level_id}`}
-                                                            className={`text-sm font-medium ${disabled ? 'cursor-not-allowed text-muted-foreground line-through' : 'cursor-pointer'}`}
+                                                            className={`text-sm font-medium ${
+                                                                disabled
+                                                                    ? 'cursor-not-allowed text-muted-foreground line-through'
+                                                                    : 'cursor-pointer'
+                                                            }`}
                                                         >
                                                             {
                                                                 level.level
@@ -312,8 +427,12 @@ export default function ChampionsCreate({
                                 disabled={processing}
                                 className="w-full gap-2"
                             >
-                                <Save className="h-4 w-4" /> Simpan Semua
-                                Penghargaan
+                                {processing ? (
+                                    <Spinner className="h-4 w-4" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                Simpan Semua Penghargaan
                             </Button>
                             <Link
                                 href={`/committee/events/${event.public_id}/champions`}
@@ -330,7 +449,7 @@ export default function ChampionsCreate({
                         </div>
                     </div>
 
-                    <div className=" space-y-4 order-2 lg:col-span-8">
+                    <div className="order-2 space-y-4 lg:col-span-8">
                         <div className="mb-2 flex items-center justify-between">
                             <h3 className="text-lg font-bold">Rincian Piala</h3>
                             {data.champions.length === 0 && (
@@ -351,7 +470,7 @@ export default function ChampionsCreate({
                         {!data.champion_category_id ? (
                             <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                                 Silakan pilih <strong>Kategori Juara</strong> di
-                                sebelah kanan terlebih dahulu untuk menyusun
+                                sebelah kiri terlebih dahulu untuk menyusun
                                 piala.
                             </div>
                         ) : (
@@ -360,263 +479,314 @@ export default function ChampionsCreate({
                                     message={errors.champions as string}
                                 />
 
-                                {data.champions.map((champ, index) => (
-                                    <Card
-                                        key={index}
-                                        className="relative overflow-hidden border-border/60 shadow-sm"
-                                    >
-                                        <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-primary"></div>
-                                        <CardContent className="p-5 pl-6">
-                                            <div className="mb-4 flex items-start justify-between gap-4">
-                                                <h4 className="text-sm font-bold tracking-wider text-muted-foreground uppercase">
-                                                    Piala #{index + 1}
-                                                </h4>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 text-destructive"
-                                                    onClick={() =>
-                                                        removeChampionField(
-                                                            index,
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2 className="h-4 w-4" />{' '}
-                                                    Hapus
-                                                </Button>
-                                            </div>
+                                {data.champions.map((champ, index) => {
+                                    const champIdError =
+                                        errors[
+                                            `champions.${index}.champion_id`
+                                        ];
+                                    const rankPosError =
+                                        errors[
+                                            `champions.${index}.rank_position`
+                                        ];
+                                    const prizeMoneyError =
+                                        errors[
+                                            `champions.${index}.prize_money`
+                                        ];
 
-                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label requirement="required">
-                                                        Nama Piala (Master)
-                                                    </Label>
-                                                    <Combobox
-                                                        value={
-                                                            champ.champion_name_ui
-                                                        }
-                                                        onValueChange={(
-                                                            val: any,
-                                                        ) => {
-                                                            const selectedChamp =
-                                                                availableChampions.find(
-                                                                    (c: any) =>
-                                                                        c.champion_name ===
-                                                                        val,
-                                                                );
-                                                            const newChampions =
-                                                                [
-                                                                    ...data.champions,
-                                                                ];
-                                                            newChampions[
-                                                                index
-                                                            ].champion_name_ui =
-                                                                val ?? '';
-                                                            newChampions[
-                                                                index
-                                                            ].champion_id =
-                                                                selectedChamp
-                                                                    ? selectedChamp.champion_id.toString()
-                                                                    : '';
-                                                            setData(
-                                                                'champions',
-                                                                newChampions,
-                                                            );
-                                                        }}
-                                                        inputValue={
-                                                            champSearch[index]
-                                                        }
-                                                        onInputValueChange={(
-                                                            val: string,
-                                                        ) =>
-                                                            setChampSearch(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    [index]:
-                                                                        val,
-                                                                }),
+                                    return (
+                                        <Card
+                                            key={index}
+                                            className="relative overflow-hidden border-border/60 shadow-sm"
+                                        >
+                                            <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-primary"></div>
+                                            <CardContent className="p-5 pl-6">
+                                                <div className="mb-4 flex items-start justify-between gap-4">
+                                                    <h4 className="text-sm font-bold tracking-wider text-muted-foreground uppercase">
+                                                        Piala #{index + 1}
+                                                    </h4>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 text-destructive"
+                                                        onClick={() =>
+                                                            removeChampionField(
+                                                                index,
                                                             )
                                                         }
                                                     >
-                                                        <ComboboxInput
-                                                            placeholder="Cari referensi piala..."
-                                                            showClear={
-                                                                !!champ.champion_name_ui
+                                                        <Trash2 className="h-4 w-4" />{' '}
+                                                        Hapus
+                                                    </Button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                    {/* NAMA PIALA */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Nama Piala
+                                                                (Master)
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                champIdError,
+                                                            )}
+                                                        </div>
+                                                        <Combobox
+                                                            value={
+                                                                champ.champion_name_ui
                                                             }
-                                                        />
-                                                        <ComboboxContent>
-                                                            <ComboboxList>
-                                                                {getFilteredChampions(
-                                                                    index,
-                                                                ).length ===
-                                                                    0 && (
-                                                                    <ComboboxEmpty>
-                                                                        Belum
-                                                                        ada
-                                                                        master
-                                                                        piala.
-                                                                    </ComboboxEmpty>
-                                                                )}
-                                                                <ComboboxGroup>
-                                                                    {getFilteredChampions(
-                                                                        index,
-                                                                    ).map(
+                                                            onValueChange={(
+                                                                val: any,
+                                                            ) => {
+                                                                const selectedChamp =
+                                                                    availableChampions.find(
                                                                         (
                                                                             c: any,
-                                                                        ) => {
-                                                                            const champIdStr =
-                                                                                c.champion_id.toString();
-                                                                            const disabled =
-                                                                                isChampionSelected(
-                                                                                    champIdStr,
-                                                                                    index,
-                                                                                );
-                                                                            return (
-                                                                                <ComboboxItem
-                                                                                    key={
-                                                                                        c.champion_id
-                                                                                    }
-                                                                                    value={
-                                                                                        c.champion_name
-                                                                                    }
-                                                                                    disabled={
-                                                                                        disabled
-                                                                                    }
-                                                                                    className="rounded-none px-4 py-2 text-xs"
-                                                                                >
-                                                                                    {
-                                                                                        c.champion_name
-                                                                                    }{' '}
-                                                                                    {disabled &&
-                                                                                        '(Sudah Dipilih)'}
-                                                                                </ComboboxItem>
-                                                                            );
-                                                                        },
-                                                                    )}
-                                                                </ComboboxGroup>
-                                                            </ComboboxList>
-                                                        </ComboboxContent>
-                                                    </Combobox>
-                                                    {errors[
-                                                        `champions.${index}.champion_id`
-                                                    ] && (
-                                                        <span className="text-xs text-red-500">
-                                                            {
-                                                                errors[
-                                                                    `champions.${index}.champion_id`
+                                                                        ) =>
+                                                                            c.champion_name ===
+                                                                            val,
+                                                                    );
+                                                                const newChampions =
+                                                                    [
+                                                                        ...data.champions,
+                                                                    ];
+                                                                newChampions[
+                                                                    index
+                                                                ].champion_name_ui =
+                                                                    val ?? '';
+                                                                newChampions[
+                                                                    index
+                                                                ].champion_id =
+                                                                    selectedChamp
+                                                                        ? selectedChamp.champion_id.toString()
+                                                                        : '';
+                                                                setData(
+                                                                    'champions',
+                                                                    newChampions,
+                                                                );
+                                                            }}
+                                                            inputValue={
+                                                                champSearch[
+                                                                    index
                                                                 ]
                                                             }
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label requirement="required">
-                                                        Peringkat (Angka)
-                                                    </Label>
-                                                    <Input
-                                                        inputMode="numeric"
-                                                        min="1"
-                                                        value={
-                                                            champ.rank_position
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateChampion(
-                                                                index,
-                                                                'rank_position',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="1"
-                                                    />
-                                                    {errors[
-                                                        `champions.${index}.rank_position`
-                                                    ] && (
-                                                        <span className="text-xs text-red-500">
-                                                            {
-                                                                errors[
-                                                                    `champions.${index}.rank_position`
-                                                                ]
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>
-                                                        Uang Pembinaan (Rp)
-                                                    </Label>
-                                                    <Input
-                                                        inputMode="numeric"
-                                                        min="0"
-                                                        value={
-                                                            champ.prize_money
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateChampion(
-                                                                index,
-                                                                'prize_money',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="0"
-                                                    />
-                                                    {errors[
-                                                        `champions.${index}.prize_money`
-                                                    ] && (
-                                                        <span className="text-xs text-red-500">
-                                                            {
-                                                                errors[
-                                                                    `champions.${index}.prize_money`
-                                                                ]
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col justify-end space-y-2 pb-2">
-                                                    <div className="flex items-center space-x-2">
-                                                        <Switch
-                                                            checked={
-                                                                champ.certificate
-                                                            }
-                                                            onCheckedChange={(
-                                                                checked,
+                                                            onInputValueChange={(
+                                                                val: string,
                                                             ) =>
-                                                                updateChampion(
-                                                                    index,
-                                                                    'certificate',
-                                                                    checked,
+                                                                setChampSearch(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [index]:
+                                                                            val,
+                                                                    }),
                                                                 )
                                                             }
+                                                        >
+                                                            <ComboboxInput
+                                                                id={`champions.${index}.champion_id`}
+                                                                placeholder="Cari referensi piala..."
+                                                                showClear={
+                                                                    !!champ.champion_name_ui
+                                                                }
+                                                                className={
+                                                                    champIdError
+                                                                        ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                        : ''
+                                                                }
+                                                            />
+                                                            <ComboboxContent>
+                                                                <ComboboxList>
+                                                                    {getFilteredChampions(
+                                                                        index,
+                                                                    ).length ===
+                                                                        0 && (
+                                                                        <ComboboxEmpty>
+                                                                            Belum
+                                                                            ada
+                                                                            master
+                                                                            piala.
+                                                                        </ComboboxEmpty>
+                                                                    )}
+                                                                    <ComboboxGroup>
+                                                                        {getFilteredChampions(
+                                                                            index,
+                                                                        ).map(
+                                                                            (
+                                                                                c: any,
+                                                                            ) => {
+                                                                                const champIdStr =
+                                                                                    c.champion_id.toString();
+                                                                                const disabled =
+                                                                                    isChampionSelected(
+                                                                                        champIdStr,
+                                                                                        index,
+                                                                                    );
+                                                                                return (
+                                                                                    <ComboboxItem
+                                                                                        key={
+                                                                                            c.champion_id
+                                                                                        }
+                                                                                        value={
+                                                                                            c.champion_name
+                                                                                        }
+                                                                                        disabled={
+                                                                                            disabled
+                                                                                        }
+                                                                                        className="rounded-none px-4 py-2 text-xs"
+                                                                                    >
+                                                                                        {
+                                                                                            c.champion_name
+                                                                                        }{' '}
+                                                                                        {disabled &&
+                                                                                            '(Sudah Dipilih)'}
+                                                                                    </ComboboxItem>
+                                                                                );
+                                                                            },
+                                                                        )}
+                                                                    </ComboboxGroup>
+                                                                </ComboboxList>
+                                                            </ComboboxContent>
+                                                        </Combobox>
+                                                        <InputError
+                                                            message={
+                                                                champIdError
+                                                            }
                                                         />
-                                                        <Label className="cursor-pointer font-medium">
-                                                            Termasuk Sertifikat
+                                                    </div>
+
+                                                    {/* PERINGKAT */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Peringkat
+                                                                (Angka)
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                rankPosError,
+                                                            )}
+                                                        </div>
+                                                        <Input
+                                                            id={`champions.${index}.rank_position`}
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            min="1"
+                                                            value={
+                                                                champ.rank_position
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateChampion(
+                                                                    index,
+                                                                    'rank_position',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="1"
+                                                            className={
+                                                                rankPosError
+                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                    : ''
+                                                            }
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                rankPosError
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    {/* UANG PEMBINAAN (DENGAN TITIK RIBUAN) */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label>
+                                                                Uang Pembinaan
+                                                                (Rp)
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                prizeMoneyError,
+                                                            )}
+                                                        </div>
+                                                        <Input
+                                                            id={`champions.${index}.prize_money`}
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={formatNumberWithDots(
+                                                                champ.prize_money,
+                                                            )}
+                                                            onChange={(e) =>
+                                                                updateChampion(
+                                                                    index,
+                                                                    'prize_money',
+                                                                    parseNumberFromDots(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                            placeholder="0"
+                                                            className={
+                                                                prizeMoneyError
+                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                    : ''
+                                                            }
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                prizeMoneyError
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex flex-col justify-end space-y-2 pb-2">
+                                                        <div className="flex items-center space-x-2">
+                                                            <Switch
+                                                                checked={
+                                                                    champ.certificate
+                                                                }
+                                                                onCheckedChange={(
+                                                                    checked,
+                                                                ) =>
+                                                                    updateChampion(
+                                                                        index,
+                                                                        'certificate',
+                                                                        checked,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <Label className="cursor-pointer font-medium">
+                                                                Termasuk
+                                                                Sertifikat
+                                                            </Label>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2 sm:col-span-2">
+                                                        <Label>
+                                                            Deskripsi Tambahan
+                                                            Hadiah
                                                         </Label>
+                                                        <Textarea
+                                                            rows={2}
+                                                            value={
+                                                                champ.prize_descriptions
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateChampion(
+                                                                    index,
+                                                                    'prize_descriptions',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Cth: Beasiswa Pendidikan"
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="space-y-2 sm:col-span-2">
-                                                    <Label>
-                                                        Deskripsi Tambahan
-                                                        Hadiah
-                                                    </Label>
-                                                    <Textarea
-                                                        rows={2}
-                                                        value={
-                                                            champ.prize_descriptions
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateChampion(
-                                                                index,
-                                                                'prize_descriptions',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Cth: Beasiswa Pendidikan"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
 
                                 {data.champions.length > 0 && (
                                     <Button
@@ -638,8 +808,12 @@ export default function ChampionsCreate({
                                 disabled={processing}
                                 className="w-full gap-2"
                             >
-                                <Save className="h-4 w-4" /> Simpan Semua
-                                Penghargaan
+                                {processing ? (
+                                    <Spinner className="h-4 w-4" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                Simpan Semua Penghargaan
                             </Button>
                             <Link
                                 href={`/committee/events/${event.public_id}/champions`}

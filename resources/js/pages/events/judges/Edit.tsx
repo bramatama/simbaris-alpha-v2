@@ -59,7 +59,7 @@ export default function EditJudge({
     expertises = [],
 }: EditJudgeProps) {
     const { auth } = usePage<PageProps & { auth: Auth }>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const currentExpertiseIds = (
         eventJudge.judge_expertises ||
@@ -106,7 +106,11 @@ export default function EditJudge({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Edit Penugasan Juri - ${event.event_name}`} />
 
@@ -141,7 +145,10 @@ export default function EditJudge({
                                         <UserCheck className="h-5 w-5 text-primary" />{' '}
                                         Informasi Akun Juri
                                     </CardTitle>
-                                    <p className='text-xs text-muted-foreground'>Hanya Akun Juri Terkait yang dapat mengganti Nama dan Email pribadinya</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Hanya Akun Juri Terkait yang dapat
+                                        mengganti Nama dan Email pribadinya
+                                    </p>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid gap-2">

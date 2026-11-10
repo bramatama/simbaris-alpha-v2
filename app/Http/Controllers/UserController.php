@@ -40,14 +40,6 @@ class UserController extends Controller
         ]);
     }
 
-    /** Menampilkan ringkasan informasi satu akun. */
-    public function show(User $user)
-    {
-        return inertia('users/Show', [
-            'user' => $user->only(['user_id', 'public_id', 'name', 'email', 'role', 'contact_info']),
-        ]);
-    }
-
     /**
      * Menghapus satu akun selain akun administrator yang sedang aktif.
      */
@@ -56,13 +48,13 @@ class UserController extends Controller
         $currentUserId = auth()->user()?->user_id;
         if ($user->user_id === $currentUserId) {
             return redirect()->back()
-                ->with('error', 'You cannot delete your own account.');
+                ->with('error', 'Anda tidak bisa menghapus akun anda sendiri');
         }
 
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'Pengguna berhasil dihapus');
     }
 
     /** Menghapus beberapa akun yang dipilih administrator. */
@@ -74,11 +66,11 @@ class UserController extends Controller
         ]);
 
         if (in_array($currentUserId, $request->user_ids)) {
-            return redirect()->back() ->with('error', 'You cannot delete your own account.');
+            return redirect()->back() ->with('error', 'Anda tidak bisa menghapus akun anda sendiri');
         }
         User::whereIn('user_id', $request->user_ids)->delete(); 
         
         return redirect() ->route('admin.users.index')
-        ->with('success', 'Selected users deleted successfully.');
+        ->with('success', 'Pengguna terpilih berhasil dihapus');
     }
 }

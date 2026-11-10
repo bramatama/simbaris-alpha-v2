@@ -36,12 +36,12 @@ export default function UserTableHeaders({
                 <TableRow>
                     <SelectAllCheckbox />
 
-                    <TableHead>Name & Email</TableHead>
-                    <TableHead>Institution</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Contact</TableHead>
+                    <TableHead>Nama & Email</TableHead>
+                    <TableHead>Instansi</TableHead>
+                    <TableHead>Lokasi</TableHead>
+                    <TableHead>Kontak</TableHead>
 
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
             </TableHeader>
         );
@@ -53,12 +53,12 @@ export default function UserTableHeaders({
                 <TableRow>
                     <SelectAllCheckbox />
 
-                    <TableHead>Name & Email</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Contact</TableHead>
+                    <TableHead>Nama & Email</TableHead>
+                    <TableHead>Departemen</TableHead>
+                    <TableHead>Peran</TableHead>
+                    <TableHead>Kontak</TableHead>
 
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
             </TableHeader>
         );
@@ -69,12 +69,12 @@ export default function UserTableHeaders({
             <TableRow>
                 <SelectAllCheckbox />
 
-                <TableHead>Name & Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Joined Date</TableHead>
+                <TableHead>Nama & Email</TableHead>
+                <TableHead>Peran</TableHead>
+                <TableHead>Kontak</TableHead>
+                <TableHead>Tanggal Bergabung</TableHead>
 
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
         </TableHeader>
     );

@@ -19,7 +19,7 @@ import {
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 interface Region {
     id: string;
@@ -38,6 +38,10 @@ export default function Register() {
     const [citySearch, setCitySearch] = useState<string>('');
 
     const [isLoadingCities, setIsLoadingCities] = useState(false);
+
+    // State untuk visibilitas password
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const filteredProvinces = provinceSearch
         ? provinces.filter((p) =>
@@ -267,7 +271,6 @@ export default function Register() {
                                                 </ComboboxEmpty>
                                             )}
                                             <ComboboxGroup>
-                                                {/* Gunakan array hasil filter */}
                                                 {filteredCities.map((city) => (
                                                     <ComboboxItem
                                                         key={city.id}
@@ -293,15 +296,39 @@ export default function Register() {
                                     >
                                         Password
                                     </Label>
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        required
-                                        tabIndex={7}
-                                        autoComplete="new-password"
-                                        name="password"
-                                        placeholder="Password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={
+                                                showPassword
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            required
+                                            tabIndex={7}
+                                            autoComplete="new-password"
+                                            name="password"
+                                            placeholder="Password"
+                                            className="pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowPassword(!showPassword)
+                                            }
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-hidden"
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                            <span className="sr-only">
+                                                Toggle password visibility
+                                            </span>
+                                        </button>
+                                    </div>
                                     <InputError message={errors.password} />
                                 </div>
 
@@ -312,15 +339,42 @@ export default function Register() {
                                     >
                                         Konfirmasi password
                                     </Label>
-                                    <Input
-                                        id="password_confirmation"
-                                        type="password"
-                                        required
-                                        tabIndex={8}
-                                        autoComplete="new-password"
-                                        name="password_confirmation"
-                                        placeholder="Konfirmasi password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password_confirmation"
+                                            type={
+                                                showConfirmPassword
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            required
+                                            tabIndex={8}
+                                            autoComplete="new-password"
+                                            name="password_confirmation"
+                                            placeholder="Konfirmasi password"
+                                            className="pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowConfirmPassword(
+                                                    !showConfirmPassword,
+                                                )
+                                            }
+                                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-hidden"
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                            <span className="sr-only">
+                                                Toggle confirm password
+                                                visibility
+                                            </span>
+                                        </button>
+                                    </div>
                                     <InputError
                                         message={errors.password_confirmation}
                                     />

@@ -29,7 +29,7 @@ export default function ScoringCategoryShow({
     scoringCategory,
 }: any) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const isCommittee = ['committee', 'admin'].includes(userRole);
     const isOngoing = event.status === 'ongoing';
@@ -58,7 +58,11 @@ export default function ScoringCategoryShow({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head
                 title={`Preview Form: ${scoringCategory.master_category?.category_name}`}

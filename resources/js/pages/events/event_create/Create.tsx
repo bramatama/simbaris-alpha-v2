@@ -12,7 +12,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import {
     Trash2,
@@ -27,6 +26,7 @@ import {
     ShieldCheck,
     ArrowLeft,
     CheckCircle2,
+    AlertCircle,
 } from 'lucide-react';
 
 import {
@@ -45,7 +45,6 @@ export default function EventCreate({
 }: {
     existingCommittees: any[];
 }) {
-    // 1. Tambahkan properti poster di inisialisasi useForm
     const { data, setData, post, processing, errors, clearErrors, transform } =
         useForm({
             event_name: '',
@@ -56,7 +55,7 @@ export default function EventCreate({
             registration_end_time: '',
             start_time: '',
             end_time: '',
-            poster: null as File | null, // <-- Field poster baru
+            poster_path: null as File | null,
             committees: [{ name: '', email: '', department: '', position: '' }],
         });
 
@@ -68,10 +67,36 @@ export default function EventCreate({
     const [posterPreview, setPosterPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            const errorBanner = document.querySelector('.is-error-banner');
+
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                let targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors]);
+
     const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setData('poster', file);
+            setData('poster_path', file);
             if (posterPreview) {
                 URL.revokeObjectURL(posterPreview);
             }
@@ -80,7 +105,7 @@ export default function EventCreate({
     };
 
     const removePoster = () => {
-        setData('poster', null);
+        setData('poster_path', null);
         if (posterPreview) {
             URL.revokeObjectURL(posterPreview);
             setPosterPreview(null);
@@ -168,9 +193,23 @@ export default function EventCreate({
         });
     };
 
+    // Helper untuk render Ikon Error + Tooltip di sebelah Label
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     return (
         <AppLayout>
-            <Head title="Create New Event" />
+            <Head title="Buat Event Baru" />
 
             <div className="min-h-screen w-full bg-muted/20 p-4 md:p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl space-y-6">
@@ -203,10 +242,35 @@ export default function EventCreate({
                         </div>
                     </div>
 
+                    {/* SOLUSI 3: BANNER RINGKASAN ERROR GABUNGAN DI ATAS FORM */}
+                    {Object.keys(errors).length > 0 && (
+                        <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <h4 className="text-sm font-bold">
+                                    Pengisian Form Belum Lengkap / Terjadi
+                                    Kesalahan:
+                                </h4>
+                                <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                    {Object.entries(errors).map(
+                                        ([key, err], idx) => (
+                                            <li
+                                                key={idx}
+                                                className="leading-relaxed"
+                                            >
+                                                {err as string}
+                                            </li>
+                                        ),
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={submit} className="space-y-6 pb-12">
-                        {/* BASIC INFORMATION & SCHEDULING */}
+                        {/* INFORMASI DASAR & PENJADWALAN */}
                         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                            {/* BASIC DETAILS */}
+                            {/* CARD INFORMASI DASAR */}
                             <Card className="overflow-hidden border-border/70 shadow-sm">
                                 <CardHeader className="border-b bg-muted/20 px-4 py-4 sm:px-6">
                                     <div className="flex items-center gap-3">
@@ -233,9 +297,14 @@ export default function EventCreate({
                                             <Label requirement="optional">
                                                 Poster Event
                                             </Label>
-                                            <span className="text-[11px] text-muted-foreground">
-                                                JPG / PNG
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                {renderErrorBadge(
+                                                    errors.poster_path as string,
+                                                )}
+                                                <span className="text-[11px] text-muted-foreground">
+                                                    JPG / PNG
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <div className="flex flex-col gap-4 rounded-xl border border-dashed bg-muted/20 p-3 sm:flex-row sm:items-center sm:p-4">
@@ -245,13 +314,14 @@ export default function EventCreate({
                                                 ref={fileInputRef}
                                                 onChange={handlePosterChange}
                                                 accept="image/*"
+                                                id="poster"
                                             />
 
                                             {posterPreview ? (
                                                 <div className="group relative mx-auto aspect-3/4 w-32 shrink-0 overflow-hidden rounded-lg border bg-background shadow-sm sm:mx-0">
                                                     <img
                                                         src={posterPreview}
-                                                        alt="Poster Preview"
+                                                        alt="Pratinjau Poster"
                                                         className="h-full w-full object-cover"
                                                     />
 
@@ -299,7 +369,7 @@ export default function EventCreate({
 
                                                 <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
                                                     <span className="rounded-md bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground">
-                                                        Portrait 3:4
+                                                        Potret 3:4
                                                     </span>
                                                     <span className="rounded-md bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground">
                                                         JPG / PNG
@@ -307,22 +377,23 @@ export default function EventCreate({
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <InputError
-                                            message={errors.poster as string}
-                                        />
                                     </div>
 
                                     <div className="border-t" />
 
-                                    {/* EVENT NAME */}
-                                    <div className="grid gap-2">
-                                        <Label
-                                            requirement="required"
-                                            htmlFor="event_name"
-                                        >
-                                            Nama Event
-                                        </Label>
+                                    {/* NAMA EVENT */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                requirement="required"
+                                                htmlFor="event_name"
+                                            >
+                                                Nama Event
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.event_name,
+                                            )}
+                                        </div>
                                         <Input
                                             id="event_name"
                                             value={data.event_name}
@@ -332,23 +403,23 @@ export default function EventCreate({
                                                     e.target.value,
                                                 )
                                             }
-                                            placeholder="e.g. Lomba Paskibra Pandawa Vol IV 2026"
-                                            className="h-10"
+                                            placeholder="Contoh: Lomba Paskibra Pandawa Vol IV 2026"
+                                            className={`h-10 ${errors.event_name ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                             required
-                                        />
-                                        <InputError
-                                            message={errors.event_name}
                                         />
                                     </div>
 
-                                    {/* LOCATION */}
-                                    <div className="grid gap-2">
-                                        <Label
-                                            requirement="required"
-                                            htmlFor="location"
-                                        >
-                                            Lokasi
-                                        </Label>
+                                    {/* LOKASI */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                requirement="required"
+                                                htmlFor="location"
+                                            >
+                                                Lokasi
+                                            </Label>
+                                            {renderErrorBadge(errors.location)}
+                                        </div>
                                         <div className="relative">
                                             <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                             <Input
@@ -360,22 +431,26 @@ export default function EventCreate({
                                                         e.target.value,
                                                     )
                                                 }
-                                                placeholder="e.g. GOR Segiri Samarinda"
-                                                className="h-10 pl-9"
+                                                placeholder="Contoh: GOR Segiri Samarinda"
+                                                className={`h-10 pl-9 ${errors.location ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                 required
                                             />
                                         </div>
-                                        <InputError message={errors.location} />
                                     </div>
 
-                                    {/* DESCRIPTION */}
-                                    <div className="grid gap-2">
-                                        <Label
-                                            requirement="optional"
-                                            htmlFor="description"
-                                        >
-                                            Deskripsi
-                                        </Label>
+                                    {/* DESKRIPSI */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                requirement="optional"
+                                                htmlFor="description"
+                                            >
+                                                Deskripsi
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.description,
+                                            )}
+                                        </div>
                                         <Textarea
                                             id="description"
                                             value={data.description}
@@ -391,11 +466,14 @@ export default function EventCreate({
                                         />
                                     </div>
 
-                                    {/* STATUS */}
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="status">
-                                            Status Awal
-                                        </Label>
+                                    {/* STATUS AWAL */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="status">
+                                                Status Awal
+                                            </Label>
+                                            {renderErrorBadge(errors.status)}
+                                        </div>
                                         <Select
                                             value={data.status}
                                             onValueChange={(value) =>
@@ -406,14 +484,14 @@ export default function EventCreate({
                                                 id="status"
                                                 className="h-10 w-full"
                                             >
-                                                <SelectValue placeholder="Select status" />
+                                                <SelectValue placeholder="Pilih status awal" />
                                             </SelectTrigger>
                                             <SelectContent position="popper">
                                                 <SelectItem value="draft">
                                                     Draf
                                                 </SelectItem>
                                                 <SelectItem value="registration_open">
-                                                    Pendaftaran dibuka
+                                                    Pendaftaran Dibuka
                                                 </SelectItem>
                                                 <SelectItem value="active">
                                                     Sedang Berlangsung
@@ -424,7 +502,7 @@ export default function EventCreate({
                                 </CardContent>
                             </Card>
 
-                            {/* SCHEDULING */}
+                            {/* CARD PENJADWALAN */}
                             <Card className="overflow-hidden border-border/70 shadow-sm">
                                 <CardHeader className="border-b bg-muted/20 px-4 py-4 sm:px-6">
                                     <div className="flex items-center gap-3">
@@ -445,7 +523,7 @@ export default function EventCreate({
                                 </CardHeader>
 
                                 <CardContent className="space-y-5 p-4 sm:p-6">
-                                    {/* REGISTRATION PERIOD */}
+                                    {/* PERIODE PENDAFTARAN */}
                                     <div className="space-y-4 rounded-xl border bg-card p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -463,11 +541,20 @@ export default function EventCreate({
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div className="grid min-w-0 gap-2">
-                                                <Label requirement="required">
-                                                    Mulai
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="registration_start_time"
+                                                    >
+                                                        Mulai
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.registration_start_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="registration_start_time"
                                                     type="datetime-local"
                                                     value={
                                                         data.registration_start_time
@@ -478,21 +565,25 @@ export default function EventCreate({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-10 min-w-0 text-xs sm:text-sm"
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.registration_start_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.registration_start_time
-                                                    }
                                                 />
                                             </div>
 
-                                            <div className="grid min-w-0 gap-2">
-                                                <Label requirement="required">
-                                                    Sampai
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="registration_end_time"
+                                                    >
+                                                        Sampai
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.registration_end_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="registration_end_time"
                                                     type="datetime-local"
                                                     value={
                                                         data.registration_end_time
@@ -503,19 +594,14 @@ export default function EventCreate({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-10 min-w-0 text-xs sm:text-sm"
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.registration_end_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors.registration_end_time
-                                                    }
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* EVENT PERIOD */}
+                                    {/* TANGGAL PELAKSANAAN */}
                                     <div className="space-y-4 rounded-xl border bg-card p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -534,11 +620,20 @@ export default function EventCreate({
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div className="grid min-w-0 gap-2">
-                                                <Label requirement="required">
-                                                    Mulai
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="start_time"
+                                                    >
+                                                        Mulai
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.start_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="start_time"
                                                     type="datetime-local"
                                                     value={data.start_time}
                                                     onChange={(e) =>
@@ -547,19 +642,25 @@ export default function EventCreate({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-10 min-w-0 text-xs sm:text-sm"
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.start_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={errors.start_time}
                                                 />
                                             </div>
 
-                                            <div className="grid min-w-0 gap-2">
-                                                <Label requirement="required">
-                                                    Selesai
-                                                </Label>
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <Label
+                                                        requirement="required"
+                                                        htmlFor="end_time"
+                                                    >
+                                                        Selesai
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.end_time,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="end_time"
                                                     type="datetime-local"
                                                     value={data.end_time}
                                                     onChange={(e) =>
@@ -568,11 +669,8 @@ export default function EventCreate({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-10 min-w-0 text-xs sm:text-sm"
+                                                    className={`h-10 min-w-0 text-xs sm:text-sm ${errors.end_time ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                     required
-                                                />
-                                                <InputError
-                                                    message={errors.end_time}
                                                 />
                                             </div>
                                         </div>
@@ -590,7 +688,7 @@ export default function EventCreate({
                             </Card>
                         </div>
 
-                        {/* COMMITTEE MANAGEMENT */}
+                        {/* MANAJEMEN AKUN PANITIA */}
                         <Card className="overflow-hidden border-border/70 shadow-sm">
                             <CardHeader className="border-b bg-muted/20 px-4 py-4 sm:px-6">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -629,35 +727,22 @@ export default function EventCreate({
                                                 Informasi Akun Panitia
                                             </p>
                                             <p className="mt-0.5 text-muted-foreground">
-                                                Akun panitia akan otomatis
-                                                ditambahkan ke event ini.
+                                                Akun panitia baru akan otomatis
+                                                ditambahkan dan dikirimkan
+                                                konfirmasi via email.
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2 text-xs">
                                         <span className="text-muted-foreground">
-                                            Default password:
+                                            Kata sandi bawaan:
                                         </span>
                                         <code className="rounded-md border bg-background px-2 py-1 font-semibold text-foreground">
                                             password123
                                         </code>
                                     </div>
                                 </div>
-
-                                {/* COMMITTEE ERRORS */}
-                                {Object.keys(errors).some((key) =>
-                                    key.includes('committees'),
-                                ) && (
-                                    <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                                        <X className="mt-0.5 h-4 w-4 shrink-0" />
-                                        <p>
-                                            Harap periksa kolom-kolom komite.
-                                            Beberapa alamat email mungkin sudah
-                                            terdaftar.
-                                        </p>
-                                    </div>
-                                )}
 
                                 {/* COMMITTEE LIST */}
                                 <div className="space-y-4">
@@ -677,11 +762,10 @@ export default function EventCreate({
 
                                                     <div>
                                                         <h4 className="text-sm font-semibold">
-                                                            Committee #
-                                                            {index + 1}
+                                                            Panitia #{index + 1}
                                                         </h4>
                                                         <p className="text-[11px] text-muted-foreground">
-                                                            Account information
+                                                            Informasi Akun
                                                         </p>
                                                     </div>
                                                 </div>
@@ -700,7 +784,7 @@ export default function EventCreate({
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                         <span className="hidden sm:inline">
-                                                            Remove
+                                                            Hapus
                                                         </span>
                                                     </Button>
                                                 )}
@@ -714,8 +798,8 @@ export default function EventCreate({
                                                             requirement="optional"
                                                             className="text-xs"
                                                         >
-                                                            Autofill Existing
-                                                            Committee
+                                                            Isi Otomatis Panitia
+                                                            Terdaftar
                                                         </Label>
 
                                                         <span className="text-[10px] text-muted-foreground">
@@ -859,7 +943,7 @@ export default function EventCreate({
                                                                         index,
                                                                     )
                                                                 }
-                                                                title="Batalkan pilihan committee"
+                                                                title="Batalkan pilihan panitia"
                                                             >
                                                                 <X className="h-4 w-4" />
                                                             </Button>
@@ -869,12 +953,20 @@ export default function EventCreate({
 
                                                 {/* COMMITTEE FIELDS */}
                                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                    <div className="grid min-w-0 gap-2">
-                                                        <Label requirement="required">
-                                                            Full Name
-                                                        </Label>
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Nama Lengkap
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                errors[
+                                                                    `committees.${index}.name` as keyof typeof errors
+                                                                ],
+                                                            )}
+                                                        </div>
                                                         <Input
-                                                            placeholder="e.g. Budi Santoso"
+                                                            id={`committees.${index}.name`}
+                                                            placeholder="Contoh: Budi Santoso"
                                                             value={item.name}
                                                             onChange={(e) =>
                                                                 updateCommittee(
@@ -884,23 +976,24 @@ export default function EventCreate({
                                                                         .value,
                                                                 )
                                                             }
-                                                            className="h-10"
+                                                            className={`h-10 ${errors[`committees.${index}.name` as keyof typeof errors] ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                             required
-                                                        />
-                                                        <InputError
-                                                            message={
-                                                                errors[
-                                                                    `committees.${index}.name` as keyof typeof errors
-                                                                ]
-                                                            }
                                                         />
                                                     </div>
 
-                                                    <div className="grid min-w-0 gap-2">
-                                                        <Label requirement="required">
-                                                            Email
-                                                        </Label>
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Email
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                errors[
+                                                                    `committees.${index}.email` as keyof typeof errors
+                                                                ],
+                                                            )}
+                                                        </div>
                                                         <Input
+                                                            id={`committees.${index}.email`}
                                                             type="email"
                                                             placeholder="budi@example.com"
                                                             value={item.email}
@@ -912,24 +1005,26 @@ export default function EventCreate({
                                                                         .value,
                                                                 )
                                                             }
-                                                            className="h-10"
+                                                            className={`h-10 ${errors[`committees.${index}.email` as keyof typeof errors] ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                             required
-                                                        />
-                                                        <InputError
-                                                            message={
-                                                                errors[
-                                                                    `committees.${index}.email` as keyof typeof errors
-                                                                ]
-                                                            }
                                                         />
                                                     </div>
 
-                                                    <div className="grid min-w-0 gap-2">
-                                                        <Label requirement="required">
-                                                            Departemen
-                                                        </Label>
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Departemen /
+                                                                Bidang
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                errors[
+                                                                    `committees.${index}.department` as keyof typeof errors
+                                                                ],
+                                                            )}
+                                                        </div>
                                                         <Input
-                                                            placeholder="e.g. Juara Management"
+                                                            id={`committees.${index}.department`}
+                                                            placeholder="Contoh: Manajemen Juara"
                                                             value={
                                                                 item.department
                                                             }
@@ -941,15 +1036,22 @@ export default function EventCreate({
                                                                         .value,
                                                                 )
                                                             }
-                                                            className="h-10"
+                                                            className={`h-10 ${errors[`committees.${index}.department` as keyof typeof errors] ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                             required
                                                         />
                                                     </div>
 
-                                                    <div className="grid min-w-0 gap-2">
-                                                        <Label requirement="required">
-                                                            Committee Position
-                                                        </Label>
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label requirement="required">
+                                                                Posisi Panitia
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                errors[
+                                                                    `committees.${index}.position` as keyof typeof errors
+                                                                ],
+                                                            )}
+                                                        </div>
                                                         <Select
                                                             value={
                                                                 item.position
@@ -964,7 +1066,10 @@ export default function EventCreate({
                                                                 )
                                                             }
                                                         >
-                                                            <SelectTrigger className="h-10 w-full">
+                                                            <SelectTrigger
+                                                                id={`committees.${index}.position`}
+                                                                className="h-10 w-full"
+                                                            >
                                                                 <SelectValue placeholder="Pilih Posisi" />
                                                             </SelectTrigger>
 
@@ -974,10 +1079,11 @@ export default function EventCreate({
                                                                         Posisi
                                                                     </SelectLabel>
                                                                     <SelectItem value="administration">
-                                                                        Administration
+                                                                        Administrasi
                                                                     </SelectItem>
                                                                     <SelectItem value="auditor">
                                                                         Auditor
+                                                                        / Rekap
                                                                     </SelectItem>
                                                                 </SelectGroup>
                                                             </SelectContent>
@@ -989,7 +1095,7 @@ export default function EventCreate({
                                     ))}
                                 </div>
 
-                                {/* ADD COMMITTEE */}
+                                {/* ADD COMMITTEE BUTTON */}
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -998,7 +1104,7 @@ export default function EventCreate({
                                     className="h-11 w-full gap-2 border-dashed hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                                 >
                                     <PlusCircle className="h-4 w-4" />
-                                    Add Another Committee Member
+                                    Tambah Anggota Panitia Lain
                                     <span className="text-xs text-muted-foreground">
                                         ({data.committees.length}/3)
                                     </span>
@@ -1016,7 +1122,7 @@ export default function EventCreate({
                                     className="h-10 w-full sm:w-auto"
                                 >
                                     <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Cancel
+                                    Batal
                                 </Button>
 
                                 <Button
@@ -1029,7 +1135,7 @@ export default function EventCreate({
                                     ) : (
                                         <CheckCircle2 className="mr-2 h-4 w-4" />
                                     )}
-                                    Create Event & Accounts
+                                    Buat Event & Akun Panitia
                                 </Button>
                             </div>
                         </div>
@@ -1045,13 +1151,14 @@ export default function EventCreate({
                                 );
                             }
                         }}
-                        title="Committee Account Exists"
+                        title="Akun Panitia Sudah Ada"
                         description={
                             errors[
                                 'confirmation' as keyof typeof errors
                             ] as string
                         }
-                        confirmText="Proceed"
+                        confirmText="Lanjutkan"
+                        cancelText="Batal"
                         onConfirm={confirmSubmit}
                         isProcessing={processing}
                     />

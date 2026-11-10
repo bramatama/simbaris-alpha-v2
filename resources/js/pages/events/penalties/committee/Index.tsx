@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Select,
     SelectContent,
@@ -27,7 +28,6 @@ import {
     ComboboxGroup,
 } from '@/components/ui/combobox';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import InputError from '@/components/input-error';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -47,10 +47,9 @@ export default function EventPenaltiesIndex({
     championCategories,
 }: any) {
     const { auth, errors: pageErrors } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
-    // State Manajemen Form (Tambah/Edit)
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
 
@@ -74,6 +73,31 @@ export default function EventPenaltiesIndex({
         mp.penalty_name.toLowerCase().includes(searchPenalty.toLowerCase()),
     );
 
+    useEffect(() => {
+        if (Object.keys(errors).length > 0 || pageErrors?.error) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                const targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors, pageErrors]);
+
     // ==========================================
     // HANDLERS
     // ==========================================
@@ -86,11 +110,13 @@ export default function EventPenaltiesIndex({
                 ? current.filter((val) => val !== id)
                 : [...current, id],
         );
+        clearErrors('event_champion_category_ids');
     };
 
     const handleEditClick = (penalty: any) => {
         setIsEditing(true);
         setEditId(penalty.event_penalty_id);
+        setSearchPenalty(penalty.master_penalty?.penalty_name || '');
 
         setData({
             master_penalty_id: penalty.master_penalty_id.toString() ?? '',
@@ -105,10 +131,7 @@ export default function EventPenaltiesIndex({
         });
 
         clearErrors();
-        // Gulir ke atas untuk pengguna mobile agar fokus ke form
-        if (window.innerWidth < 1024) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleCancelEdit = () => {
@@ -176,6 +199,19 @@ export default function EventPenaltiesIndex({
         );
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     // ==========================================
     // HELPERS UTILITY
     // ==========================================
@@ -188,15 +224,13 @@ export default function EventPenaltiesIndex({
         return types[type] || type;
     };
 
-    const translateAction = (action: string) => {
-        return action === 'disqualification'
-            ? 'Diskualifikasi'
-            : 'Pengurangan Nilai';
-    };
-
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Penalti & Pelanggaran - ${event.event_name}`} />
 
@@ -221,11 +255,32 @@ export default function EventPenaltiesIndex({
                     </div>
                 </div>
 
-                {/* ERROR ALERT (Jika duplikasi master_penalty_id) */}
-                {pageErrors?.error && (
-                    <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/15 p-4 text-sm font-medium text-destructive">
+                {(Object.keys(errors).length > 0 || pageErrors?.error) && (
+                    <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
                         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                        <p>{pageErrors.error}</p>
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Pengisian Form Belum Lengkap / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {pageErrors?.error && (
+                                    <li className="leading-relaxed">
+                                        {pageErrors.error as string}
+                                    </li>
+                                )}
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
                     </div>
                 )}
 
@@ -235,11 +290,15 @@ export default function EventPenaltiesIndex({
                     <div className="order-1 flex flex-col space-y-4 lg:sticky lg:top-6 lg:col-span-5 xl:col-span-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold">
-                                Konfigurasi Umum{' '}
+                                Konfigurasi Umum
                             </h3>
                         </div>
                         <Card
-                            className={`border-border/60 shadow-sm transition-colors ${isEditing ? 'border-primary/50 ring-1 ring-primary/20' : ''}`}
+                            className={`border-border/60 shadow-sm transition-colors ${
+                                isEditing
+                                    ? 'border-primary/50 ring-1 ring-primary/20'
+                                    : ''
+                            }`}
                         >
                             <CardContent className="p-5">
                                 <div className="mb-5 flex items-center justify-between border-b border-border/50 pb-4">
@@ -264,10 +323,19 @@ export default function EventPenaltiesIndex({
                                     onSubmit={handleSubmit}
                                     className="space-y-5"
                                 >
+                                    {/* PILIH PENALTI (MASTER) */}
                                     <div className="space-y-2">
-                                        <Label requirement="required">
-                                            Pilih Jenis Penalti (Master)
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between">
+                                                <Label requirement="required">
+                                                    Pilih Jenis Penalti (Master)
+                                                </Label>
+
+                                                {renderErrorBadge(
+                                                    errors.master_penalty_id,
+                                                )}
+                                            </div>
+                                        </div>
                                         <Combobox
                                             value={data.penalty_name_ui ?? ''}
                                             onValueChange={(val: any) => {
@@ -286,6 +354,9 @@ export default function EventPenaltiesIndex({
                                                             ? selectedPenalty.master_penalty_id.toString()
                                                             : '',
                                                 }));
+                                                clearErrors(
+                                                    'master_penalty_id',
+                                                );
                                             }}
                                             inputValue={searchPenalty}
                                             onInputValueChange={(val: string) =>
@@ -293,9 +364,15 @@ export default function EventPenaltiesIndex({
                                             }
                                         >
                                             <ComboboxInput
+                                                id="master_penalty_id"
                                                 placeholder="Cari referensi penalti..."
                                                 showClear={
                                                     !!data.master_penalty_id
+                                                }
+                                                className={
+                                                    errors.master_penalty_id
+                                                        ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                        : ''
                                                 }
                                             />
                                             <ComboboxContent>
@@ -317,9 +394,7 @@ export default function EventPenaltiesIndex({
                                                                     value={
                                                                         mp.penalty_name
                                                                     }
-                                                                    className={
-                                                                        'rounded-none px-4 py-2 text-xs'
-                                                                    }
+                                                                    className="rounded-none px-4 py-2 text-xs"
                                                                 >
                                                                     {
                                                                         mp.penalty_name
@@ -331,15 +406,18 @@ export default function EventPenaltiesIndex({
                                                 </ComboboxList>
                                             </ComboboxContent>
                                         </Combobox>
-                                        <InputError
-                                            message={errors.master_penalty_id}
-                                        />
                                     </div>
 
+                                    {/* TINDAKAN HUKUMAN */}
                                     <div className="space-y-2">
-                                        <Label requirement="required">
-                                            Tindakan Hukuman
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label requirement="required">
+                                                Tindakan Hukuman
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.penalty_action,
+                                            )}
+                                        </div>
                                         <Select
                                             value={data.penalty_action}
                                             onValueChange={(val) => {
@@ -358,11 +436,19 @@ export default function EventPenaltiesIndex({
                                                             : data.calculation_type,
                                                 });
 
+                                                clearErrors('penalty_action');
                                                 clearErrors('penalty_value');
                                                 clearErrors('calculation_type');
                                             }}
                                         >
-                                            <SelectTrigger className="w-full">
+                                            <SelectTrigger
+                                                id="penalty_action"
+                                                className={`w-full ${
+                                                    errors.penalty_action
+                                                        ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                        : ''
+                                                }`}
+                                            >
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -374,55 +460,77 @@ export default function EventPenaltiesIndex({
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <InputError
-                                            message={errors.penalty_action}
-                                        />
                                     </div>
 
-                                    {/* Jika Disqualifikasi, tidak perlu input angka */}
+                                    {/* NILAI POTONGAN & KALKULASI */}
                                     {data.penalty_action === 'deduction' ? (
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <Label requirement="required">
-                                                    Nilai Potongan
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label requirement="required">
+                                                        Nilai Potongan
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.penalty_value,
+                                                    )}
+                                                </div>
                                                 <Input
+                                                    id="penalty_value"
                                                     type="number"
                                                     min="0"
+                                                    step="any"
                                                     onWheel={(e) =>
                                                         e.currentTarget.blur()
                                                     }
                                                     value={data.penalty_value}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
                                                         setData(
                                                             'penalty_value',
                                                             e.target.value,
-                                                        )
-                                                    }
+                                                        );
+                                                        clearErrors(
+                                                            'penalty_value',
+                                                        );
+                                                    }}
                                                     placeholder="Cth: 10"
-                                                />
-                                                <InputError
-                                                    message={
+                                                    className={
                                                         errors.penalty_value
+                                                            ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                            : ''
                                                     }
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label requirement="required">
-                                                    Tipe Kalkulasi
-                                                </Label>
+                                                <div className="flex items-center justify-between">
+                                                    <Label requirement="required">
+                                                        Tipe Kalkulasi
+                                                    </Label>
+                                                    {renderErrorBadge(
+                                                        errors.calculation_type,
+                                                    )}
+                                                </div>
                                                 <Select
                                                     value={
                                                         data.calculation_type
                                                     }
-                                                    onValueChange={(val) =>
+                                                    onValueChange={(val) => {
                                                         setData(
                                                             'calculation_type',
                                                             val,
-                                                        )
-                                                    }
+                                                        );
+                                                        clearErrors(
+                                                            'calculation_type',
+                                                        );
+                                                    }}
                                                 >
-                                                    <SelectTrigger className="w-full">
+                                                    <SelectTrigger
+                                                        id="calculation_type"
+                                                        className={`w-full ${
+                                                            errors.calculation_type
+                                                                ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                : ''
+                                                        }`}
+                                                    >
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -437,11 +545,6 @@ export default function EventPenaltiesIndex({
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError
-                                                    message={
-                                                        errors.calculation_type
-                                                    }
-                                                />
                                             </div>
                                         </div>
                                     ) : (
@@ -463,30 +566,52 @@ export default function EventPenaltiesIndex({
                                         </div>
                                     )}
 
+                                    {/* DESKRIPSI SPESIFIK */}
                                     <div className="space-y-2">
-                                        <Label>
-                                            Deskripsi Spesifik (Opsional)
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label requirement="optional">
+                                                Deskripsi Spesifik
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.description,
+                                            )}
+                                        </div>
                                         <Textarea
+                                            id="description"
                                             rows={2}
                                             value={data.description}
-                                            onChange={(e) =>
+                                            onChange={(e) => {
                                                 setData(
                                                     'description',
                                                     e.target.value,
-                                                )
-                                            }
+                                                );
+                                                clearErrors('description');
+                                            }}
                                             placeholder="Tulis jika ada spesifikasi khusus pada event ini..."
-                                        />
-                                        <InputError
-                                            message={errors.description}
+                                            className={
+                                                errors.description
+                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                    : ''
+                                            }
                                         />
                                     </div>
 
-                                    <div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-4">
-                                        <Label requirement="required">
-                                            Terapkan Pada Kategori:
-                                        </Label>
+                                    {/* KATEGORI JUARA TERDAMPAK */}
+                                    <div
+                                        className={`space-y-3 rounded-lg border p-4 ${
+                                            errors.event_champion_category_ids
+                                                ? 'border-destructive/60 bg-destructive/5'
+                                                : 'border-border/50 bg-muted/10'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <Label requirement="required">
+                                                Terapkan Pada Kategori:
+                                            </Label>
+                                            {renderErrorBadge(
+                                                errors.event_champion_category_ids,
+                                            )}
+                                        </div>
                                         {championCategories.length === 0 ? (
                                             <p className="text-xs text-muted-foreground italic">
                                                 Belum ada kategori juara di
@@ -531,11 +656,6 @@ export default function EventPenaltiesIndex({
                                                 )}
                                             </div>
                                         )}
-                                        <InputError
-                                            message={
-                                                errors.event_champion_category_ids
-                                            }
-                                        />
                                     </div>
 
                                     <div className="flex flex-col gap-2 pt-2">
@@ -544,7 +664,9 @@ export default function EventPenaltiesIndex({
                                             disabled={processing}
                                             className="w-full gap-2"
                                         >
-                                            {isEditing ? (
+                                            {processing ? (
+                                                <Spinner className="h-4 w-4" />
+                                            ) : isEditing ? (
                                                 <Save className="h-4 w-4" />
                                             ) : (
                                                 <Plus className="h-4 w-4" />
@@ -595,11 +717,22 @@ export default function EventPenaltiesIndex({
                                             !ep.is_active
                                                 ? 'opacity-70 grayscale-50'
                                                 : ''
-                                        } ${editId === ep.event_penalty_id ? 'border-primary ring-2 ring-primary' : ''}`}
+                                        } ${
+                                            editId === ep.event_penalty_id
+                                                ? 'border-primary ring-2 ring-primary'
+                                                : ''
+                                        }`}
                                     >
                                         {/* Status Line Indicator */}
                                         <div
-                                            className={`absolute top-0 bottom-0 left-0 w-1.5 ${ep.is_active ? (ep.penalty_action === 'disqualification' ? 'bg-destructive' : 'bg-amber-500') : 'bg-muted-foreground/30'}`}
+                                            className={`absolute top-0 bottom-0 left-0 w-1.5 ${
+                                                ep.is_active
+                                                    ? ep.penalty_action ===
+                                                      'disqualification'
+                                                        ? 'bg-destructive'
+                                                        : 'bg-amber-500'
+                                                    : 'bg-muted-foreground/30'
+                                            }`}
                                         ></div>
 
                                         <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 p-3 pl-5">
@@ -652,7 +785,12 @@ export default function EventPenaltiesIndex({
                                             <div className="mb-3">
                                                 <div className="flex items-start gap-2">
                                                     <Gavel
-                                                        className={`mt-0.5 h-4 w-4 shrink-0 ${ep.penalty_action === 'disqualification' ? 'text-destructive' : 'text-amber-500'}`}
+                                                        className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                                            ep.penalty_action ===
+                                                            'disqualification'
+                                                                ? 'text-destructive'
+                                                                : 'text-amber-500'
+                                                        }`}
                                                     />
                                                     <h4 className="leading-tight font-bold text-foreground">
                                                         {

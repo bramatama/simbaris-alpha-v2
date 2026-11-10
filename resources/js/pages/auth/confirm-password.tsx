@@ -10,7 +10,7 @@ import { store } from '@/routes/password/confirm';
 export default function ConfirmPassword() {
     return (
         <AuthLayout
-            title="Confirm your password"
+            title="Konfirmasi Password Anda"
             description="This is a secure area of the application. Please confirm your password before continuing."
             className='max-w-md'
         >

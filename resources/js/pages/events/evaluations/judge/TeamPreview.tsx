@@ -62,7 +62,7 @@ const getStatusBadge = (status: string) => {
 };
 
 /* ==========================================
-   KOMPONEN ACCORDION KATEGORI
+   KOMPONEN ACCORDION KATEGORI (RESPONSIVE)
 ========================================== */
 const CategoryAccordion = ({
     category,
@@ -112,60 +112,65 @@ const CategoryAccordion = ({
 
     return (
         <Card className="overflow-hidden border-border/70 shadow-sm">
+            {/* ACCORDION HEADER - RESPONSIVE FLEXBOX */}
             <div
-                className="flex cursor-pointer flex-col gap-4 bg-muted/20 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                className="flex cursor-pointer flex-col gap-3 bg-muted/20 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <div className="flex items-center gap-3">
-                    <ClipboardCheck className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-foreground sm:text-lg">
-                        {categoryTitle}
-                    </h3>
-                    <div className="ml-2">
-                        {getStatusBadge(category.category_status)}
+                <div className="flex min-w-0 flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <ClipboardCheck className="h-5 w-5 shrink-0 text-primary" />
+                        <h3 className="truncate text-base font-bold text-foreground sm:text-lg">
+                            {categoryTitle}
+                        </h3>
+                        <div>{getStatusBadge(category.category_status)}</div>
                     </div>
                     {category.category_status === 'draft' && (
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                             *Kriteria yang dibiarkan kosong akan otomatis
-                            bernilai 0 saat disimpan atau dikunci.
+                            bernilai 0 saat dikunci.
                         </p>
                     )}
                 </div>
 
+                {/* TOMBOL AKSI METODE FLEX-WRAP */}
                 <div
-                    className="flex items-center gap-2"
+                    className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 sm:justify-end sm:border-t-0 sm:pt-0"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {(category.category_status === 'draft' ||
-                        category.category_status === 'needs_review') && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleOpenLockModal}
-                            className="border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                        >
-                            <Lock className="mr-1.5 h-4 w-4" /> Kunci Nilai
-                        </Button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {(category.category_status === 'draft' ||
+                            category.category_status === 'needs_review') && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleOpenLockModal}
+                                className="h-8 border-amber-500 text-xs text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                            >
+                                <Lock className="mr-1 h-3.5 w-3.5" /> Kunci
+                                Nilai
+                            </Button>
+                        )}
 
-                    {!isLocked && (
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => router.get(evaluateUrl)}
-                            className="gap-1.5 shadow-sm"
-                        >
-                            <Play className="h-4 w-4" />
-                            {category.category_status === 'needs_review'
-                                ? 'Revisi Nilai'
-                                : category.category_status === 'draft'
-                                  ? 'Lanjutkan'
-                                  : 'Mulai Menilai'}
-                        </Button>
-                    )}
+                        {!isLocked && (
+                            <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => router.get(evaluateUrl)}
+                                className="h-8 gap-1 text-xs shadow-sm"
+                            >
+                                <Play className="h-3.5 w-3.5" />
+                                {category.category_status === 'needs_review'
+                                    ? 'Revisi Nilai'
+                                    : category.category_status === 'draft'
+                                      ? 'Lanjutkan'
+                                      : 'Mulai Menilai'}
+                            </Button>
+                        )}
+                    </div>
 
                     <div
-                        className="ml-2 cursor-pointer p-1"
+                        className="cursor-pointer rounded-md p-1 hover:bg-muted"
                         onClick={() => setIsOpen(!isOpen)}
                     >
                         {isOpen ? (
@@ -179,8 +184,87 @@ const CategoryAccordion = ({
 
             {isOpen && (
                 <CardContent className="p-0">
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-175 text-left text-sm">
+                    {/* ===================================================
+                       1. TAMPILAN MOBILE (CARD LIST LAYOUT)
+                       =================================================== */}
+                    <div className="flex flex-col divide-y divide-border/50 sm:hidden">
+                        {category.assessment_criteria.map(
+                            (crit: any, cIdx: number) => (
+                                <div
+                                    key={crit.criteria_id}
+                                    className="space-y-3 bg-card p-4"
+                                >
+                                    <div className="flex items-start gap-2.5">
+                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                            {cIdx + 1}
+                                        </span>
+                                        <h4 className="text-xs leading-snug font-bold text-foreground">
+                                            {crit.master_criteria
+                                                ?.criteria_name ||
+                                                crit.masterCriteria
+                                                    ?.criteria_name ||
+                                                `Kriteria #${crit.master_criteria_id}`}
+                                        </h4>
+                                    </div>
+
+                                    <div className="space-y-2 pl-8">
+                                        {crit.rubric_categories.map(
+                                            (rubricCol: any) => (
+                                                <div
+                                                    key={
+                                                        rubricCol.rubric_category_id
+                                                    }
+                                                    className="space-y-1"
+                                                >
+                                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                        {
+                                                            rubricCol.category_label
+                                                        }
+                                                    </span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {rubricCol.rubric_scores.map(
+                                                            (score: any) => {
+                                                                const isSelected =
+                                                                    existingScores.some(
+                                                                        (
+                                                                            es: any,
+                                                                        ) =>
+                                                                            es.rubric_score_id ===
+                                                                            score.rubric_score_id,
+                                                                    );
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            score.rubric_score_id
+                                                                        }
+                                                                        className={`flex h-7 items-center justify-center rounded-md border px-3 text-xs font-semibold ${
+                                                                            isSelected
+                                                                                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                                                                                : 'border-border/60 bg-muted/20 text-muted-foreground opacity-50'
+                                                                        }`}
+                                                                    >
+                                                                        {
+                                                                            score.score_value
+                                                                        }
+                                                                    </div>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                </div>
+                            ),
+                        )}
+                    </div>
+
+                    {/* ===================================================
+                       2. TAMPILAN DESKTOP (TABLE LAYOUT)
+                       =================================================== */}
+                    <div className="hidden w-full overflow-x-auto sm:block">
+                        <table className="w-full text-left text-sm">
                             <thead className="bg-muted/10">
                                 <tr>
                                     <th className="border-b border-border/50 p-4 font-semibold text-muted-foreground">
@@ -240,10 +324,10 @@ const CategoryAccordion = ({
                                                                             key={
                                                                                 score.rubric_score_id
                                                                             }
-                                                                            className={`flex h-8 w-10 items-center justify-center rounded-md border px-7 font-semibold transition-all ${
+                                                                            className={`flex h-8 w-10 items-center justify-center rounded-md border font-semibold transition-all ${
                                                                                 isSelected
                                                                                     ? 'border-primary bg-primary text-primary-foreground shadow-md'
-                                                                                    : 'border-border/60 bg-background text-muted-foreground opacity-60'
+                                                                                    : 'border-border/60 bg-background text-muted-foreground opacity-50'
                                                                             }`}
                                                                         >
                                                                             {
@@ -266,7 +350,7 @@ const CategoryAccordion = ({
                 </CardContent>
             )}
 
-            {/* CONFIRMATION DIALOG KUNCI NILAI KATEGORI */}
+            {/* CONFIRMATION DIALOG KUNCI NILAI */}
             <ConfirmationDialog
                 open={showLockDialog}
                 onOpenChange={setShowLockDialog}
@@ -291,7 +375,7 @@ export default function TeamPreview({
     existingScores,
 }: ScoringProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const backUrl = `/${userRole}/events/${event.public_id}/participants`;
 
     let computedGlobalStatus = 'ready';
@@ -317,37 +401,36 @@ export default function TeamPreview({
         <AppLayout>
             <Head title={`Pratinjau Penilaian - ${participation.team_name}`} />
 
-            <div className="mx-auto w-full max-w-6xl space-y-6 p-4 pb-12 md:p-6 lg:p-8">
-                <div className="flex flex-col gap-4 border-b border-border/50 pb-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex flex-col">
-                        <Link
-                            href={backUrl}
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-                        >
-                            <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" />{' '}
-                            Kembali ke Antrean
-                        </Link>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                            Pratinjau Penilaian Tim
-                        </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Pilih kategori untuk mulai atau melanjutkan
-                            penilaian.
-                        </p>
-                    </div>
+            <div className="mx-auto w-full max-w-6xl space-y-4 p-3 pb-12 sm:space-y-6 sm:p-6 lg:p-8">
+                {/* HEADER UTAMA */}
+                <div className="flex flex-col gap-2 border-b border-border/50 pb-4">
+                    <Link
+                        href={backUrl}
+                        className="inline-flex items-center text-xs font-medium text-muted-foreground transition-colors hover:text-primary sm:text-sm"
+                    >
+                        <ArrowLeft className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />{' '}
+                        Kembali ke Antrean
+                    </Link>
+                    <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl md:text-3xl">
+                        Pratinjau Penilaian Tim
+                    </h1>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                        Pilih kategori untuk mulai atau melanjutkan penilaian.
+                    </p>
                 </div>
 
+                {/* KARTU RINGKASAN TIM */}
                 <Card className="border-t-4 border-t-primary bg-primary/5 shadow-sm">
-                    <CardContent className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground shadow-inner">
+                    <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-inner sm:h-14 sm:w-14 sm:text-xl">
                                 {participation.appearance_order ?? '?'}
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <h2 className="text-xl leading-none font-bold text-foreground">
+                            <div className="flex min-w-0 flex-col gap-0.5">
+                                <h2 className="truncate text-lg leading-tight font-bold text-foreground sm:text-xl">
                                     {participation.team_name}
                                 </h2>
-                                <span className="text-sm font-medium text-muted-foreground">
+                                <span className="truncate text-xs font-medium text-muted-foreground sm:text-sm">
                                     Jenjang:{' '}
                                     {
                                         participation.event_level?.level
@@ -358,8 +441,8 @@ export default function TeamPreview({
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-start gap-1 sm:items-end">
-                            <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                        <div className="flex items-center justify-between border-t border-border/40 pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase sm:text-xs">
                                 Status Keseluruhan
                             </span>
                             {getStatusBadge(computedGlobalStatus)}
@@ -367,7 +450,8 @@ export default function TeamPreview({
                     </CardContent>
                 </Card>
 
-                <div className="space-y-6">
+                {/* ACCORDION DAFTAR KATEGORI */}
+                <div className="space-y-4 sm:space-y-6">
                     {scoringCategories.map((category) => (
                         <CategoryAccordion
                             key={category.scoring_category_id}

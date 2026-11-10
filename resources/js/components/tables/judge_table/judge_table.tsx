@@ -197,7 +197,7 @@ export default function JudgeTable({
                                             }
                                         >
                                             <UserX className="mr-1.5 h-4 w-4" />{' '}
-                                            Remove
+                                            Hapus
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -352,7 +352,7 @@ export default function JudgeTable({
                                                     }
                                                 >
                                                     <UserX className="mr-1.5 h-4 w-4" />{' '}
-                                                    Remove
+                                                    Hapus
                                                 </Button>
                                             </div>
                                         </TableCell>

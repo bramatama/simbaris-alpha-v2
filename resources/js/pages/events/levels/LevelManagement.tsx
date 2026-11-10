@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
@@ -13,10 +14,9 @@ import {
     CardDescription,
     CardFooter,
 } from '@/components/ui/card';
-import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
 import type { PageProps } from '@inertiajs/core';
-import { ArrowLeft, Plus, Save, Trash2, Tag, CheckSquare } from 'lucide-react';
+import { ArrowLeft, Save, CheckSquare, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MasterLevel = {
@@ -50,7 +50,6 @@ type FormLevelItem = {
     level_name: string;
     registration_fees: number | string;
     quota: number | string;
-    is_custom: boolean;
 };
 
 export default function LevelManagement({
@@ -58,10 +57,9 @@ export default function LevelManagement({
     levels,
 }: LevelManagementProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
-    // 1. Inisialisasi data form dari database
     const initialLevels: FormLevelItem[] =
         event.event_levels?.map((el) => ({
             unique_id: crypto.randomUUID(),
@@ -69,14 +67,38 @@ export default function LevelManagement({
             level_name: el.level?.level_name || '',
             registration_fees: el.registration_fees,
             quota: el.quota || 0,
-            is_custom: false,
         })) || [];
 
     const { data, setData, post, processing, errors } = useForm({
         levels: initialLevels,
     });
 
-    // 2. Fungsi Toggle Checkbox untuk Master Data Level
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            const errorBanner = document.querySelector('.is-error-banner');
+
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                let targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors]);
+
     const toggleMasterLevel = (
         levelId: number,
         levelName: string,
@@ -91,42 +113,16 @@ export default function LevelManagement({
                     level_name: levelName,
                     registration_fees: 0,
                     quota: '',
-                    is_custom: false,
                 },
             ]);
         } else {
             setData(
                 'levels',
-                data.levels.filter(
-                    (l) => l.level_id !== levelId.toString() || l.is_custom,
-                ),
+                data.levels.filter((l) => l.level_id !== levelId.toString()),
             );
         }
     };
 
-    // 3. Fungsi Tambah/Hapus Jenjang Baru (Custom)
-    const addCustomLevel = () => {
-        setData('levels', [
-            ...data.levels,
-            {
-                unique_id: crypto.randomUUID(),
-                level_id: '',
-                level_name: '',
-                registration_fees: 0,
-                quota: 0,
-                is_custom: true,
-            },
-        ]);
-    };
-
-    const removeCustomLevel = (uniqueId: string) => {
-        setData(
-            'levels',
-            data.levels.filter((l) => l.unique_id !== uniqueId),
-        );
-    };
-
-    // 4. Update field biaya & kuota
     const updateLevelField = (
         uniqueId: string,
         field: keyof FormLevelItem,
@@ -140,12 +136,34 @@ export default function LevelManagement({
         );
     };
 
-    // Membantu mengambil error berdasarkan indeks array yang bergeser-geser
     const getError = (uniqueId: string, field: string) => {
         const index = data.levels.findIndex((l) => l.unique_id === uniqueId);
         if (index === -1) return null;
         return errors[`levels.${index}.${field}` as keyof typeof errors] as
             string | undefined;
+    };
+
+    const renderErrorBadge = (errorMsg?: string | null) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
+    const cleanCurrencyInput = (val: string): number => {
+        const numericOnly = val.replace(/[^0-9]/g, '');
+        return numericOnly ? parseInt(numericOnly, 10) : 0;
+    };
+
+    const handleFeeChange = (uniqueId: string, rawValue: string) => {
+        const numericValue = cleanCurrencyInput(rawValue);
+        updateLevelField(uniqueId, 'registration_fees', numericValue);
     };
 
     const submit = (e: React.FormEvent) => {
@@ -155,12 +173,13 @@ export default function LevelManagement({
         });
     };
 
-    // Pisahkan daftar custom level untuk di-render di bawah
-    const customLevels = data.levels.filter((l) => l.is_custom);
-
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Manajemen Jenjang - ${event.event_name}`} />
 
@@ -170,9 +189,10 @@ export default function LevelManagement({
                     <div>
                         <Link
                             href={`/${userRole}/events/${event.public_id}/information`}
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
-                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke Event
+                            <ArrowLeft className="mr-1 h-4 w-4" /> Kembali ke
+                            Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
                             Manajemen Jenjang & Biaya
@@ -183,6 +203,30 @@ export default function LevelManagement({
                         </p>
                     </div>
                 </div>
+
+                {Object.keys(errors).length > 0 && (
+                    <div className="is-error-banner mb-6 flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h4 className="text-sm font-bold">
+                                Pengisian Form Belum Lengkap / Terjadi
+                                Kesalahan:
+                            </h4>
+                            <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                {Object.entries(errors).map(
+                                    ([key, err], idx) => (
+                                        <li
+                                            key={idx}
+                                            className="leading-relaxed"
+                                        >
+                                            {err as string}
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={submit}>
                     <Card className="border-border/50 shadow-sm">
@@ -205,10 +249,22 @@ export default function LevelManagement({
                                     const selectedData = data.levels.find(
                                         (l) =>
                                             l.level_id ===
-                                                masterLevel.level_id.toString() &&
-                                            !l.is_custom,
+                                            masterLevel.level_id.toString(),
                                     );
                                     const isChecked = !!selectedData;
+
+                                    const feeError = selectedData
+                                        ? getError(
+                                              selectedData.unique_id,
+                                              'registration_fees',
+                                          )
+                                        : undefined;
+                                    const quotaError = selectedData
+                                        ? getError(
+                                              selectedData.unique_id,
+                                              'quota',
+                                          )
+                                        : undefined;
 
                                     return (
                                         <div
@@ -245,56 +301,64 @@ export default function LevelManagement({
                                             {/* Form Detail Terbuka Jika Dicentang */}
                                             {isChecked && selectedData && (
                                                 <div className="grid grid-cols-1 gap-5 px-4 pt-1 pb-5 md:grid-cols-2">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs tracking-wider text-muted-foreground uppercase">
-                                                            Biaya Pendaftaran
-                                                            (Rp)
-                                                        </Label>
+                                                    {/* BIAYA PENDAFTARAN */}
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label className="text-xs tracking-wider text-muted-foreground uppercase">
+                                                                Biaya
+                                                                Pendaftaran (Rp)
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                feeError,
+                                                            )}
+                                                        </div>
                                                         <div className="relative">
                                                             <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium text-muted-foreground">
                                                                 Rp
                                                             </span>
                                                             <Input
-                                                                type="number"
-                                                                onWheel={(e) =>
-                                                                    e.currentTarget.blur()
-                                                                }
-                                                                className="bg-background pl-9"
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                placeholder="0"
+                                                                className={`bg-background pl-9 ${feeError ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                                 value={
                                                                     selectedData.registration_fees
+                                                                        ? Number(
+                                                                              selectedData.registration_fees,
+                                                                          ).toLocaleString(
+                                                                              'id-ID',
+                                                                          )
+                                                                        : ''
                                                                 }
                                                                 onChange={(e) =>
-                                                                    updateLevelField(
+                                                                    handleFeeChange(
                                                                         selectedData.unique_id,
-                                                                        'registration_fees',
                                                                         e.target
                                                                             .value,
                                                                     )
                                                                 }
-                                                                required
+                                                                
                                                             />
                                                         </div>
-                                                        <InputError
-                                                            message={
-                                                                getError(
-                                                                    selectedData.unique_id,
-                                                                    'registration_fees',
-                                                                ) ?? undefined
-                                                            }
-                                                        />
                                                     </div>
 
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs tracking-wider text-muted-foreground uppercase">
-                                                            Kuota (Tim)
-                                                        </Label>
+                                                    {/* KUOTA */}
+                                                    <div className="min-w-0 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label className="text-xs tracking-wider text-muted-foreground uppercase">
+                                                                Kuota (Tim)
+                                                            </Label>
+                                                            {renderErrorBadge(
+                                                                quotaError,
+                                                            )}
+                                                        </div>
                                                         <Input
                                                             type="number"
                                                             onWheel={(e) =>
                                                                 e.currentTarget.blur()
                                                             }
-                                                            placeholder="Kosong = Tanpa Batas"
-                                                            className="bg-background"
+                                                            placeholder="Kosongkan = Tanpa Batas"
+                                                            className={`bg-background ${quotaError ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive' : ''}`}
                                                             value={
                                                                 selectedData.quota
                                                             }
@@ -307,14 +371,6 @@ export default function LevelManagement({
                                                                 )
                                                             }
                                                         />
-                                                        <InputError
-                                                            message={
-                                                                getError(
-                                                                    selectedData.unique_id,
-                                                                    'quota',
-                                                                ) ?? undefined
-                                                            }
-                                                        />
                                                     </div>
                                                 </div>
                                             )}
@@ -322,169 +378,6 @@ export default function LevelManagement({
                                     );
                                 })}
                             </div>
-
-                            {/* CUSTOM LEVELS (Jenjang Baru) */}
-                            {customLevels.length > 0 && (
-                                <div className="space-y-4 border-t border-dashed border-border/70 pt-4">
-                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                                        <Tag className="h-4 w-4" /> Jenjang
-                                        Tambahan
-                                    </div>
-
-                                    {customLevels.map((customLevel) => (
-                                        <div
-                                            key={customLevel.unique_id}
-                                            className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 shadow-sm"
-                                        >
-                                            <div className="mb-4 flex flex-col gap-4 border-b border-orange-500/20 pb-4 sm:flex-row">
-                                                <div className="flex-1 space-y-2">
-                                                    <Label
-                                                        requirement="required"
-                                                        className="text-xs tracking-wider text-orange-700/80 uppercase dark:text-orange-400/80"
-                                                    >
-                                                        Nama Jenjang Baru
-                                                    </Label>
-                                                    <Input
-                                                        value={
-                                                            customLevel.level_name
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateLevelField(
-                                                                customLevel.unique_id,
-                                                                'level_name',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Misal: UMUM, KAMPUS"
-                                                        className="bg-background uppercase"
-                                                        required
-                                                    />
-                                                    <InputError
-                                                        message={
-                                                            getError(
-                                                                customLevel.unique_id,
-                                                                'level_name',
-                                                            ) ?? undefined
-                                                        }
-                                                    />
-                                                </div>
-                                                <div className="flex items-end">
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        className="w-full sm:w-auto"
-                                                        onClick={() =>
-                                                            removeCustomLevel(
-                                                                customLevel.unique_id,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Trash2 className="h-4 w-4 sm:mr-2" />
-                                                        <span className="sm:hidden">
-                                                            Hapus Jenjang
-                                                        </span>
-                                                        <span className="hidden sm:inline">
-                                                            Hapus
-                                                        </span>
-                                                    </Button>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs tracking-wider text-muted-foreground uppercase">
-                                                        Biaya Pendaftaran (Rp)
-                                                    </Label>
-                                                    <div className="relative">
-                                                        <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                                                            Rp
-                                                        </span>
-                                                        <Input
-                                                            type="number"
-                                                            onWheel={(e) =>
-                                                                e.currentTarget.blur()
-                                                            }
-                                                            className="bg-background pl-9"
-                                                            value={
-                                                                customLevel.registration_fees
-                                                            }
-                                                            onChange={(e) =>
-                                                                updateLevelField(
-                                                                    customLevel.unique_id,
-                                                                    'registration_fees',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <InputError
-                                                        message={
-                                                            getError(
-                                                                customLevel.unique_id,
-                                                                'registration_fees',
-                                                            ) ?? undefined
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs tracking-wider text-muted-foreground uppercase">
-                                                        Kuota (Tim)
-                                                    </Label>
-                                                    <Input
-                                                        type="number"
-                                                        onWheel={(e) =>
-                                                            e.currentTarget.blur()
-                                                        }
-                                                        placeholder="0 = Tanpa Batas"
-                                                        className="bg-background"
-                                                        value={
-                                                            customLevel.quota
-                                                        }
-                                                        onChange={(e) =>
-                                                            updateLevelField(
-                                                                customLevel.unique_id,
-                                                                'quota',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    <InputError
-                                                        message={
-                                                            getError(
-                                                                customLevel.unique_id,
-                                                                'quota',
-                                                            ) ?? undefined
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Tombol Tambah Jenjang Custom */}
-                            <div className="pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={addCustomLevel}
-                                    className="w-full gap-2 border-dashed md:w-auto"
-                                >
-                                    <Plus className="h-4 w-4" /> Buat Jenjang
-                                    Baru (Luar Daftar)
-                                </Button>
-                            </div>
-
-                            {errors.levels && (
-                                <InputError
-                                    message={errors.levels as string}
-                                    className="mt-2 text-center"
-                                />
-                            )}
                         </CardContent>
 
                         <CardFooter className="flex items-center justify-between border-t border-border/50 bg-muted/10 p-6">

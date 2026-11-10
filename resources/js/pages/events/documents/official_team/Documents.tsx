@@ -26,7 +26,7 @@ export default function OfficialTeamParticipationDocuments({
     participation: any;
 }) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const isApproved = participation.status === 'approved';
 

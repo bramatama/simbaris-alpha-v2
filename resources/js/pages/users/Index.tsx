@@ -13,8 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-
+import { Table, TableBody } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Users, Filter, Trash2 } from 'lucide-react';
 
@@ -128,14 +127,15 @@ export default function UserManagementIndex({
     const emptyState = (
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
             <Users className="h-9 w-9 opacity-30" />
-
-            <p className="text-sm">No users found for this filter.</p>
+            <p className="text-sm">
+                Tidak ada pengguna yang ditemukan untuk filter ini.
+            </p>
         </div>
     );
 
     return (
         <AppLayout>
-            <Head title="User Management" />
+            <Head title="Manajemen Pengguna" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 overflow-hidden p-4 md:p-6 lg:p-8">
                 {/* Header dan filter */}
@@ -143,12 +143,12 @@ export default function UserManagementIndex({
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
                             <Users className="h-7 w-7 text-primary md:h-8 md:w-8" />
-                            User Management
+                            Manajemen Pengguna
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground md:text-base">
-                            Manage system users, their roles, and specific
-                            profiles.
+                            Kelola pengguna sistem, peran, dan profil
+                            masing-masing pengguna.
                         </p>
                     </div>
 
@@ -161,7 +161,7 @@ export default function UserManagementIndex({
                                 className="w-full sm:w-auto"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Selected ({selectedUserIds.length})
+                                Hapus yang Dipilih ({selectedUserIds.length})
                             </Button>
                         )}
 
@@ -173,25 +173,27 @@ export default function UserManagementIndex({
                                 onValueChange={handleRoleChange}
                             >
                                 <SelectTrigger className="w-full border-none bg-background shadow-sm sm:w-45">
-                                    <SelectValue placeholder="Filter by Role" />
+                                    <SelectValue placeholder="Filter berdasarkan peran" />
                                 </SelectTrigger>
 
                                 <SelectContent position="popper">
                                     <SelectItem value="all">
-                                        All Roles
+                                        Semua Peran
                                     </SelectItem>
 
                                     <SelectItem value="official_team">
-                                        Official Team
+                                        Tim Peserta
                                     </SelectItem>
 
                                     <SelectItem value="committee">
-                                        Committee
+                                        Panitia
                                     </SelectItem>
 
-                                    <SelectItem value="judge">Judge</SelectItem>
+                                    <SelectItem value="judge">Juri</SelectItem>
 
-                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="admin">
+                                        Administrator
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -208,9 +210,7 @@ export default function UserManagementIndex({
                 >
                     {userList.length > 0 ? (
                         <>
-                            {/* ====================================== */}
-                            {/* MOBILE: CARD, DI LUAR ELEMEN TABLE     */}
-                            {/* ====================================== */}
+                            {/* Tampilan mobile: kartu, di luar elemen tabel */}
                             <div className="overflow-hidden rounded-md border bg-card md:hidden">
                                 {userList.map((user) => (
                                     <UserMobileCard
@@ -226,9 +226,7 @@ export default function UserManagementIndex({
                                 ))}
                             </div>
 
-                            {/* ====================================== */}
-                            {/* DESKTOP: TABLE                        */}
-                            {/* ====================================== */}
+                            {/* Tampilan desktop: tabel */}
                             <div className="hidden min-w-0 overflow-hidden rounded-md border bg-card shadow-sm md:block">
                                 <div className="w-full overflow-x-auto">
                                     <Table>
@@ -271,7 +269,7 @@ export default function UserManagementIndex({
                 />
             </div>
 
-            {/* Dialog konfirmasi hapus pengguna */}
+            {/* Dialog konfirmasi penghapusan pengguna */}
             <ConfirmationDialog
                 open={deleteUserId !== null}
                 onOpenChange={(open) => {
@@ -279,23 +277,23 @@ export default function UserManagementIndex({
                         setDeleteUserId(null);
                     }
                 }}
-                title="Delete User"
-                description="Are you sure you want to delete this user? This action cannot be undone."
+                title="Hapus Pengguna"
+                description="Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan."
                 onConfirm={handleDelete}
                 isProcessing={isDeleting}
-                confirmText="Delete"
+                confirmText="Hapus"
                 variant="destructive"
             />
 
-            {/* Dialog konfirmasi hapus massal */}
+            {/* Dialog konfirmasi penghapusan massal */}
             <ConfirmationDialog
                 open={isBulkDeleteOpen}
                 onOpenChange={setIsBulkDeleteOpen}
-                title="Delete Selected Users"
-                description={`Are you sure you want to delete ${selectedUserIds.length} selected user(s)? This action cannot be undone.`}
+                title="Hapus Pengguna Terpilih"
+                description={`Apakah Anda yakin ingin menghapus ${selectedUserIds.length} pengguna yang dipilih? Tindakan ini tidak dapat dibatalkan.`}
                 onConfirm={handleBulkDelete}
                 isProcessing={isDeleting}
-                confirmText={`Delete ${selectedUserIds.length} User(s)`}
+                confirmText={`Hapus ${selectedUserIds.length} Pengguna`}
                 variant="destructive"
             />
         </AppLayout>

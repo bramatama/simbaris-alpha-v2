@@ -45,7 +45,7 @@ export default function EventCard({ event }: EventCardProps) {
         switch (currentStatus) {
             case 'registration_open':
                 return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
-            case 'active':
+            case 'ongoing':
             case 'ongoing':
                 return 'bg-blue-500/10 text-blue-600 border border-blue-500/20';
             case 'finished':
@@ -56,7 +56,6 @@ export default function EventCard({ event }: EventCardProps) {
     };
 
     return (
-        /* PERBAIKAN: Tambahkan h-full agar semua kartu berukuran sama tinggi */
         <div className="group flex h-full w-full max-w-60 flex-col overflow-hidden rounded-xl border border-border/70 bg-card font-sans text-card-foreground shadow-xs transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
             {/* POSTER & STATUS */}
             <div className="relative aspect-3/4 w-full overflow-hidden bg-muted">
@@ -100,7 +99,7 @@ export default function EventCard({ event }: EventCardProps) {
                     >
                         {event.status === 'registration_open'
                             ? 'Pendaftaran'
-                            : event.status === 'active' ||
+                            : event.status === 'ongoing' ||
                                 event.status === 'ongoing'
                               ? 'Berlangsung'
                               : event.status === 'finished'

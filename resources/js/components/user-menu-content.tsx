@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -40,8 +40,8 @@ export function UserMenuContent({ user }: Props) {
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
-                        Settings
+                        <UserCircle className="mr-2" />
+                        Profil Saya
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -112,7 +112,7 @@ export default function ParticipantList({
     participations = {},
 }: ParticipantListProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const [activeLevelId, setActiveLevelId] = useState<number | null>(
         eventLevels.length > 0 ? eventLevels[0].event_level_id : null,

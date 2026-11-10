@@ -29,10 +29,11 @@ import {
     Info,
     LayoutList,
     Layers,
+    AlertCircle,
 } from 'lucide-react';
 
 /* =========================================================
-   TYPES & HELPERS SAMA SEPERTI SEBELUMNYA
+   TYPES & HELPERS
 ========================================================= */
 interface SimbarisEvent {
     public_id: string;
@@ -117,8 +118,8 @@ export default function ChampionFormulaIndex({
     scoringCategories = [],
     existingFormulas = {},
 }: IndexProps) {
-    const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const { auth, errors: pageErrors } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const isCommittee = ['committee', 'admin'].includes(userRole);
 
@@ -129,6 +130,31 @@ export default function ChampionFormulaIndex({
         });
 
     const formErrors = errors as Record<string, string | undefined>;
+
+    useEffect(() => {
+        if (Object.keys(errors).length > 0 || pageErrors?.error) {
+            const errorBanner = document.querySelector('.is-error-banner');
+            if (errorBanner) {
+                errorBanner.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            } else {
+                const firstErrorKey = Object.keys(errors)[0];
+                const targetElement =
+                    document.getElementById(firstErrorKey) ||
+                    document.querySelector(`[name="${firstErrorKey}"]`);
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    targetElement.focus?.();
+                }
+            }
+        }
+    }, [errors, pageErrors]);
 
     useEffect(() => {
         setData({
@@ -142,13 +168,20 @@ export default function ChampionFormulaIndex({
                     event_champion_category_id: item.event_champion_category_id,
                     champion_category_name:
                         item.champion_category.champion_category_name,
-                    components: existingRows.map((row) => ({
-                        master_category_id:
-                            row.master_category_id !== undefined
-                                ? String(row.master_category_id)
-                                : '',
-                        weight_value: Number(row.weight_multiplier).toString(),
-                    })),
+                    components: existingRows.map((row) => {
+                        const numericVal = Number(row.weight_multiplier);
+                        const percentVal = isNaN(numericVal)
+                            ? ''
+                            : (numericVal * 100).toString();
+
+                        return {
+                            master_category_id:
+                                row.master_category_id !== undefined
+                                    ? String(row.master_category_id)
+                                    : '',
+                            weight_value: percentVal,
+                        };
+                    }),
                 };
             }),
         });
@@ -240,6 +273,19 @@ export default function ChampionFormulaIndex({
         return new Set(selectedIds).size !== selectedIds.length;
     };
 
+    const renderErrorBadge = (errorMsg?: string) => {
+        if (!errorMsg) return null;
+        return (
+            <span
+                className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
+                title={errorMsg}
+            >
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Periksa Kolom</span>
+            </span>
+        );
+    };
+
     const canSubmit =
         !processing &&
         data.event_level_id !== null &&
@@ -258,7 +304,7 @@ export default function ChampionFormulaIndex({
                 event_champion_category_id: formula.event_champion_category_id,
                 components: formula.components.map((component) => ({
                     master_category_id: Number(component.master_category_id),
-                    weight_multiplier: Number(component.weight_value),
+                    weight_multiplier: Number(component.weight_value) / 100,
                 })),
             })),
         }));
@@ -270,50 +316,87 @@ export default function ChampionFormulaIndex({
 
     return (
         <InnerAppLayout
-            sidebarNavItems={getEventInnerNav(event.public_id, userRole, committeePosition || undefined)}
+            sidebarNavItems={getEventInnerNav(
+                event.public_id,
+                userRole,
+                committeePosition || undefined,
+            )}
         >
             <Head title={`Formula Bobot - ${event.event_name}`} />
             <div className="grid w-full min-w-0 grid-cols-1">
                 <form
                     onSubmit={handleSubmit}
-                    className="mx-auto w-full max-w-5xl space-y-6 p-4 pb-28 md:p-6 lg:p-8"
+                    className="mx-auto w-full max-w-7xl min-w-0 space-y-5 px-3 pt-4 pb-32 sm:space-y-6 sm:px-5 sm:pt-6 sm:pb-28 lg:px-8"
                 >
                     {/* HEADER & FILTER */}
-                    <div className="mb-6 flex flex-col justify-between gap-5 border-b border-border/50 pb-6 md:flex-row md:items-start">
-                        <div>
+                    <div className="mb-5 flex min-w-0 flex-col justify-between gap-4 border-b border-border/50 pb-5 sm:mb-6 sm:gap-5 sm:pb-6 md:flex-row md:items-start">
+                        <div className="min-w-0">
                             <Link
                                 href={`/${userRole}/events/${event.public_id}/information`}
-                                className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                                className="mb-3 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                             >
-                                <ArrowLeft className="mr-1.5 h-4 w-4" /> Kembali
-                                ke Dasbor
+                                <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" />
+                                Kembali ke Dasbor
                             </Link>
-                            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+
+                            <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
                                 Formula Bobot Piala
                             </h1>
-                            <p className="mt-1 text-sm text-muted-foreground md:text-base">
+
+                            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm md:text-base">
                                 Pilih jenjang yang dituju, lalu atur pengali
-                                nilai piala yang diinginkan. Anda dapat
+                                nilai piala (dalam persentase %). Anda dapat
                                 mengosongkan komponen jika piala tidak
                                 dipertandingkan.
                             </p>
                         </div>
                     </div>
 
+                    {/* ERROR BANNER ATAS (Metode 3) */}
+                    {(Object.keys(errors).length > 0 || pageErrors?.error) && (
+                        <div className="is-error-banner flex animate-in items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm duration-300 fade-in slide-in-from-top-2">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <h4 className="text-sm font-bold">
+                                    Pengisian Form Belum Lengkap / Terjadi
+                                    Kesalahan:
+                                </h4>
+                                <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
+                                    {pageErrors?.error && (
+                                        <li className="leading-relaxed">
+                                            {pageErrors.error as string}
+                                        </li>
+                                    )}
+                                    {Object.entries(errors).map(
+                                        ([key, err], idx) => (
+                                            <li
+                                                key={idx}
+                                                className="leading-relaxed"
+                                            >
+                                                {err as string}
+                                            </li>
+                                        ),
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     {/* KONTEN UTAMA */}
                     {eventLevels.length > 0 ? (
                         <div className="space-y-5">
                             {activeLevel && (
                                 <div className="animate-in space-y-4 duration-300 fade-in">
-                                    <div className="flex min-w-0 items-start justify-between gap-2 sm:items-center">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex min-w-0 items-center gap-2">
                                             <LayoutList className="h-4 w-4 shrink-0 text-primary" />
-                                            <h2 className="text-sm font-bold sm:text-base">
+
+                                            <h2 className="min-w-0 text-sm font-bold sm:text-base">
                                                 Konfigurasi Jenjang (
                                                 {activeLevel.level.level_name})
                                             </h2>
                                         </div>
-                                        <div className="w-full shrink-0 md:w-auto">
+                                        <div className="w-full sm:w-auto sm:shrink-0">
                                             {eventLevels.length > 0 && (
                                                 <LevelDropdownFilter
                                                     eventLevels={eventLevels}
@@ -325,7 +408,7 @@ export default function ChampionFormulaIndex({
                                                         handleLevelChange
                                                     }
                                                     placeholder="Pilih jenjang..."
-                                                    className="w-full md:w-56"
+                                                    className="w-full"
                                                 />
                                             )}
                                         </div>
@@ -347,7 +430,7 @@ export default function ChampionFormulaIndex({
                                             </p>
                                         </Card>
                                     ) : (
-                                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                        <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
                                             {data.formulas.map(
                                                 (formula, fIndex) => {
                                                     const hasComponents =
@@ -375,13 +458,14 @@ export default function ChampionFormulaIndex({
                                                             key={
                                                                 formula.event_champion_category_id
                                                             }
-                                                            className="overflow-hidden border-border/70 shadow-sm transition-colors hover:border-primary/40"
+                                                            className="min-w-0 overflow-hidden border-border/70 shadow-sm transition-colors hover:border-primary/40"
                                                         >
-                                                            <CardHeader className="border-b border-border/50 bg-muted/10 p-4 sm:p-5">
-                                                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                                    <div className="flex items-start gap-2 sm:items-center">
+                                                            <CardHeader className="border-b border-border/50 bg-muted/10 p-3 sm:p-4 lg:p-5">
+                                                                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                                    <div className="flex min-w-0 items-start gap-2 sm:items-center">
                                                                         <Calculator className="mt-0.5 h-5 w-5 shrink-0 text-primary sm:mt-0" />
-                                                                        <CardTitle className="text-base leading-tight font-bold">
+
+                                                                        <CardTitle className="min-w-0 text-sm leading-tight font-bold wrap-break-word sm:text-base">
                                                                             {
                                                                                 formula.champion_category_name
                                                                             }
@@ -405,7 +489,7 @@ export default function ChampionFormulaIndex({
                                                                 </div>
                                                             </CardHeader>
 
-                                                            <CardContent className="space-y-4 p-4 sm:p-5">
+                                                            <CardContent className="min-w-0 space-y-4 p-3 sm:p-4 lg:p-5">
                                                                 {!hasComponents && (
                                                                     <div className="flex items-start gap-2 rounded-md border border-muted-foreground/20 bg-muted/30 p-3 text-sm text-muted-foreground">
                                                                         <Info className="mt-0.5 h-4 w-4 shrink-0" />
@@ -425,183 +509,214 @@ export default function ChampionFormulaIndex({
                                                                             diabaikan
                                                                             pada
                                                                             jenjang
-                                                                            ini
+                                                                            ini.
                                                                         </p>
                                                                     </div>
                                                                 )}
-
                                                                 {formula.components.map(
                                                                     (
                                                                         component,
                                                                         cIndex,
-                                                                    ) => (
-                                                                        <div
-                                                                            key={
-                                                                                cIndex
-                                                                            }
-                                                                            className="flex flex-col gap-4 rounded-lg border border-border/50 bg-muted/10 p-3.5 sm:grid sm:grid-cols-[1fr_140px_auto] sm:items-start sm:gap-4 sm:p-4"
-                                                                        >
-                                                                            {/* KATEGORI PENILAIAN */}
-                                                                            <div className="flex flex-col gap-1.5">
-                                                                                <Label className="text-xs font-semibold text-muted-foreground">
-                                                                                    Sumber
-                                                                                    Nilai
-                                                                                    (Kategori)
-                                                                                </Label>
-                                                                                <Select
-                                                                                    value={
-                                                                                        component.master_category_id
-                                                                                    }
-                                                                                    onValueChange={(
-                                                                                        value,
-                                                                                    ) =>
-                                                                                        updateComponent(
-                                                                                            fIndex,
-                                                                                            cIndex,
-                                                                                            'master_category_id',
-                                                                                            value,
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    <SelectTrigger className="h-10 w-full bg-background sm:h-9">
-                                                                                        <SelectValue placeholder="Pilih sumber penilaian..." />
-                                                                                    </SelectTrigger>
-                                                                                    <SelectContent>
-                                                                                        {scoringCategories.map(
-                                                                                            (
-                                                                                                category,
-                                                                                            ) => {
-                                                                                                const id =
-                                                                                                    String(
-                                                                                                        category.master_category_id,
-                                                                                                    );
-                                                                                                const isAlreadySelected =
-                                                                                                    selectedCategoryIds.includes(
-                                                                                                        id,
-                                                                                                    ) &&
-                                                                                                    component.master_category_id !==
-                                                                                                        id;
+                                                                    ) => {
+                                                                        const masterCatError =
+                                                                            formErrors[
+                                                                                `formulas.${fIndex}.components.${cIndex}.master_category_id`
+                                                                            ];
+                                                                        const weightError =
+                                                                            formErrors[
+                                                                                `formulas.${fIndex}.components.${cIndex}.weight_multiplier`
+                                                                            ];
 
-                                                                                                return (
-                                                                                                    <SelectItem
-                                                                                                        key={
-                                                                                                            category.master_category_id
-                                                                                                        }
-                                                                                                        value={
-                                                                                                            id
-                                                                                                        }
-                                                                                                        disabled={
-                                                                                                            isAlreadySelected
-                                                                                                        }
-                                                                                                    >
-                                                                                                        {
-                                                                                                            category
-                                                                                                                .master_category
-                                                                                                                ?.category_name
-                                                                                                        }
-                                                                                                    </SelectItem>
-                                                                                                );
-                                                                                            },
+                                                                        return (
+                                                                            <div
+                                                                                key={
+                                                                                    cIndex
+                                                                                }
+                                                                                className="grid min-w-0 grid-cols-1 gap-3 rounded-lg border border-border/50 bg-muted/10 p-3 sm:gap-4 sm:p-4 lg:grid-cols-[minmax(0,1fr)_110px_auto] lg:items-end"
+                                                                            >
+                                                                                {/* KATEGORI PENILAIAN */}
+                                                                                <div className="flex flex-col gap-1.5">
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                                                                            Sumber
+                                                                                            Nilai
+                                                                                            (Kategori)
+                                                                                        </Label>
+                                                                                        {renderErrorBadge(
+                                                                                            masterCatError,
                                                                                         )}
-                                                                                    </SelectContent>
-                                                                                </Select>
-
-                                                                                {duplicate &&
-                                                                                    component.master_category_id !==
-                                                                                        '' &&
-                                                                                    selectedCategoryIds.filter(
-                                                                                        (
-                                                                                            id,
+                                                                                    </div>
+                                                                                    <Select
+                                                                                        value={
+                                                                                            component.master_category_id
+                                                                                        }
+                                                                                        onValueChange={(
+                                                                                            value,
                                                                                         ) =>
-                                                                                            id ===
-                                                                                            component.master_category_id,
-                                                                                    )
-                                                                                        .length >
-                                                                                        1 && (
-                                                                                        <p className="text-xs text-destructive">
-                                                                                            Kategori
-                                                                                            ini
-                                                                                            terduplikasi
-                                                                                        </p>
-                                                                                    )}
-                                                                                <InputError
-                                                                                    message={
-                                                                                        formErrors[
-                                                                                            `formulas.${fIndex}.components.${cIndex}.master_category_id`
-                                                                                        ]
-                                                                                    }
-                                                                                />
-                                                                            </div>
+                                                                                            updateComponent(
+                                                                                                fIndex,
+                                                                                                cIndex,
+                                                                                                'master_category_id',
+                                                                                                value,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <SelectTrigger
+                                                                                            id={`formulas.${fIndex}.components.${cIndex}.master_category_id`}
+                                                                                            className={`h-10 w-full bg-background sm:h-9 ${
+                                                                                                masterCatError
+                                                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                                                    : ''
+                                                                                            }`}
+                                                                                        >
+                                                                                            <SelectValue placeholder="Pilih sumber penilaian..." />
+                                                                                        </SelectTrigger>
+                                                                                        <SelectContent>
+                                                                                            {scoringCategories.map(
+                                                                                                (
+                                                                                                    category,
+                                                                                                ) => {
+                                                                                                    const id =
+                                                                                                        String(
+                                                                                                            category.master_category_id,
+                                                                                                        );
+                                                                                                    const isAlreadySelected =
+                                                                                                        selectedCategoryIds.includes(
+                                                                                                            id,
+                                                                                                        ) &&
+                                                                                                        component.master_category_id !==
+                                                                                                            id;
 
-                                                                            {/* BOBOT / PENGALI */}
-                                                                            <div className="flex flex-col gap-1.5">
-                                                                                <Label className="text-xs font-semibold text-muted-foreground">
-                                                                                    Bobot
-                                                                                    /
-                                                                                    Pengali
-                                                                                </Label>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    min="0.01"
-                                                                                    step="0.01"
-                                                                                    onWheel={(
-                                                                                        e,
-                                                                                    ) =>
-                                                                                        e.currentTarget.blur()
-                                                                                    }
-                                                                                    value={
-                                                                                        component.weight_value
-                                                                                    }
-                                                                                    onChange={(
-                                                                                        e,
-                                                                                    ) =>
-                                                                                        updateComponent(
-                                                                                            fIndex,
-                                                                                            cIndex,
-                                                                                            'weight_value',
-                                                                                            e
-                                                                                                .target
-                                                                                                .value,
-                                                                                        )
-                                                                                    }
-                                                                                    className="h-10 bg-background sm:h-9"
-                                                                                    placeholder="Contoh: 1.5"
-                                                                                />
-                                                                                <InputError
-                                                                                    message={
-                                                                                        formErrors[
-                                                                                            `formulas.${fIndex}.components.${cIndex}.weight_multiplier`
-                                                                                        ]
-                                                                                    }
-                                                                                />
-                                                                            </div>
+                                                                                                    return (
+                                                                                                        <SelectItem
+                                                                                                            key={
+                                                                                                                category.master_category_id
+                                                                                                            }
+                                                                                                            value={
+                                                                                                                id
+                                                                                                            }
+                                                                                                            disabled={
+                                                                                                                isAlreadySelected
+                                                                                                            }
+                                                                                                        >
+                                                                                                            {
+                                                                                                                category
+                                                                                                                    .master_category
+                                                                                                                    ?.category_name
+                                                                                                            }
+                                                                                                        </SelectItem>
+                                                                                                    );
+                                                                                                },
+                                                                                            )}
+                                                                                        </SelectContent>
+                                                                                    </Select>
 
-                                                                            {/* HAPUS KOMPONEN */}
-                                                                            <div className="flex pt-1 sm:h-14.5 sm:items-end sm:pt-0 sm:pb-px">
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="sm"
-                                                                                    aria-label="Hapus komponen"
-                                                                                    className="flex h-10 w-full items-center justify-center border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground sm:h-9 sm:w-9 sm:border-transparent sm:bg-transparent sm:px-0 sm:hover:bg-destructive/10 sm:hover:text-destructive"
-                                                                                    onClick={() =>
-                                                                                        removeComponent(
-                                                                                            fIndex,
-                                                                                            cIndex,
+                                                                                    {duplicate &&
+                                                                                        component.master_category_id !==
+                                                                                            '' &&
+                                                                                        selectedCategoryIds.filter(
+                                                                                            (
+                                                                                                id,
+                                                                                            ) =>
+                                                                                                id ===
+                                                                                                component.master_category_id,
                                                                                         )
-                                                                                    }
-                                                                                >
-                                                                                    <Trash2 className="mr-2 h-4 w-4 sm:mr-0" />
-                                                                                    <span className="font-semibold sm:hidden">
-                                                                                        Hapus
-                                                                                        Komponen
-                                                                                    </span>
-                                                                                </Button>
+                                                                                            .length >
+                                                                                            1 && (
+                                                                                            <p className="text-xs text-destructive">
+                                                                                                Kategori
+                                                                                                ini
+                                                                                                terduplikasi
+                                                                                            </p>
+                                                                                        )}
+                                                                                    <InputError
+                                                                                        message={
+                                                                                            masterCatError
+                                                                                        }
+                                                                                    />
+                                                                                </div>
+
+                                                                                {/* BOBOT / PENGALI (PERSEN) */}
+                                                                                <div className="flex flex-col gap-1.5">
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                                                                            Bobot
+                                                                                            (%)
+                                                                                        </Label>
+                                                                                        {renderErrorBadge(
+                                                                                            weightError,
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="relative flex items-center">
+                                                                                        <Input
+                                                                                            id={`formulas.${fIndex}.components.${cIndex}.weight_multiplier`}
+                                                                                            type="number"
+                                                                                            min="0.01"
+                                                                                            step="any"
+                                                                                            onWheel={(
+                                                                                                e,
+                                                                                            ) =>
+                                                                                                e.currentTarget.blur()
+                                                                                            }
+                                                                                            value={
+                                                                                                component.weight_value
+                                                                                            }
+                                                                                            onChange={(
+                                                                                                e,
+                                                                                            ) =>
+                                                                                                updateComponent(
+                                                                                                    fIndex,
+                                                                                                    cIndex,
+                                                                                                    'weight_value',
+                                                                                                    e
+                                                                                                        .target
+                                                                                                        .value,
+                                                                                                )
+                                                                                            }
+                                                                                            className={`h-10 w-full min-w-0 bg-background pr-7 text-center sm:h-9 ${
+                                                                                                weightError
+                                                                                                    ? 'border-destructive bg-destructive/5 focus-visible:ring-destructive'
+                                                                                                    : ''
+                                                                                            }`}
+                                                                                            placeholder="100"
+                                                                                        />
+                                                                                        <span className="pointer-events-none absolute right-2.5 text-xs font-bold text-muted-foreground">
+                                                                                            %
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <InputError
+                                                                                        message={
+                                                                                            weightError
+                                                                                        }
+                                                                                    />
+                                                                                </div>
+
+                                                                                {/* HAPUS KOMPONEN */}
+                                                                                <div className="flex pt-1 sm:h-14.5 sm:items-end sm:pt-0 sm:pb-px">
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="ghost"
+                                                                                        size="sm"
+                                                                                        aria-label="Hapus komponen"
+                                                                                        className="flex h-10 w-full items-center justify-center border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground lg:h-9 lg:w-9 lg:border-transparent lg:bg-transparent lg:px-0 lg:hover:bg-destructive/10 lg:hover:text-destructive"
+                                                                                        onClick={() =>
+                                                                                            removeComponent(
+                                                                                                fIndex,
+                                                                                                cIndex,
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        <Trash2 className="mr-2 h-4 w-4 sm:mr-0" />
+                                                                                        <span className="font-semibold sm:hidden">
+                                                                                            Hapus
+                                                                                            Komponen
+                                                                                        </span>
+                                                                                    </Button>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    ),
+                                                                        );
+                                                                    },
                                                                 )}
-
                                                                 {hasComponents &&
                                                                     !complete && (
                                                                         <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-sm">
@@ -618,7 +733,6 @@ export default function ChampionFormulaIndex({
                                                                             </p>
                                                                         </div>
                                                                     )}
-
                                                                 <Button
                                                                     type="button"
                                                                     variant="outline"
@@ -676,15 +790,15 @@ export default function ChampionFormulaIndex({
                     {activeLevel &&
                         championCategories.length > 0 &&
                         isCommittee && (
-                            <div className="sticky bottom-6 z-20 flex justify-end gap-4 rounded-xl border border-border/40 bg-background/90 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] backdrop-blur-md">
+                            <div className="sticky bottom-2 z-20 flex flex-col-reverse gap-2 rounded-xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur-md sm:bottom-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-4">
                                 <Link
                                     href={`/${userRole}/events/${event.public_id}/information`}
                                 >
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="border-border/60 px-6 hover:bg-muted/50"
-                                        size={'lg'}
+                                        className="w-full border-border/60 sm:w-auto sm:px-6"
+                                        size="lg"
                                     >
                                         Batal
                                     </Button>
@@ -693,7 +807,7 @@ export default function ChampionFormulaIndex({
                                     type="submit"
                                     size="lg"
                                     disabled={!canSubmit}
-                                    className="gap-2 px-8 font-semibold shadow-md"
+                                    className="w-full gap-2 font-semibold shadow-md sm:w-auto sm:px-8"
                                 >
                                     {processing ? (
                                         <Spinner className="h-4 w-4" />

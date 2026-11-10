@@ -34,7 +34,7 @@ class EventSeeder extends Seeder
 
         $eventId1 = DB::table('events')->insertGetId([
             'public_id' => (string) Str::uuid(),
-            'event_name' => 'Lomba Paskibra Pandawa Vol IV 2026',
+            'event_name' => 'Lomba Uji Coba',
             'description' => 'Kompetisi baris berbaris bergengsi tingkat nasional.',
             'location' => 'GOR Bulungan, Jakarta',
             'status' => 'registration_open',
@@ -52,38 +52,38 @@ class EventSeeder extends Seeder
         // 2. SETUP JENJANG EVENT
         // =========================================================
 
-        $eventLevelSmpId = DB::table('event_levels')->insertGetId([
-            'event_id' => $eventId1,
-            'level_id' => 2,
-            'registration_fees' => 150000,
-            'quota' => 20,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        // $eventLevelSmpId = DB::table('event_levels')->insertGetId([
+        //     'event_id' => $eventId1,
+        //     'level_id' => 2,
+        //     'registration_fees' => 150000,
+        //     'quota' => 20,
+        //     'created_at' => $now,
+        //     'updated_at' => $now,
+        // ]);
 
-        $eventLevelSmaId = DB::table('event_levels')->insertGetId([
-            'event_id' => $eventId1,
-            'level_id' => 3,
-            'registration_fees' => 200000,
-            'quota' => 25,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        // $eventLevelSmaId = DB::table('event_levels')->insertGetId([
+        //     'event_id' => $eventId1,
+        //     'level_id' => 3,
+        //     'registration_fees' => 200000,
+        //     'quota' => 25,
+        //     'created_at' => $now,
+        //     'updated_at' => $now,
+        // ]);
 
         // =========================================================
         // 3. SETUP PANITIA EVENT
         // =========================================================
 
-        $committee = DB::table('committees')->first();
+        // $committee = DB::table('committees')->first();
 
-        if ($committee) {
-            DB::table('event_committees')->insert([
-                'event_id' => $eventId1,
-                'committee_id' => $committee->committee_id,
-                'position' => 'administration',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
+        // if ($committee) {
+        //     DB::table('event_committees')->insert([
+        //         'event_id' => $eventId1,
+        //         'committee_id' => $committee->committee_id,
+        //         'position' => 'administration',
+        //         'created_at' => $now,
+        //         'updated_at' => $now,
+        //     ]);
+        // }
     }
 }

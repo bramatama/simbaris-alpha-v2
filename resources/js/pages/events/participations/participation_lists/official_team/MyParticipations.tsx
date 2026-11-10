@@ -47,7 +47,7 @@ export default function MyParticipations({
     myOfficialTeamId,
 }: MyParticipationsProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth.user.role;
+    const userRole = auth?.user?.role;
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeLevelId, setActiveLevelId] = useState<number | null>(null);
