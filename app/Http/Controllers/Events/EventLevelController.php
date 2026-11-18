@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Level;
 use App\Models\EventLevel;
+use App\Models\ScoringCategory;
+use App\Models\JudgeExpertise;
 use App\Concerns\HasEventAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,9 +38,11 @@ class EventLevelController extends Controller
     /**
      * Menyimpan atau memperbarui konfigurasi biaya dan kuota jenjang.
      */
+   
     public function store(Request $request, $public_id)
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
+
         $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $validated = $request->validate([
@@ -58,34 +62,91 @@ class EventLevelController extends Controller
             'levels.*.quota.min' => 'Kuota tidak boleh bernilai negatif.',
         ]);
 
-        DB::transaction(function () use ($validated, $event) {
-            $submittedLevelIds = [];
+        try {
+            DB::transaction(function () use ($validated, $event) {
 
-            foreach ($validated['levels'] as $levelData) {
-                $currentLevelId = $levelData['level_id'];
-                $submittedLevelIds[] = $currentLevelId;
+                $submittedLevelIds = collect($validated['levels'])
+                    ->pluck('level_id')
+                    ->unique()
+                    ->values()
+                    ->toArray();
 
-                EventLevel::updateOrCreate(
-                    [
-                        'event_id' => $event->event_id,
-                        'level_id' => $currentLevelId,
-                    ],
-                    [
-                        'registration_fees' => $levelData['registration_fees'],
-                        'quota' => $levelData['quota'] ?? 0,
-                    ]
-                );
-            }
+                // Identifikasi jenjang yang akan dihapus
+                $levelsToDelete = EventLevel::where('event_id', $event->event_id)
+                    ->whereNotIn('level_id', $submittedLevelIds)
+                    ->get();
 
-            if (!empty($submittedLevelIds)) {
+                // Validasi relasi sebelum penghapusan
+                foreach ($levelsToDelete as $eventLevel) {
+
+                    // Ambil kategori penilaian pada jenjang tersebut
+                    $scoringCategories = ScoringCategory::where(
+                        'event_level_id',
+                        $eventLevel->event_level_id
+                    );
+
+                    $hasScoringCategories = $scoringCategories->exists();
+
+                    // Periksa expertise juri melalui scoring_categories
+                    $hasJudgeExpertises = JudgeExpertise::whereIn(
+                        'scoring_category_id',
+                        ScoringCategory::where(
+                            'event_level_id',
+                            $eventLevel->event_level_id
+                        )->select('scoring_category_id')
+                    )->exists();
+
+                    // Tolak penghapusan jika masih memiliki relasi
+                    if ($hasScoringCategories || $hasJudgeExpertises) {
+
+                        $levelName = $eventLevel->level->level_name
+                            ?? 'Jenjang ini';
+
+                        $relations = [];
+
+                        if ($hasScoringCategories) {
+                            $relations[] = 'kategori penilaian';
+                        }
+
+                        if ($hasJudgeExpertises) {
+                            $relations[] = 'expertise juri';
+                        }
+
+                        throw new \Exception(
+                            "{$levelName} tidak dapat dihapus karena masih digunakan dalam konfigurasi penilaian atau juri."
+                        );
+                    }
+                }
+
+                // Simpan atau perbarui konfigurasi jenjang
+                foreach ($validated['levels'] as $levelData) {
+
+                    EventLevel::updateOrCreate(
+                        [
+                            'event_id' => $event->event_id,
+                            'level_id' => $levelData['level_id'],
+                        ],
+                        [
+                            'registration_fees' => $levelData['registration_fees'],
+                            'quota' => $levelData['quota'] ?? 0,
+                        ]
+                    );
+                }
+
+                // Hapus jenjang yang tidak lagi dipilih
                 EventLevel::where('event_id', $event->event_id)
                     ->whereNotIn('level_id', $submittedLevelIds)
                     ->delete();
-            } else {
-                EventLevel::where('event_id', $event->event_id)->delete();
-            }
-        });
+            });
 
-        return back()->with('success', 'Konfigurasi jenjang berhasil disimpan!');
+            return back()->with(
+                'success',
+                'Konfigurasi jenjang berhasil disimpan!'
+            );
+
+        } catch (\Exception $e) {
+
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

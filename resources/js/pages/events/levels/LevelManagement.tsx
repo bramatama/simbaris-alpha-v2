@@ -354,6 +354,7 @@ export default function LevelManagement({
                                                         </div>
                                                         <Input
                                                             type="number"
+                                                            min={0}
                                                             onWheel={(e) =>
                                                                 e.currentTarget.blur()
                                                             }

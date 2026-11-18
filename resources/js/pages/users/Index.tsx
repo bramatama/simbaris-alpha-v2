@@ -161,7 +161,7 @@ export default function UserManagementIndex({
                                 className="w-full sm:w-auto"
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Hapus yang Dipilih ({selectedUserIds.length})
+                                Hapus pengguna terpilih ({selectedUserIds.length})
                             </Button>
                         )}
 
@@ -190,10 +190,6 @@ export default function UserManagementIndex({
                                     </SelectItem>
 
                                     <SelectItem value="judge">Juri</SelectItem>
-
-                                    <SelectItem value="admin">
-                                        Administrator
-                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

@@ -218,7 +218,7 @@ export default function EventIndex({ events = [] }: { events: EventData[] }) {
                         Event Tidak Ditemukan
                     </h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Coba ubah kata kunci pencarian atau filter status acara
+                        Coba ubah kata kunci pencarian atau filter status event
                         Anda.
                     </p>
                 </div>

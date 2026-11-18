@@ -157,46 +157,60 @@ class EvaluationMonitoringController extends Controller
      * Memperbarui status atau waktu sesi secara manual.
      */
     public function manualUpdate(
-    Request $request,
-    Event $event,
-    Participation $participation
-) {
-    $this->validateEventAccess(
-        $event,
-        ['auditor'],
-        ['committee']
-    );
+        Request $request,
+        Event $event,
+        Participation $participation
+    ) {
+        $committee = $this->validateEventAccess(
+            $event,
+            ['auditor'],
+            ['committee']
+        );
 
-    $session = EvaluationSession::where(
-        'participation_id',
-        $participation->participation_id
-    )->firstOrFail();
+        $session = EvaluationSession::where(
+            'participation_id',
+            $participation->participation_id
+        )->firstOrFail();
 
-    $validated = $request->validate([
-        'status' => 'required|in:waiting,ongoing,finished',
-        'start_time' => 'nullable|date',
-        'end_time' => 'nullable|date',
-    ]);
+        $messages = [
+            'status.required'           => 'Status sesi wajib dipilih.',
+            'status.in'                 => 'Status sesi tidak valid.',
+            'start_time.required_unless'=> 'Waktu mulai wajib diisi jika status bukan Waiting.',
+            'start_time.date'           => 'Format waktu mulai tidak valid.',
+            'end_time.required_if'      => 'Waktu selesai wajib diisi jika status Finished.',
+            'end_time.date'             => 'Format waktu selesai tidak valid.',
+            'end_time.after_or_equal'   => 'Waktu selesai tidak boleh lebih awal dari waktu mulai.',
+            'manual_reason.required'    => 'Alasan perubahan manual wajib diisi.',
+            'manual_reason.max'         => 'Alasan perubahan manual maksimal 1000 karakter.',
+        ];
 
-    $timezone = 'Asia/Makassar';
+        $validated = $request->validate([
+            'status'        => 'required|in:waiting,ongoing,finished',
+            'start_time'    => 'nullable|required_unless:status,waiting|date',
+            'end_time'      => 'nullable|required_if:status,finished|date|after_or_equal:start_time',
+            'manual_reason' => 'required|string|max:1000',
+        ], $messages);
 
-    $session->update([
-        'status' => $validated['status'],
+        $timezone = 'Asia/Makassar';
 
-        'start_time' => !empty($validated['start_time'])
-            ? Carbon::parse($validated['start_time'], $timezone)
-            : null,
+        $session->update([
+            'status'         => $validated['status'],
+            'start_time'     => !empty($validated['start_time'])
+                ? Carbon::parse($validated['start_time'], $timezone)
+                : null,
+            'end_time'       => !empty($validated['end_time'])
+                ? Carbon::parse($validated['end_time'], $timezone)
+                : null,
+            'recorded_by'    => is_object($committee) ? $committee->event_committee_id : $session->recorded_by,
+            'recording_mode' => 'manual',
+            'manual_reason'  => trim($validated['manual_reason']),
+        ]);
 
-        'end_time' => !empty($validated['end_time'])
-            ? Carbon::parse($validated['end_time'], $timezone)
-            : null,
-    ]);
-
-    return redirect()->back()->with(
-        'success',
-        'Data sesi berhasil diperbarui secara manual.'
-    );
-}
+        return redirect()->back()->with(
+            'success',
+            'Data sesi berhasil diperbarui secara manual.'
+        );
+    }
 
     /**
      * Mengambil riwayat audit penilaian dalam format JSON.

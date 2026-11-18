@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
+
 import { useForm, usePage } from '@inertiajs/react';
+
 import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
+
 import { Label } from '@/components/ui/label';
+
 import {
     Dialog,
     DialogContent,
@@ -11,6 +16,7 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
+
 import {
     Select,
     SelectContent,
@@ -20,15 +26,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+
 import InputError from '@/components/input-error';
+
 import { Spinner } from '@/components/ui/spinner';
+
 import { ConfirmationDialog } from '../confirmation-dialog';
+
 import { Plus } from 'lucide-react';
 
 interface AddCommitteeDialogProps {
     eventPublicId: string;
     existingCommittees: any[];
 }
+
 import type { PageProps } from '@inertiajs/core';
 
 export default function AddCommitteeDialog({
@@ -108,13 +119,13 @@ export default function AddCommitteeDialog({
             >
                 <DialogTrigger asChild>
                     <Button className="gap-2">
-                        <Plus className="h-4 w-4" /> Assign New Member
+                        <Plus className="h-4 w-4" /> Tugaskan Panitia Baru
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-lg">
                     <form onSubmit={submitAdd}>
                         <DialogHeader className="sticky top-0 bg-background/90 backdrop-blur-sm">
-                            <DialogTitle>Add Committee Member</DialogTitle>
+                            <DialogTitle>Tambah Panitia</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="grid gap-2 border-b border-border pb-4">
@@ -122,7 +133,7 @@ export default function AddCommitteeDialog({
                                     className="text-muted-foreground"
                                     requirement="optional"
                                 >
-                                    Autofill dari akun yang sudah ada
+                                    Isi otomatis dari akun yang sudah terdaftar
                                 </Label>
                                 <Select
                                     onValueChange={(val) => {
@@ -143,7 +154,7 @@ export default function AddCommitteeDialog({
                                     }}
                                 >
                                     <SelectTrigger className="w-full bg-muted/30">
-                                        <SelectValue placeholder="-- Pilih Panitia yang sudah terdaftar --" />
+                                        <SelectValue placeholder="-- Pilih Panitia yang Sudah Terdaftar --" />
                                     </SelectTrigger>
                                     <SelectContent position="popper">
                                         <SelectGroup>
@@ -165,7 +176,7 @@ export default function AddCommitteeDialog({
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="name" requirement="required">
-                                    Full Name
+                                    Nama Lengkap
                                 </Label>
                                 <Input
                                     id="name"
@@ -173,13 +184,12 @@ export default function AddCommitteeDialog({
                                     onChange={(e) =>
                                         setData('name', e.target.value)
                                     }
-                                    required
                                 />
                                 <InputError message={errors.name} />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="email" requirement="required">
-                                    Email Address
+                                    Alamat Email
                                 </Label>
                                 <Input
                                     id="email"
@@ -188,7 +198,7 @@ export default function AddCommitteeDialog({
                                     onChange={(e) =>
                                         setData('email', e.target.value)
                                     }
-                                    required
+                                    
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -197,16 +207,16 @@ export default function AddCommitteeDialog({
                                     htmlFor="department"
                                     requirement="required"
                                 >
-                                    Department
+                                    Instansi
                                 </Label>
                                 <Input
                                     id="department"
-                                    placeholder="e.g. Raja Management"
+                                    placeholder="Contoh: Raja Management"
                                     value={data.department}
                                     onChange={(e) =>
                                         setData('department', e.target.value)
                                     }
-                                    required
+                                    
                                 />
                                 <InputError message={errors.department} />
                             </div>
@@ -215,23 +225,23 @@ export default function AddCommitteeDialog({
                                     htmlFor="position"
                                     requirement="required"
                                 >
-                                    Position / Role
+                                    Jabatan / Peran
                                 </Label>
                                 <Select
                                     value={data.position}
                                     onValueChange={(value) =>
                                         setData('position', value)
                                     }
-                                    required
+                                    
                                 >
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select position" />
+                                        <SelectValue placeholder="Pilih jabatan" />
                                     </SelectTrigger>
                                     <SelectContent position="popper">
                                         <SelectGroup>
-                                            <SelectLabel>Position</SelectLabel>
+                                            <SelectLabel>Jabatan</SelectLabel>
                                             <SelectItem value="administration">
-                                                Administration
+                                                Administrasi
                                             </SelectItem>
                                             <SelectItem value="auditor">
                                                 Auditor
@@ -248,13 +258,13 @@ export default function AddCommitteeDialog({
                                 variant="outline"
                                 onClick={() => setIsAddOpen(false)}
                             >
-                                Cancel
+                                Batal
                             </Button>
                             <Button type="submit" disabled={processing}>
                                 {processing && (
                                     <Spinner className="mr-2 h-4 w-4" />
                                 )}{' '}
-                                Save & Create Account
+                                Simpan & Buat Akun
                             </Button>
                         </DialogFooter>
                     </form>
@@ -272,7 +282,7 @@ export default function AddCommitteeDialog({
                 description={
                     errors['confirmation' as keyof typeof errors] as string
                 }
-                confirmText="Lanjutkan Assignment"
+                confirmText="Lanjutkan Penugasan"
                 onConfirm={confirmSubmit}
                 isProcessing={processing}
             />

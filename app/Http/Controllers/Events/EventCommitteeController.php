@@ -89,13 +89,13 @@ class EventCommitteeController extends Controller
 
                 if ($isAlreadyAssigned) {
                     throw ValidationException::withMessages([
-                        'email' => 'Panitia ini sudah ditugaskan pada acara ini sebelumnya.',
+                        'email' => 'Panitia ini sudah ditugaskan pada event ini sebelumnya.',
                     ]);
                 }
 
                 if (empty($validated['force_create'])) {
                     throw ValidationException::withMessages([
-                        'confirmation' => 'Akun panitia ditemukan: ' . $user->name . ' (' . $committee->department . '). Lanjutkan menugaskan ke acara ini?',
+                        'confirmation' => 'Akun panitia ditemukan: ' . $user->name . ' (' . $committee->department . '). Lanjutkan menugaskan ke event ini?',
                     ]);
                 }
             }
@@ -129,7 +129,7 @@ class EventCommitteeController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Panitia berhasil ditugaskan ke acara ini!');
+        return back()->with('success', 'Panitia berhasil ditugaskan ke event ini!');
     }
 
     /** Menghapus penugasan panitia dari event. */
@@ -140,6 +140,6 @@ class EventCommitteeController extends Controller
 
         EventCommittee::where('event_committee_id', $event_committee_id)->delete();
 
-        return back()->with('success', 'Panitia berhasil diberhentikan dari acara ini.');
+        return back()->with('success', 'Panitia berhasil diberhentikan dari event ini.');
     }
 }

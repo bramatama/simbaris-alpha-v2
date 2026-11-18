@@ -390,7 +390,7 @@ export default function ParticipantList({
                     ) : (
                         <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                             Anda belum ditugaskan untuk menilai kategori apapun
-                            di acara ini
+                            di event ini
                         </div>
                     )}
                 </div>

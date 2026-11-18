@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Trash2, Key, ArrowLeftRightIcon, AlertCircle } from 'lucide-react';
 import { FormDialog } from '@/components/dialogs/form-dialog';
 import { FileUploader } from '@/components/ui/file-uploader';
+import { PageProps } from '@inertiajs/core';
 
 interface User {
     user_id: number;
@@ -33,6 +34,8 @@ type ProfilePageProps = {
 };
 
 export default function ProfileEdit({ user }: ProfilePageProps) {
+    const { auth } = usePage<PageProps>().props;
+    const userRole = auth?.user?.role;
     const [isTransferOpen, setIsTransferOpen] = useState(false);
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -624,79 +627,86 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
                             </div>
 
                             {/* Hapus Akun */}
-                            <div className="flex flex-col justify-between gap-4 bg-white p-4 sm:flex-row sm:items-center dark:bg-transparent">
-                                <div>
-                                    <h4 className="text-sm font-semibold">
-                                        Hapus Akun Ini
-                                    </h4>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Setelah menghapus akun, tindakan ini
-                                        tidak dapat dibatalkan. Mohon pastikan
-                                        kembali.
-                                    </p>
-                                </div>
-                                <FormDialog
-                                    trigger={
-                                        <Button
-                                            variant="outline"
-                                            className="gap-2 border-red-200 whitespace-nowrap text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/80 dark:text-red-500 dark:hover:bg-red-950/50"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                            Hapus Akun
-                                        </Button>
-                                    }
-                                    open={isDeleteOpen}
-                                    onOpenChange={(open) => {
-                                        setIsDeleteOpen(open);
-                                        if (!open) deleteForm.reset();
-                                        deleteForm.clearErrors();
-                                    }}
-                                    onSubmit={submitDelete}
-                                    title="Apakah Anda benar-benar yakin?"
-                                    titleClass="text-red-600"
-                                    description="Tindakan ini tidak dapat dibatalkan. Akun Anda beserta seluruh datanya akan dihapus secara permanen dari server kami."
-                                    submitText="Hapus Akun"
-                                    submitVariant="destructive"
-                                    isProcessing={deleteForm.processing}
-                                    isDisabled={!deleteForm.data.password}
-                                >
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="password">
-                                                Konfirmasi Kata Sandi
-                                            </Label>
-                                            {/* METODE 1: INLINE BADGE */}
-                                            {deleteForm.errors.password && (
-                                                <span className="flex items-center gap-1 text-xs font-medium text-destructive">
-                                                    <AlertCircle className="h-3 w-3" />
-                                                    {deleteForm.errors.password}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            value={deleteForm.data.password}
-                                            onChange={(e) =>
-                                                deleteForm.setData(
-                                                    'password',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Masukkan kata sandi Anda"
-                                            required
-                                            className={
-                                                deleteForm.errors.password
-                                                    ? 'border-destructive focus-visible:ring-destructive'
-                                                    : ''
-                                            }
-                                        />
-                                        <InputError
-                                            message={deleteForm.errors.password}
-                                        />
+                            {userRole !== 'admin' && (
+                                <div className="flex flex-col justify-between gap-4 bg-white p-4 sm:flex-row sm:items-center dark:bg-transparent">
+                                    <div>
+                                        <h4 className="text-sm font-semibold">
+                                            Hapus Akun Ini
+                                        </h4>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Setelah menghapus akun, tindakan ini
+                                            tidak dapat dibatalkan. Mohon
+                                            pastikan kembali.
+                                        </p>
                                     </div>
-                                </FormDialog>
-                            </div>
+                                    <FormDialog
+                                        trigger={
+                                            <Button
+                                                variant="outline"
+                                                className="gap-2 border-red-200 whitespace-nowrap text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/80 dark:text-red-500 dark:hover:bg-red-950/50"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Hapus Akun
+                                            </Button>
+                                        }
+                                        open={isDeleteOpen}
+                                        onOpenChange={(open) => {
+                                            setIsDeleteOpen(open);
+                                            if (!open) deleteForm.reset();
+                                            deleteForm.clearErrors();
+                                        }}
+                                        onSubmit={submitDelete}
+                                        title="Apakah Anda benar-benar yakin?"
+                                        titleClass="text-red-600"
+                                        description="Tindakan ini tidak dapat dibatalkan. Akun Anda beserta seluruh datanya akan dihapus secara permanen dari server kami."
+                                        submitText="Hapus Akun"
+                                        submitVariant="destructive"
+                                        isProcessing={deleteForm.processing}
+                                        isDisabled={!deleteForm.data.password}
+                                    >
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="password">
+                                                    Konfirmasi Kata Sandi
+                                                </Label>
+                                                {/* METODE 1: INLINE BADGE */}
+                                                {deleteForm.errors.password && (
+                                                    <span className="flex items-center gap-1 text-xs font-medium text-destructive">
+                                                        <AlertCircle className="h-3 w-3" />
+                                                        {
+                                                            deleteForm.errors
+                                                                .password
+                                                        }
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <Input
+                                                id="password"
+                                                type="password"
+                                                value={deleteForm.data.password}
+                                                onChange={(e) =>
+                                                    deleteForm.setData(
+                                                        'password',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Masukkan kata sandi Anda"
+                                                required
+                                                className={
+                                                    deleteForm.errors.password
+                                                        ? 'border-destructive focus-visible:ring-destructive'
+                                                        : ''
+                                                }
+                                            />
+                                            <InputError
+                                                message={
+                                                    deleteForm.errors.password
+                                                }
+                                            />
+                                        </div>
+                                    </FormDialog>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,6 +88,30 @@ export default function DynamicScoringBuilderCreate({
     const [newRubricName, setNewRubricName] = useState('');
     const [newRubricCount, setNewRubricCount] = useState<number | ''>('');
     const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+
+    // Gabungkan error lokal dengan nested error dari server (misal: criteria.0.rubrics.1.scores.0.score_value)
+    const mergedRowErrors = useMemo(() => {
+        const combined: Record<string, string> = { ...localErrors };
+        const serverErrors = errors as Record<string, string>;
+
+        Object.entries(serverErrors).forEach(([key, msg]) => {
+            const match = key.match(/^criteria\.(\d+)\./);
+            if (match) {
+                const cIdx = Number(match[1]);
+                const crit = uiCriteria[cIdx];
+                if (crit && !combined[`crit_${crit.id}`]) {
+                    combined[`crit_${crit.id}`] = msg;
+                }
+            }
+        });
+
+        return combined;
+    }, [localErrors, errors, uiCriteria]);
+
+    // Kumpulkan semua pesan error server untuk ditampilkan di Top Banner
+    const serverErrorMessages = useMemo(() => {
+        return Object.values(errors as Record<string, string>).filter(Boolean);
+    }, [errors]);
 
     const clearLocalError = (key: string) => {
         setLocalErrors((prev) => {
@@ -193,19 +217,47 @@ export default function DynamicScoringBuilderCreate({
         `new_${Math.random().toString(36).substring(2, 9)}`;
 
     const addGlobalRubric = () => {
-        if (!newRubricName.trim() || !newRubricCount) return;
-        setGlobalRubrics([
-            ...globalRubrics,
+        const count = Number(newRubricCount);
+        const trimmedName = newRubricName.trim();
+
+        if (!trimmedName || !newRubricCount) {
+            setLocalErrors((prev) => ({
+                ...prev,
+                global: 'Nama kolom kategori rubrik dan jumlah opsi wajib diisi.',
+            }));
+            return;
+        }
+
+        if (trimmedName.length > 255) {
+            setLocalErrors((prev) => ({
+                ...prev,
+                global: 'Nama kategori rubrik maksimal 255 karakter.',
+            }));
+            return;
+        }
+
+        if (!Number.isInteger(count) || count < 1) {
+            setLocalErrors((prev) => ({
+                ...prev,
+                global: 'Jumlah opsi minimal 1 dan harus berupa bilangan bulat.',
+            }));
+            return;
+        }
+
+        setGlobalRubrics((prev) => [
+            ...prev,
             {
-                id: Math.random().toString(36).substring(7),
-                name: toTitleCase(newRubricName.trim()),
-                expected_count: Number(newRubricCount),
+                id: generateNewId(),
+                name: toTitleCase(trimmedName),
+                expected_count: count,
             },
         ]);
+
         setNewRubricName('');
         setNewRubricCount('');
         clearLocalError('global');
     };
+
     const removeGlobalRubric = (id: string) =>
         setGlobalRubrics((prev) => prev.filter((gr) => gr.id !== id));
 
@@ -331,7 +383,6 @@ export default function DynamicScoringBuilderCreate({
         clearLocalError(`crit_${critId}`);
     };
 
-    // FUNGSI SMOOTH SCROLL TO ERROR DI CREATE PAGE
     const scrollToError = () => {
         setTimeout(() => {
             const firstError = document.querySelector('.is-error-msg');
@@ -349,37 +400,44 @@ export default function DynamicScoringBuilderCreate({
         let hasError = false;
         const newLocalErrors: Record<string, string> = {};
 
-        if (globalRubrics.length === 0) {
+        // Validasi Master Category & Event Levels sebelum hit server
+        if (!data.master_category_id) {
+            newLocalErrors['global'] = 'Kategori penilaian wajib dipilih.';
+            hasError = true;
+        } else if (data.event_level_ids.length === 0) {
+            newLocalErrors['global'] =
+                'Minimal satu jenjang lomba harus dipilih.';
+            hasError = true;
+        } else if (globalRubrics.length === 0) {
             newLocalErrors['global'] =
                 'Buat minimal 1 kolom kategori di bagian atas.';
             hasError = true;
-        }
-        if (uiCriteria.length === 0) {
+        } else if (uiCriteria.length === 0) {
             newLocalErrors['global'] =
                 'Tambahkan minimal 1 baris komponen materi gerakan.';
             hasError = true;
         }
 
         uiCriteria.forEach((crit) => {
-            // Validasi Nama Kriteria
+            // 1. Validasi Nama Kriteria (master_criteria_id.required)
             if (!crit.name.trim()) {
                 newLocalErrors[`crit_${crit.id}`] =
-                    'Nama komponen gerakan belum dipilih.';
+                    'Kriteria utama wajib dipilih.';
                 hasError = true;
+                return;
             }
 
-            // Validasi Jumlah dan Kelengkapan Nilai Rubrik
-            globalRubrics.forEach((gr) => {
+            // 2. Validasi Jumlah, Kelengkapan, dan Angka Non-Negatif (score_value.required|numeric|min:0)
+            for (const gr of globalRubrics) {
                 const scores = crit.rubricData[gr.id] || [];
 
-                // 1. Cek Apakah Jumlah Opsi Pas dengan Katetogori
                 if (scores.length !== gr.expected_count) {
                     newLocalErrors[`crit_${crit.id}`] =
                         `Jumlah opsi nilai untuk '${gr.name}' harus ${gr.expected_count} item (saat ini: ${scores.length}).`;
                     hasError = true;
+                    break;
                 }
 
-                // 2. Cek Apakah Ada Input Opsi Nilai yang Masih Kosong
                 const hasEmptyScore = scores.some(
                     (s) =>
                         s.value === '' ||
@@ -389,10 +447,23 @@ export default function DynamicScoringBuilderCreate({
 
                 if (hasEmptyScore) {
                     newLocalErrors[`crit_${crit.id}`] =
-                        `Terdapat nilai opsi pada '${gr.name}' yang masih kosong. Harap isi semua nilai angka.`;
+                        `Nilai skor pada '${gr.name}' wajib diisi semua.`;
                     hasError = true;
+                    break;
                 }
-            });
+
+                const hasInvalidNumber = scores.some((s) => {
+                    const num = Number(s.value);
+                    return Number.isNaN(num) || num < 0;
+                });
+
+                if (hasInvalidNumber) {
+                    newLocalErrors[`crit_${crit.id}`] =
+                        `Nilai skor pada '${gr.name}' harus berupa angka dan tidak boleh negatif.`;
+                    hasError = true;
+                    break;
+                }
+            }
         });
 
         if (hasError) {
@@ -410,7 +481,7 @@ export default function DynamicScoringBuilderCreate({
                     category_label: gr.name,
                     category_order: rIdx + 1,
                     scores: (crit.rubricData[gr.id] || []).map((s, sIdx) => ({
-                        score_value: s.value,
+                        score_value: Number(s.value),
                         display_order: sIdx + 1,
                     })),
                 })),
@@ -479,12 +550,18 @@ export default function DynamicScoringBuilderCreate({
                             <div>{localErrors['global']}</div>
                         </div>
                     )}
-                    {errors.criteria && (
-                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive shadow-sm">
-                            <AlertCircle className="h-5 w-5 shrink-0" />
-                            <div>
-                                Validasi Server: Terdapat kelengkapan data yang
-                                gagal disimpan. Periksa baris komponen di bawah.
+                    {serverErrorMessages.length > 0 && (
+                        <div className="is-error-msg flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive shadow-sm">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                            <div className="space-y-1">
+                                <p className="font-semibold">
+                                    Terdapat Kesalahan validasi
+                                </p>
+                                <ul className="list-disc space-y-0.5 pl-4 text-xs">
+                                    {serverErrorMessages.map((msg, i) => (
+                                        <li key={i}>{msg}</li>
+                                    ))}
+                                </ul>
                             </div>
                         </div>
                     )}
@@ -517,6 +594,7 @@ export default function DynamicScoringBuilderCreate({
                                                 clearErrors(
                                                     'master_category_id',
                                                 );
+                                                clearLocalError('global');
                                             }}
                                             required
                                         >
@@ -575,12 +653,15 @@ export default function DynamicScoringBuilderCreate({
                                                             )}
                                                             onCheckedChange={(
                                                                 c,
-                                                            ) =>
+                                                            ) => {
                                                                 handleLevelToggle(
                                                                     level.event_level_id,
                                                                     c as boolean,
-                                                                )
-                                                            }
+                                                                );
+                                                                clearLocalError(
+                                                                    'global',
+                                                                );
+                                                            }}
                                                         />
                                                         <Label
                                                             htmlFor={`level-${level.event_level_id}`}
@@ -617,6 +698,7 @@ export default function DynamicScoringBuilderCreate({
                                                 Nama Kolom
                                             </Label>
                                             <Input
+                                                maxLength={255}
                                                 value={newRubricName}
                                                 onChange={(e) =>
                                                     setNewRubricName(
@@ -640,12 +722,12 @@ export default function DynamicScoringBuilderCreate({
                                                 value={newRubricCount}
                                                 onChange={(e) =>
                                                     setNewRubricCount(
-                                                        e.target.value
-                                                            ? parseInt(
+                                                        e.target.value === ''
+                                                            ? ''
+                                                            : Number(
                                                                   e.target
                                                                       .value,
-                                                              )
-                                                            : '',
+                                                              ),
                                                     )
                                                 }
                                                 placeholder="Misal: 3"
@@ -716,7 +798,7 @@ export default function DynamicScoringBuilderCreate({
                                             crit={crit}
                                             index={cIdx}
                                             globalRubrics={globalRubrics}
-                                            localErrors={localErrors}
+                                            localErrors={mergedRowErrors}
                                             availableMasterCriteria={
                                                 availableMasterCriteria
                                             }

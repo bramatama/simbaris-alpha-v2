@@ -118,8 +118,8 @@ class ParticipationSeeder extends Seeder
                             fake()->numerify('08##########'),
                         'team_name' => $teamData['name'],
                         'status' => $teamData['status'],
-                        'payment_proof_path' =>
-                            'payment_proofs/dummy_proof.png',
+                        // 'payment_proof_path' =>
+                        //     'payment_proofs/dummy_proof.png',
                         'billed_amount' =>
                             $registration['event_level']->registration_fees,
                         'created_at' => $now,

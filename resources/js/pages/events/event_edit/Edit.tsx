@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,10 +83,6 @@ export default function EventEdit({ event }: { event: any }) {
         temp_poster_path: null as string | null,
     });
 
-    const deleteForm = useForm({
-        password: '',
-    });
-
     useEffect(() => {
         if (Object.keys(errors).length > 0) {
             const errorBanner = document.querySelector('.is-error-banner');
@@ -126,22 +122,16 @@ export default function EventEdit({ event }: { event: any }) {
     };
 
     // Handler Hapus Event dengan Error Handling (Metode 2 & 3)
-    const submitDelete = (e: React.FormEvent) => {
-        e.preventDefault();
-        deleteForm.delete(`/${userRole}/events/${event.public_id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsDeleteOpen(false);
-                deleteForm.reset();
-                deleteForm.clearErrors();
-            },
-            onError: () => {
-                // METODE 2: Reset password input & Auto-focus
-                deleteForm.reset('password');
-                document.getElementById('delete_confirm_password')?.focus();
-            },
-        });
-    };
+   const submitDelete = (e: React.FormEvent) => {
+       e.preventDefault();
+
+       router.delete(`/${userRole}/events/${event.public_id}`, {
+           preserveScroll: true,
+           onSuccess: () => {
+               setIsDeleteOpen(false);
+           },
+       });
+   };
 
     const renderErrorBadge = (errorMsg?: string) => {
         if (!errorMsg) return null;
@@ -850,110 +840,57 @@ export default function EventEdit({ event }: { event: any }) {
                                 </Button>
                             </div>
 
-                            <div className="space-y-3 pt-4">
-                                <h3 className="text-sm font-semibold text-red-600 dark:text-red-500">
-                                    Area Berbahaya
-                                </h3>
-                                <div className="divide-y divide-red-100 overflow-hidden rounded-xl border border-red-200 bg-red-50/50 dark:divide-red-900/50 dark:border-red-900/50 dark:bg-red-950/20">
-                                    <div className="flex flex-col gap-4 p-4">
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">
-                                                Hapus Event Ini
-                                            </h4>
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                Tindakan ini tidak dapat
-                                                dibatalkan. Seluruh data
-                                                pendaftaran, tim, dan hasil
-                                                nilai akan dihapus secara
-                                                permanen.
-                                            </p>
-                                        </div>
-
-                                        <FormDialog
-                                            trigger={
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/80 dark:text-red-400 dark:hover:bg-red-900/50"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                    Hapus Event
-                                                </Button>
-                                            }
-                                            open={isDeleteOpen}
-                                            onOpenChange={(open) => {
-                                                setIsDeleteOpen(open);
-                                                if (!open) deleteForm.reset();
-                                                deleteForm.clearErrors();
-                                            }}
-                                            onSubmit={submitDelete}
-                                            title="Hapus Event Ini Secara Permanen?"
-                                            titleClass="text-red-600"
-                                            description={`Anda akan menghapus "${event.event_name}". Masukkan kata sandi Anda untuk mengonfirmasi tindakan ini.`}
-                                            submitText="Hapus Event"
-                                            submitVariant="destructive"
-                                            isProcessing={deleteForm.processing}
-                                            isDisabled={
-                                                !deleteForm.data.password
-                                            }
-                                        >
-                                            {deleteForm.hasErrors && (
-                                                <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-xs font-semibold text-destructive">
-                                                    <AlertCircle className="h-4 w-4 shrink-0" />
-                                                    Gagal menghapus event.
-                                                    Periksa kembali kata sandi
-                                                    Anda.
-                                                </div>
-                                            )}
-
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <Label htmlFor="delete_confirm_password">
-                                                        Konfirmasi Kata Sandi
-                                                    </Label>
-                                                    {deleteForm.errors
-                                                        .password && (
-                                                        <span className="flex items-center gap-1 text-xs font-medium text-destructive">
-                                                            <AlertCircle className="h-3 w-3" />
-                                                            {
-                                                                deleteForm
-                                                                    .errors
-                                                                    .password
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <Input
-                                                    id="delete_confirm_password"
-                                                    type="password"
-                                                    value={
-                                                        deleteForm.data.password
-                                                    }
-                                                    onChange={(e) =>
-                                                        deleteForm.setData(
-                                                            'password',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Masukkan kata sandi akun Anda"
-                                                    required
-                                                    className={
-                                                        deleteForm.errors
-                                                            .password
-                                                            ? 'border-destructive focus-visible:ring-destructive'
-                                                            : ''
-                                                    }
-                                                />
-                                                <InputError
-                                                    message={
-                                                        deleteForm.errors
-                                                            .password
-                                                    }
-                                                />
+                            {userRole === 'admin' && (
+                                <div className="space-y-3 pt-4">
+                                    <h3 className="text-sm font-semibold text-red-600 dark:text-red-500">
+                                        Area Berbahaya
+                                    </h3>
+                                    <div className="divide-y divide-red-100 overflow-hidden rounded-xl border border-red-200 bg-red-50/50 dark:divide-red-900/50 dark:border-red-900/50 dark:bg-red-950/20">
+                                        <div className="flex flex-col gap-4 p-4">
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">
+                                                    Hapus Event Ini
+                                                </h4>
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    Tindakan ini tidak dapat
+                                                    dibatalkan. Seluruh data
+                                                    pendaftaran, tim, dan hasil
+                                                    nilai akan dihapus secara
+                                                    permanen.
+                                                </p>
                                             </div>
-                                        </FormDialog>
+
+                                            <FormDialog
+                                                trigger={
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/80 dark:text-red-400 dark:hover:bg-red-900/50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        Hapus Event
+                                                    </Button>
+                                                }
+                                                open={isDeleteOpen}
+                                                onOpenChange={setIsDeleteOpen}
+                                                onSubmit={submitDelete}
+                                                title="Hapus Event Ini Secara Permanen?"
+                                                titleClass="text-red-600"
+                                                description={`Anda akan menghapus "${event.event_name}". Tindakan ini tidak dapat dibatalkan. Seluruh data terkait event akan dihapus secara permanen.`}
+                                                submitText="Hapus Event"
+                                                submitVariant="destructive"
+                                                isProcessing={processing}
+                                            >
+                                                <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive">
+                                                    <AlertCircle className="mr-2 inline h-4 w-4" />
+                                                    Pastikan Anda benar-benar
+                                                    yakin ingin menghapus event
+                                                    ini.
+                                                </div>
+                                            </FormDialog>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

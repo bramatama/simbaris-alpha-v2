@@ -24,6 +24,16 @@ class MasterChampionController extends Controller
      */
     public function store(Request $request)
     {
+        $messages = [
+            'champion_category_id.required' => 'Kategori juara wajib dipilih.',
+            'champion_category_id.exists' => 'Kategori juara yang dipilih tidak ditemukan.',
+
+            'champion_name.required' => 'Nama piala wajib diisi.',
+            'champion_name.string' => 'Nama piala harus berupa teks.',
+            'champion_name.max' => 'Nama piala maksimal 255 karakter.',
+            'champion_name.unique' => 'Nama piala sudah digunakan dalam kategori juara ini. Silakan gunakan nama lain.',
+        ];
+
         $validated = $request->validate([
             'champion_category_id' => 'required|exists:champion_categories,champion_category_id',
             'champion_name' => [
@@ -35,7 +45,7 @@ class MasterChampionController extends Controller
                     return $query->where('champion_category_id', $request->champion_category_id);
                 }),
             ],
-        ]);
+        ], $messages);
 
         Champion::create([
             'champion_category_id' => $validated['champion_category_id'],
@@ -46,6 +56,40 @@ class MasterChampionController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Master Piala berhasil ditambahkan.');
+    }
+    
+    /**
+     * Memperbarui nama Master Piala.
+     */
+    public function update(Request $request, $champion_id)
+    {
+        $champion = Champion::findOrFail($champion_id);
+
+        $messages = [
+            'champion_name.required' => 'Nama piala wajib diisi.',
+            'champion_name.string' => 'Nama piala harus berupa teks.',
+            'champion_name.max' => 'Nama piala maksimal 255 karakter.',
+            'champion_name.unique' => 'Nama piala sudah digunakan dalam kategori juara ini. Silakan gunakan nama lain.',
+        ];
+
+        $validated = $request->validate([
+            'champion_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('champions', 'champion_name')
+                    ->where(function ($query) use ($champion) {
+                        return $query->where('champion_category_id', $champion->champion_category_id);
+                    })
+                    ->ignore($champion->champion_id, 'champion_id'),
+            ],
+        ], $messages);
+
+        $champion->update([
+            'champion_name' => str($validated['champion_name'])->title()->trim(),
+        ]);
+
+        return redirect()->back()->with('success', 'Nama Master Piala berhasil diperbarui.');
     }
 
     /**

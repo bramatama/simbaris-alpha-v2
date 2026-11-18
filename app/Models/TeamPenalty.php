@@ -45,7 +45,7 @@ class TeamPenalty extends Model
 
     public function committee(): BelongsTo
     {
-        return $this->belongsTo(Judge::class, 'comiittee_id', 'comiittee_id');
+        return $this->belongsTo(Committee::class, 'committee_id', 'committee_id');
     }
 
     public function getTotalPenaltyAttribute(): float

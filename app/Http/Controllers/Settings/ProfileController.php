@@ -38,22 +38,22 @@ class ProfileController extends Controller
         $user->fill($request->validated());
 
         if ($request->filled('temp_photo_path')) {
-        $tempPath = $request->input('temp_photo_path');
+            $tempPath = $request->input('temp_photo_path');
 
-        if (Storage::disk('public')->exists($tempPath)) {
-            
-            if ($user->profile_picture_path && Storage::disk('public')->exists($user->profile_picture_path)) {
-                Storage::disk('public')->delete($user->profile_picture_path);
+            if (Storage::disk('public')->exists($tempPath)) {
+                
+                if ($user->profile_picture_path && Storage::disk('public')->exists($user->profile_picture_path)) {
+                    Storage::disk('public')->delete($user->profile_picture_path);
+                }
+
+                $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
+                $newPath = 'profile_photos/' . Str::random(20) . '.' . $extension;
+                
+                Storage::disk('public')->move($tempPath, $newPath);
+
+                $user->profile_picture_path = $newPath;
             }
-
-            $extension = pathinfo($tempPath, PATHINFO_EXTENSION);
-            $newPath = 'profile_photos/' . Str::random(20) . '.' . $extension;
-            
-            Storage::disk('public')->move($tempPath, $newPath);
-
-            $user->profile_picture_path = $newPath;
         }
-    }
         
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -64,7 +64,7 @@ class ProfileController extends Controller
         }
         else{
             $user->save();
-            return redirect()->route('profile.edit')->with('success', 'Profile updated successfully.');
+            return redirect()->route('profile.edit')->with('success', 'Profil berhasil diperbarui.');
         }
     }
 

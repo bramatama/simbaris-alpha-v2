@@ -128,7 +128,7 @@ export default function EditJudge({
                     </h1>
                     <p className="mt-1 text-muted-foreground">
                         Perbarui nama dan penugasan kategori penilaian juri
-                        untuk acara <strong>{event.event_name}</strong>.
+                        untuk event <strong>{event.event_name}</strong>.
                     </p>
                 </div>
 

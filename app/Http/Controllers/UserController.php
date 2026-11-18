@@ -66,7 +66,7 @@ class UserController extends Controller
         ]);
 
         if (in_array($currentUserId, $request->user_ids)) {
-            return redirect()->back() ->with('error', 'Anda tidak bisa menghapus akun anda sendiri');
+            return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun anda sendiri');
         }
         User::whereIn('user_id', $request->user_ids)->delete(); 
         

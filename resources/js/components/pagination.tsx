@@ -4,6 +4,7 @@ import {
     PaginationItem,
     PaginationLink,
 } from '@/components/ui/pagination';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationLinkType {
     url: string | null;
@@ -24,14 +25,13 @@ export function Pagination({ links, lastPage }: PaginationProps) {
         <ShadcnPagination className="mt-6 mb-2">
             <PaginationContent className="flex-wrap justify-center gap-1 sm:gap-2">
                 {links.map((link, index) => {
-                    // Laravel default mengirimkan label HTML entities untuk panah
-                    let label = link.label
-                        .replace(/&laquo;/g, '«')
-                        .replace(/&raquo;/g, '»')
-                        .trim();
-
-                    // Buat tombol Previous/Next sedikit lebih lebar
-                    const isArrow = label.includes('«') || label.includes('»');
+                    const isPrevious =
+                        link.label.includes('&laquo;') ||
+                        link.label.toLowerCase().includes('previous');
+                    const isNext =
+                        link.label.includes('&raquo;') ||
+                        link.label.toLowerCase().includes('next');
+                    const isArrow = isPrevious || isNext;
 
                     return (
                         <PaginationItem key={index}>
@@ -39,13 +39,36 @@ export function Pagination({ links, lastPage }: PaginationProps) {
                                 href={link.url || '#'}
                                 isActive={link.active}
                                 size={isArrow ? 'default' : 'icon'}
+                                aria-label={
+                                    isPrevious
+                                        ? 'Halaman sebelumnya'
+                                        : isNext
+                                          ? 'Halaman berikutnya'
+                                          : `Halaman ${link.label}`
+                                }
                                 className={
                                     !link.url
                                         ? 'pointer-events-none opacity-50'
                                         : ''
                                 }
                             >
-                                {label}
+                                {isPrevious ? (
+                                    <span className="flex items-center gap-1 px-1">
+                                        <ChevronLeft className="h-4 w-4" />
+                                        <span className="hidden sm:inline">
+                                            Sebelumnya
+                                        </span>
+                                    </span>
+                                ) : isNext ? (
+                                    <span className="flex items-center gap-1 px-1">
+                                        <span className="hidden sm:inline">
+                                            Berikutnya
+                                        </span>
+                                        <ChevronRight className="h-4 w-4" />
+                                    </span>
+                                ) : (
+                                    link.label
+                                )}
                             </PaginationLink>
                         </PaginationItem>
                     );

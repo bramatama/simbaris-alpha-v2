@@ -15,6 +15,8 @@ class EvaluationSession extends Model
         'start_time',
         'end_time',
         'recorded_by',
+        'recording_mode',
+        'manual_reason'
     ];
 
     protected function casts(): array

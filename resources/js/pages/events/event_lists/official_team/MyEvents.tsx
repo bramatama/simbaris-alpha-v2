@@ -8,18 +8,17 @@ export default function EventIndex({ events }: { events: EventData[] }) {
     const userRole = auth?.user?.role;
     return (
         <AppLayout>
-            <Head title="Event Management" />
+            <Head title="Event Saya" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Events
+                            Event Saya
                         </h1>
                         <p className="mt-1 text-muted-foreground">
-                            Lists of all competition events, schedules, and
-                            committees.
+                            Daftar Event yang tersedia.
                         </p>
                     </div>
                 </div>

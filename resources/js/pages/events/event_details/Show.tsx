@@ -95,6 +95,10 @@ export default function EventShow({
 
     const totalEventLevels = event.event_levels?.length || 0;
 
+    const levelsWithScoring = (event.event_levels ?? []).filter(
+        (el: any) => el.scoring_categories_count > 0,
+    );
+
     const readinessChecklist = [
         {
             label: '1. Dokumen Lomba',
@@ -816,38 +820,35 @@ export default function EventShow({
                                     </div>
 
                                     <div className="flex w-full flex-col gap-2">
-                                        {event.event_levels &&
-                                        event.event_levels.length > 0 ? (
-                                            event.event_levels.map(
-                                                (el: any) => (
-                                                    <div
-                                                        key={el.event_level_id}
-                                                        className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-2.5 shadow-sm transition-colors hover:bg-muted/20"
-                                                    >
-                                                        <span className="text-xs font-bold text-foreground">
-                                                            {el.level
-                                                                ?.level_name ||
-                                                                `Level ${el.level_id}`}
-                                                        </span>
+                                        {levelsWithScoring.length > 0 ? (
+                                            levelsWithScoring.map((el: any) => (
+                                                <div
+                                                    key={el.event_level_id}
+                                                    className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-2.5 shadow-sm transition-colors hover:bg-muted/20"
+                                                >
+                                                    <span className="text-xs font-bold text-foreground">
+                                                        {el.level?.level_name ||
+                                                            `Level ${el.level_id}`}
+                                                    </span>
 
-                                                        <Link
-                                                            href={`/${userRole}/events/${event.public_id}/scoring-categories/levels/${el.event_level_id}/preview`}
+                                                    <Link
+                                                        href={`/${userRole}/events/${event.public_id}/scoring-categories/levels/${el.event_level_id}/preview`}
+                                                    >
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-7 gap-1 px-2.5 text-[11px] transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                                                         >
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-7 gap-1 px-2.5 text-[11px] transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
-                                                            >
-                                                                <Eye className="h-3 w-3" />
-                                                                Lihat
-                                                            </Button>
-                                                        </Link>
-                                                    </div>
-                                                ),
-                                            )
+                                                            <Eye className="h-3 w-3" />
+                                                            Lihat
+                                                        </Button>
+                                                    </Link>
+                                                </div>
+                                            ))
                                         ) : (
                                             <div className="flex h-full min-h-24 items-center justify-center rounded-md border border-dashed border-border/60 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-                                                Belum ada jenjang perlombaan.
+                                                Belum ada format penilaian yang
+                                                dibuat.
                                             </div>
                                         )}
                                     </div>

@@ -383,7 +383,7 @@ class EventScoringCategoryController extends Controller
 
             'criteria.*.rubrics.*.scores' => 'present|array',
             'criteria.*.rubrics.*.scores.*.rubric_score_id' => 'nullable|exists:rubric_scores,rubric_score_id',
-            'criteria.*.rubrics.*.scores.*.score_value' => 'required|numeric',
+            'criteria.*.rubrics.*.scores.*.score_value' => 'required|numeric|min:0',
             'criteria.*.rubrics.*.scores.*.display_order' => 'required|integer',
         ];
 
@@ -393,7 +393,69 @@ class EventScoringCategoryController extends Controller
             $rules['event_level_ids.*'] = 'required|exists:event_levels,event_level_id';
         }
 
-        $validated = $request->validate($rules);
+        $messages = [
+            // =========================
+            // CRITERIA
+            // =========================
+            'criteria.present' => 'Data kriteria wajib disertakan.',
+            'criteria.array' => 'Data kriteria harus berupa array.',
+
+            'criteria.*.criteria_id.exists' => 'Kriteria yang dipilih tidak ditemukan.',
+
+            'criteria.*.master_criteria_id.required' => 'Kriteria utama wajib dipilih.',
+            'criteria.*.master_criteria_id.exists' => 'Kriteria utama yang dipilih tidak ditemukan.',
+
+            'criteria.*.order_index.required' => 'Urutan kriteria wajib diisi.',
+            'criteria.*.order_index.integer' => 'Urutan kriteria harus berupa bilangan bulat.',
+
+            // =========================
+            // RUBRICS
+            // =========================
+            'criteria.*.rubrics.present' => 'Data rubrik wajib disertakan.',
+            'criteria.*.rubrics.array' => 'Data rubrik harus berupa array.',
+
+            'criteria.*.rubrics.*.rubric_category_id.exists' => 'Kategori rubrik yang dipilih tidak ditemukan.',
+
+            'criteria.*.rubrics.*.category_label.required' => 'Nama kategori rubrik wajib diisi.',
+            'criteria.*.rubrics.*.category_label.string' => 'Nama kategori rubrik harus berupa teks.',
+            'criteria.*.rubrics.*.category_label.max' => 'Nama kategori rubrik maksimal 255 karakter.',
+
+            'criteria.*.rubrics.*.category_order.required' => 'Urutan kategori rubrik wajib diisi.',
+            'criteria.*.rubrics.*.category_order.integer' => 'Urutan kategori rubrik harus berupa bilangan bulat.',
+
+            // =========================
+            // SCORES
+            // =========================
+            'criteria.*.rubrics.*.scores.present' => 'Data skor wajib disertakan.',
+            'criteria.*.rubrics.*.scores.array' => 'Data skor harus berupa array.',
+
+            'criteria.*.rubrics.*.scores.*.rubric_score_id.exists' => 'Data skor yang dipilih tidak ditemukan.',
+
+            'criteria.*.rubrics.*.scores.*.score_value.required' => 'Nilai skor wajib diisi.',
+            'criteria.*.rubrics.*.scores.*.score_value.numeric' => 'Nilai skor harus berupa angka.',
+            'criteria.*.rubrics.*.scores.*.score_value.min' => 'Nilai skor tidak boleh negatif.',
+
+            'criteria.*.rubrics.*.scores.*.display_order.required' => 'Urutan tombol nilai wajib diisi.',
+            'criteria.*.rubrics.*.scores.*.display_order.integer' => 'Urutan tombol nilai harus berupa bilangan bulat.',
+
+            // =========================
+            // MASTER CATEGORY (CREATE)
+            // =========================
+            'master_category_id.required' => 'Kategori penilaian wajib dipilih.',
+            'master_category_id.exists' => 'Kategori penilaian yang dipilih tidak ditemukan.',
+
+            // =========================
+            // EVENT LEVELS (CREATE)
+            // =========================
+            'event_level_ids.required' => 'Jenjang lomba wajib dipilih.',
+            'event_level_ids.array' => 'Data jenjang lomba harus berupa array.',
+            'event_level_ids.min' => 'Minimal satu jenjang lomba harus dipilih.',
+
+            'event_level_ids.*.required' => 'Jenjang lomba wajib diisi.',
+            'event_level_ids.*.exists' => 'Jenjang lomba yang dipilih tidak ditemukan.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         $criteriaOrders = [];
         foreach ($validated['criteria'] as $cIndex => $criteria) {

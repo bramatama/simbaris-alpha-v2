@@ -11,19 +11,14 @@ Route::middleware(['auth', 'verified', 'role:judge'])->prefix('judge')->name('ju
 });
 
 Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->name('committee.')->group(function (){
-    Route::get('/events/{event:public_id}/participations/{participation:public_id}/evaluation_result', [EvaluationResultController::class, 'showResult'])
-    ->name('events.participations.result');
-    Route::post('/events/{event:public_id}/participations/{participation:public_id}/evaluation_result/unlock', [EvaluationResultController::class, 'requestUnlock'])
-    ->name('events.evaluation_result.unlock');
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/evaluation_result', [EvaluationResultController::class, 'showResult'])->name('events.participations.result');
+    Route::post('/events/{event:public_id}/participations/{participation:public_id}/evaluation_result/unlock', [EvaluationResultController::class, 'requestUnlock'])->name('events.evaluation_result.unlock');
 
-    Route::get('/events/{event:public_id}/participations/{participation:public_id}/penalties', [TeamPenaltyController::class, 'index'])
-    ->name('events.participations.penalties');
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/penalties', [TeamPenaltyController::class, 'index'])->name('events.participations.penalties');
     
-    Route::post('/events/{event:public_id}/participations/{participation:public_id}/penalties', [TeamPenaltyController::class, 'store'])
-        ->name('events.participations.penalties.store');
+    Route::post('/events/{event:public_id}/participations/{participation:public_id}/penalties', [TeamPenaltyController::class, 'store'])->name('events.participations.penalties.store');
         
-    Route::delete('/events/{event:public_id}/participations/{participation:public_id}/penalties/{teamPenalty}', [TeamPenaltyController::class, 'destroy'])
-        ->name('events.participations.penalties.destroy');
+    Route::delete('/events/{event:public_id}/participations/{participation:public_id}/penalties/{teamPenalty}', [TeamPenaltyController::class, 'destroy'])->name('events.participations.penalties.destroy');
 
     Route::get('/events/{event:public_id}/participations/{participation:public_id}/monitoring', [EvaluationMonitoringController::class, 'show'])->name('events.monitoring.show');
     Route::post('/events/{event:public_id}/participations/{participation:public_id}/monitoring/start', [EvaluationMonitoringController::class, 'start'])->name('events.monitoring.start');
@@ -35,8 +30,7 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
 });
 
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function (){
-    Route::get('/events/{event:public_id}/participations/{participation:public_id}/evaluation-result', [EvaluationResultController::class, 'showMyResult'])
-    ->name('participations.Myresult');
+    Route::get('/events/{event:public_id}/participations/{participation:public_id}/evaluation-result', [EvaluationResultController::class, 'showMyResult'])->name('participations.Myresult');
 
     Route::get('events/{public_id}/participations/{participation_public_id}/audit-logs',[EvaluationMonitoringController::class, 'showAuditTrail'])->name('participations.audit-logs');
 });

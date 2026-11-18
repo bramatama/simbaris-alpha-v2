@@ -57,7 +57,7 @@ trait ProfileValidationRules
      */
     protected function contactInfoRules(): array
     {
-        return ['nullable', 'string', 'max:255'];
+        return ['nullable', 'string', 'min:10', 'max:255'];
     }
 
     /**

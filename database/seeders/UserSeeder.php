@@ -47,14 +47,14 @@ class UserSeeder extends Seeder
         // 3. Buat Akun Panitia (2 Orang)
         $komiteUserId1 = DB::table('users')->insertGetId([
             'public_id' => Str::uuid(), 
-            'name' => 'Panitia Pendaftaran', 
+            'name' => 'Panitia 1', 
             'email' => 'panitia@lomba.com', 
             'role' => 'committee', 'password' => $password, 
             'created_at' => $now, 
             'updated_at' => $now,
             'email_verified_at' => $now
         ]);
-        DB::table('committees')->insert(['user_id' => $komiteUserId1, 'department' => 'Administrasi']);
+        DB::table('committees')->insert(['user_id' => $komiteUserId1, 'department' => 'Alpha']);
 
         // 4. Buat Akun Official Tim (Peserta lomba)
         // Tim SMP (Menggunakan level_id = 2 berdasarkan LevelSeeder)

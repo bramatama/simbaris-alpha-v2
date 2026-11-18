@@ -10,6 +10,8 @@ use App\Models\ScoringCategory;
 use App\Models\ScoreRecap;
 use App\Models\Participation;
 use App\Models\EventLevel;
+use App\Models\EvaluationSession;
+use App\Services\ScoreRecapService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -90,20 +92,27 @@ class LeaderboardController extends Controller
     /**
      * Menampilkan rekap hasil penilaian dan peringkat tim.
      */
-    public function myRecap(Event $event, Participation $participation)
+    public function myRecap(Event $event, Participation $participation, ScoreRecapService $recapService)
     {
         $this->validateEventAccess($event, [], ['official_team'], $participation);
-        $user = Auth::user();
-
-        $isVisible = in_array($user->role, ['committee', 'admin']) || (bool) $event->is_recap_visible;
+        
+        $isVisible =(bool) $event->is_recap_visible;
 
         $myRecapData = [];
+        $session = null;
 
         if ($isVisible) {
+            $hasRecaps = ScoreRecap::where('participation_id', $participation->participation_id)->exists();
+            if (!$hasRecaps) {
+                $recapService->calculateForParticipation($participation);
+            }
+            
+            $session = EvaluationSession::where('participation_id', $participation->participation_id)->first();
+
             $levelId = $participation->event_level_id;
             $myRecapData = ScoreRecap::with([
                 'eventChampionCategory.championCategory', 
-                'eventChampionCategory.formulas' => function($query) use ($levelId) {
+                'eventChampionCategory.formulas' => function ($query) use ($levelId) {
                     $query->where('event_level_id', $levelId)
                           ->with('scoringCategory.masterCategory');
                 }, 
@@ -146,6 +155,7 @@ class LeaderboardController extends Controller
             'event' => $event,
             'participation' => $participation,
             'myRecapData' => $myRecapData,
+            'session' => $session,
             'isVisible' => $isVisible
         ]);
     }
@@ -173,19 +183,27 @@ class LeaderboardController extends Controller
     }
 
     /** Mengambil kategori penghargaan yang memiliki formula pada jenjang event. */
-    private function getChampionCategories($eventId, $eventLevelId) {
+    private function getChampionCategories($eventId, $eventLevelId)
+    {
         return EventChampionCategory::where('event_id', $eventId)
             ->whereHas('formulas', fn($q) => $q->where('event_level_id', $eventLevelId))
-            ->with(['formulas' => fn($q) => $q->where('event_level_id', $eventLevelId)->with('scoringCategory.masterCategory'), 'eventPenalties', 'championCategory'])->get();
+            ->with([
+                'formulas' => fn($q) => $q->where('event_level_id', $eventLevelId)->with('scoringCategory.masterCategory'),
+                'eventPenalties',
+                'championCategory'
+            ])
+            ->get();
     }
 
     /** Mengambil kategori penilaian pada jenjang event. */
-    private function getScoringCategories($eventLevelId) {
+    private function getScoringCategories($eventLevelId)
+    {
         return ScoringCategory::with('masterCategory')->where('event_level_id', $eventLevelId)->get();
     }
 
     /** Memastikan filter leaderboard merujuk ke kategori yang tersedia. */
-    private function validateFilterId($filterType, $filterId, $championCategories, $scoringCategories) {
+    private function validateFilterId($filterType, $filterId, $championCategories, $scoringCategories)
+    {
         if ($filterType === 'champion' && !$championCategories->contains('event_champion_category_id', $filterId)) { 
             return $championCategories->first()?->event_champion_category_id; 
         } 
@@ -200,13 +218,13 @@ class LeaderboardController extends Controller
      */
     private function buildChampionLeaderboard($eventId, $eventLevelId, $filterId, $sortBy) 
     {
-        // 1. Dapatkan daftar ID tim berurutan secara murni berdasarkan Peringkat / Nilai
         $allTiedRankOrderedIds = DB::table('participations')
             ->leftJoin('score_recaps', function($join) use ($filterId) { 
                 $join->on('participations.participation_id', '=', 'score_recaps.participation_id')
                      ->where('score_recaps.event_champion_category_id', '=', $filterId); 
             })
             ->where('participations.event_id', $eventId)
+            ->whereNotNull('participations.appearance_order')
             ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
             ->orderByRaw('CASE WHEN score_recaps.rank_override IS NOT NULL THEN score_recaps.rank_override ELSE 9999 END ASC')
             ->orderByRaw('COALESCE(score_recaps.final_score, 0) DESC')
@@ -227,6 +245,7 @@ class LeaderboardController extends Controller
                      ->where('score_recaps.event_champion_category_id', '=', $filterId); 
             })
             ->where('participations.event_id', $eventId)
+            ->whereNotNull('participations.appearance_order')
             ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
             ->with(['teamScores', 'teamPenalties.eventPenalty.masterPenalty']);
 
@@ -270,6 +289,7 @@ class LeaderboardController extends Controller
                      ->where('team_scores.scoring_category_id', '=', $filterId);
             })
             ->where('participations.event_id', $eventId)
+            ->whereNotNull('participations.appearance_order')
             ->when($eventLevelId, fn($q) => $q->where('participations.event_level_id', $eventLevelId))
             ->groupBy('participations.participation_id', 'participations.appearance_order')
             ->orderByRaw('COALESCE(SUM(team_scores.total_score), 0) DESC')
@@ -280,6 +300,7 @@ class LeaderboardController extends Controller
         $rankMapping = array_flip($allScoringRankOrderedIds);
 
         $query = Participation::where('event_id', $eventId)
+            ->whereNotNull('appearance_order')
             ->when($eventLevelId, fn($q) => $q->where('event_level_id', $eventLevelId))
             ->withSum(['teamScores' => fn($q) => $q->where('scoring_category_id', $filterId)], 'total_score');
 

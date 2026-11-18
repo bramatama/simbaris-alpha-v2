@@ -922,7 +922,9 @@ export default function EventCreate({
                                                                                 }{' '}
                                                                                 -{' '}
                                                                                 {
-                                                                                    c.department
+                                                                                    c
+                                                                                        .user
+                                                                                        ?.email
                                                                                 }
                                                                             </SelectItem>
                                                                         ),

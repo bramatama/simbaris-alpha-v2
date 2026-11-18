@@ -118,7 +118,7 @@ class EventJudgeController extends Controller
 
                 if ($isAlreadyAssigned) {
                     throw ValidationException::withMessages([
-                        'email' => 'Juri ini sudah ditugaskan pada acara ini sebelumnya.',
+                        'email' => 'Juri ini sudah ditugaskan pada event ini sebelumnya.',
                     ]);
                 }
 
@@ -126,7 +126,7 @@ class EventJudgeController extends Controller
                     throw ValidationException::withMessages([
                         'confirmation' => 'Akun juri ditemukan: '
                             . $user->name
-                            . '. Lanjutkan menugaskan ke acara ini?',
+                            . '. Lanjutkan menugaskan ke event ini?',
                     ]);
                 }
             }
@@ -172,7 +172,7 @@ class EventJudgeController extends Controller
 
         return back()->with(
             'success',
-            'Juri berhasil ditugaskan ke acara ini!'
+            'Juri berhasil ditugaskan ke event ini!'
         );
     }
 
@@ -293,7 +293,7 @@ class EventJudgeController extends Controller
 
         return back()->with(
             'success',
-            'Juri berhasil diberhentikan dari acara ini.'
+            'Juri berhasil diberhentikan dari event ini.'
         );
     }
 

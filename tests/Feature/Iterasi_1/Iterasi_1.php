@@ -211,7 +211,7 @@ test('pengguna dapat memperbarui informasi dasar', function () {
 
     $response->assertSessionHas(
         'success',
-        'Profile updated successfully.'
+        'Profil berhasil diperbarui.'
     );
 
     $this->assertDatabaseHas('users', [
@@ -607,7 +607,7 @@ test('admin dapat menghapus event', function () {
     $response = actingAs($admin)->delete(route('admin.events.destroy', $event->public_id));
 
     $response->assertRedirect(route('events.index'));
-    $response->assertSessionHas('message', 'Event Berhasil Dihapus.');
+    $response->assertSessionHas('success', 'Event Berhasil Dihapus.');
 
     $this->assertDatabaseMissing('events', [
         'event_id' => $event->event_id,

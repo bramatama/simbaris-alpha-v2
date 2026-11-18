@@ -45,7 +45,7 @@ class JudgeEvaluationController extends Controller
             ->toArray();
 
         if (empty($assignedLevelIds)) {
-            abort(403, 'Anda belum memiliki penugasan kategori penilaian di acara ini.');
+            abort(403, 'Anda belum memiliki penugasan kategori penilaian di lomba ini.');
         }
 
         $assignedCategoriesByLevel = [];
@@ -58,7 +58,8 @@ class JudgeEvaluationController extends Controller
             ->whereIn('event_level_id', $assignedLevelIds)
             ->get();
 
-        $participations = Participation::select(
+        // 1. Fetch Partisipasi (Filter appearance_order not null & diurutkan)
+        $participationsCollection = Participation::select(
                 'participations.public_id',
                 'participations.participation_id', 
                 'participations.event_level_id', 
@@ -69,23 +70,39 @@ class JudgeEvaluationController extends Controller
             ->where('participations.event_id', $event->event_id)
             ->whereIn('participations.event_level_id', $assignedLevelIds)
             ->where('participations.status', 'approved')
-            ->orderByRaw('ISNULL(appearance_order), appearance_order ASC')
-            ->get()
-            ->map(function ($participation) use ($judge, $assignedCategoriesByLevel) {
+            ->whereNotNull('participations.appearance_order')
+            ->orderBy('participations.appearance_order', 'asc')
+            ->get();
+
+        if ($participationsCollection->isEmpty()) {
+            $participations = collect();
+        } else {
+            $participationIds = $participationsCollection->pluck('participation_id')->toArray();
+
+            // 2. Eager fetch SEMUA TeamScore terkait juri & partisipasi ini dalam 1 query
+            $allScores = TeamScore::whereIn('participation_id', $participationIds)
+                ->where('judge_id', $judge->judge_id)
+                ->get()
+                ->groupBy('participation_id');
+
+            $unsubmittedDraftParticipationIds = TeamScoreDetail::whereIn('participation_id', $participationIds)
+                ->where('judge_id', $judge->judge_id)
+                ->pluck('participation_id')
+                ->unique()
+                ->flip()
+                ->toArray();
+
+            $participations = $participationsCollection->map(function ($participation) use ($judge, $assignedCategoriesByLevel, $allScores, $unsubmittedDraftParticipationIds) {
                 
                 $levelCategoryIds = $assignedCategoriesByLevel[$participation->event_level_id] ?? [];
                 $totalAssignedCategories = count($levelCategoryIds);
 
-                $scores = TeamScore::where('participation_id', $participation->participation_id)
-                    ->where('judge_id', $judge->judge_id)
-                    ->whereIn('scoring_category_id', $levelCategoryIds)
-                    ->get();
+                $scores = ($allScores->get($participation->participation_id) ?? collect())
+                    ->whereIn('scoring_category_id', $levelCategoryIds);
                 
                 $statuses = $scores->pluck('evaluation_status')->unique()->toArray();
 
-                $hasUnsubmittedDraft = TeamScoreDetail::where('participation_id', $participation->participation_id)
-                    ->where('judge_id', $judge->judge_id)
-                    ->exists();
+                $hasUnsubmittedDraft = isset($unsubmittedDraftParticipationIds[$participation->participation_id]);
 
                 $lockedCount = $scores->where('evaluation_status', 'locked')->count();
 
@@ -105,6 +122,7 @@ class JudgeEvaluationController extends Controller
                 return $pData;
             })
             ->groupBy('event_level_id');
+        }
 
         return inertia('events/evaluations/judge/ParticipantList', [
             'event' => $event,

@@ -25,7 +25,7 @@ export default function UserTableHeaders({
                           : false
                 }
                 onCheckedChange={(checked) => onSelectAll(checked === true)}
-                aria-label="Select all users"
+                aria-label="Pilih semua pengguna"
             />
         </TableHead>
     );
@@ -40,7 +40,7 @@ export default function UserTableHeaders({
                     <TableHead>Instansi</TableHead>
                     <TableHead>Lokasi</TableHead>
                     <TableHead>Kontak</TableHead>
-
+                    <TableHead>Status Akun</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
             </TableHeader>
@@ -57,7 +57,7 @@ export default function UserTableHeaders({
                     <TableHead>Departemen</TableHead>
                     <TableHead>Peran</TableHead>
                     <TableHead>Kontak</TableHead>
-
+                    <TableHead>Status Akun</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
             </TableHeader>
@@ -73,7 +73,7 @@ export default function UserTableHeaders({
                 <TableHead>Peran</TableHead>
                 <TableHead>Kontak</TableHead>
                 <TableHead>Tanggal Bergabung</TableHead>
-
+                <TableHead>Status Akun</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
         </TableHeader>

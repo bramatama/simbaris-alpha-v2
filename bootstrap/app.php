@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Exceptions\PostTooLargeException;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -32,6 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (
+            InvalidSignatureException $e,
+            $request
+        ) {
+            if ($request->routeIs('verification.verify')) {
+
+                if ($request->user() && $request->user()->hasVerifiedEmail()) {
+                    return redirect()->intended(route('dashboard', absolute: false));
+                }
+                return Inertia::render('auth/verification-expired', [
+                    'isAuthenticated' => (bool) $request->user(),
+                    'userEmail' => $request->user()?->email,
+                ]);
+            }   
+        });
 
         $exceptions->render(function (PostTooLargeException $e, Request $request) {
             if ($request->header('X-Inertia')) {

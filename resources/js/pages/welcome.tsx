@@ -154,8 +154,7 @@ export default function Welcome({ events = [] }: WelcomeProps) {
                                     Event Mendatang
                                 </h2>
                                 <p className="mt-2 text-sm text-muted-foreground">
-                                    Bergabunglah dan ikuti kompetisi marching
-                                    drill terbaik yang sedang berlangsung maupun
+                                    Bergabunglah dan ikuti kompetisi baris-berbaris terbaik yang sedang berlangsung maupun
                                     yang akan segera hadir.
                                 </p>
                             </div>

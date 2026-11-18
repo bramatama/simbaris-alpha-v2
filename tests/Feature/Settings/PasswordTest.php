@@ -26,7 +26,7 @@ test('pengguna dapat memperbarui password-nya dengan benar', function () {
     $response->assertRedirect(route('profile.edit'));
     
     // Ini menyesuaikan dengan baris ->with('status', 'Password updated successfully.')
-    $response->assertSessionHas('status', 'Password updated successfully.'); 
+    $response->assertSessionHas('success', 'Password berhasil diperbarui.'); 
 
     // Assert: Password di database benar-benar berubah
     $user->refresh();

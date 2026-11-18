@@ -39,9 +39,16 @@ class MasterChampionCategoryController extends Controller
      */
     public function store(Request $request)
     {
+        $messages = [
+            'champion_category_name.required' => 'Nama kategori juara wajib diisi.',
+            'champion_category_name.string' => 'Nama kategori juara harus berupa teks.',
+            'champion_category_name.max' => 'Nama kategori juara maksimal 255 karakter.',
+            'champion_category_name.unique' => 'Nama kategori juara sudah digunakan. Silakan gunakan nama lain.',
+        ];
+
         $validated = $request->validate([
             'champion_category_name' => 'required|string|max:255|unique:champion_categories,champion_category_name',
-        ]);
+        ], $messages);
 
         ChampionCategory::create([
             'champion_category_name' => $validated['champion_category_name'],

@@ -66,6 +66,11 @@ export default function Login({
                                     className="flex justify-center"
                                     message={errors.email}
                                 />
+                                {status && (
+                                    <div className="mb-4 text-center text-sm font-medium text-green-600">
+                                        {status}
+                                    </div>
+                                )}
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
@@ -178,12 +183,6 @@ export default function Login({
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </AuthLayout>
     );
 }

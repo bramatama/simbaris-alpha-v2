@@ -36,6 +36,7 @@ import {
     AlertTriangle,
     Scale,
     Ban,
+    UserCheck,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
@@ -51,6 +52,7 @@ interface PenaltyProps {
         penalty_value: number;
         calculation_type: string;
         penalty_action: string;
+        is_assigned?: boolean;
         master_penalty: { penalty_name: string } | null;
         masterPenalty?: { penalty_name: string };
     }[];
@@ -140,6 +142,12 @@ export default function TeamPenalty({
         return sum + item.penalty_value * item.occurrence_count;
     }, 0);
 
+    const getPenaltyName = (pen: PenaltyProps['teamPenalties'][number]) =>
+        pen.eventPenalty?.masterPenalty?.penalty_name ||
+        pen.eventPenalty?.master_penalty?.penalty_name ||
+        pen.event_penalty?.master_penalty?.penalty_name ||
+        'Penalti';
+
     return (
         <InnerAppLayout
             sidebarNavItems={getEventInnerNav(
@@ -207,7 +215,7 @@ export default function TeamPenalty({
                 {/* GRID 2 KOLOM */}
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
                     {/* KOLOM KIRI: FORM INPUT */}
-                    <div className="lg:col-span-4">
+                    <div className="min-w-0 lg:col-span-4">
                         <Card className="overflow-hidden border-t-4 border-t-destructive shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/20 pt-5 pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg text-destructive">
@@ -263,7 +271,7 @@ export default function TeamPenalty({
                                             >
                                                 <SelectValue placeholder="-- Pilih Aturan Penalti --" />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="max-w-[calc(100vw-2rem)]">
                                                 {availablePenalties.map(
                                                     (pen) => {
                                                         const name =
@@ -280,6 +288,9 @@ export default function TeamPenalty({
                                                                     pen.event_penalty_id
                                                                 }
                                                                 value={pen.event_penalty_id.toString()}
+                                                                disabled={
+                                                                    pen.is_assigned
+                                                                }
                                                             >
                                                                 <span
                                                                     className={
@@ -292,6 +303,9 @@ export default function TeamPenalty({
                                                                     {isDisq
                                                                         ? ' [DISKUALIFIKASI]'
                                                                         : ` (Potongan: -${pen.penalty_value})`}
+                                                                    {pen.is_assigned
+                                                                        ? ' — Sudah Dijatuhkan'
+                                                                        : ''}
                                                                 </span>
                                                             </SelectItem>
                                                         );
@@ -322,6 +336,7 @@ export default function TeamPenalty({
                                                 type="number"
                                                 disabled={isDisqualification}
                                                 placeholder="Min. 1"
+                                                min={1}
                                                 value={data.occurrence_count}
                                                 onChange={(e) =>
                                                     setData(
@@ -403,8 +418,8 @@ export default function TeamPenalty({
                     </div>
 
                     {/* KOLOM KANAN: RIWAYAT PENALTI */}
-                    <div className="lg:col-span-8">
-                        <Card className="h-full shadow-sm">
+                    <div className="min-w-0 lg:col-span-8">
+                        <Card className="h-full overflow-hidden shadow-sm">
                             <CardHeader className="border-b border-border/50 bg-muted/10 pt-5 pb-4">
                                 <CardTitle className="flex items-center gap-2 text-lg text-foreground">
                                     <Scale className="h-5 w-5 text-primary" />{' '}
@@ -416,118 +431,75 @@ export default function TeamPenalty({
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="w-full overflow-x-auto">
-                                    <Table className="w-full min-w-137.5">
-                                        <TableHeader className="border-b border-border/60 bg-muted/40">
-                                            <TableRow className="hover:bg-transparent">
-                                                <TableHead className="w-14 text-center font-bold text-foreground">
-                                                    No
-                                                </TableHead>
-                                                <TableHead className="font-bold text-foreground">
-                                                    Rincian Pelanggaran
-                                                </TableHead>
-                                                <TableHead className="w-40 text-center font-bold text-foreground">
-                                                    Efek / Potongan
-                                                </TableHead>
-                                                <TableHead className="w-16 text-center font-bold text-foreground">
-                                                    Aksi
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody className="divide-y divide-border/60">
-                                            {teamPenalties.length > 0 ? (
-                                                teamPenalties.map(
-                                                    (pen, idx) => {
-                                                        const penaltyName =
-                                                            pen.eventPenalty
-                                                                ?.masterPenalty
-                                                                ?.penalty_name ||
-                                                            pen.eventPenalty
-                                                                ?.master_penalty
-                                                                ?.penalty_name ||
-                                                            pen.event_penalty
-                                                                ?.master_penalty
-                                                                ?.penalty_name ||
-                                                            'Penalti';
-                                                        const isRowDisq =
-                                                            pen.penalty_action ===
-                                                            'disqualification';
-                                                        const totalDeduction =
-                                                            pen.penalty_value *
-                                                            pen.occurrence_count;
+                                {/* EMPTY STATE (BERLAKU UNTUK MOBILE & DESKTOP) */}
+                                {teamPenalties.length === 0 ? (
+                                    <div className="flex h-44 flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground">
+                                        <div className="rounded-full bg-muted/50 p-3">
+                                            <AlertTriangle className="h-6 w-6 text-muted-foreground/70" />
+                                        </div>
+                                        <p className="text-sm font-medium">
+                                            Tim ini bersih dari penalti
+                                            pelanggaran.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* =========================================
+                                            TAMPILAN MOBILE: CARD LIST (< md)
+                                        ========================================= */}
+                                        <div className="divide-y divide-border/60 md:hidden">
+                                            {teamPenalties.map((pen, idx) => {
+                                                const penaltyName =
+                                                    getPenaltyName(pen);
+                                                const isRowDisq =
+                                                    pen.penalty_action ===
+                                                    'disqualification';
+                                                const totalDeduction =
+                                                    pen.penalty_value *
+                                                    pen.occurrence_count;
 
-                                                        return (
-                                                            <TableRow
-                                                                key={
-                                                                    pen.team_penalty_id
-                                                                }
-                                                                className={`transition-colors ${isRowDisq ? 'bg-destructive/5 hover:bg-destructive/10' : 'hover:bg-muted/20'}`}
-                                                            >
-                                                                <TableCell className="py-3 text-center font-medium text-muted-foreground">
-                                                                    {idx + 1}
-                                                                </TableCell>
-                                                                <TableCell className="py-3">
-                                                                    <div className="flex flex-col gap-1.5">
-                                                                        <span
-                                                                            className={`font-bold ${isRowDisq ? 'text-destructive' : 'text-foreground'}`}
+                                                return (
+                                                    <div
+                                                        key={
+                                                            pen.team_penalty_id
+                                                        }
+                                                        className={`p-3.5 ${isRowDisq ? 'bg-destructive/5' : ''}`}
+                                                    >
+                                                        <Card
+                                                            className={`overflow-hidden shadow-xs ${
+                                                                isRowDisq
+                                                                    ? 'border-destructive/40 bg-destructive/5'
+                                                                    : 'border-border/60'
+                                                            }`}
+                                                        >
+                                                            <CardContent className="space-y-3 p-4">
+                                                                {/* Header Card: Nomor, Nama Pelanggaran, Tombol Hapus */}
+                                                                <div className="flex items-start justify-between gap-2.5">
+                                                                    <div className="min-w-0 flex-1 space-y-1">
+                                                                        <span className="inline-block text-[11px] font-semibold text-muted-foreground">
+                                                                            #
+                                                                            {idx +
+                                                                                1}{' '}
+                                                                            Pelanggaran
+                                                                        </span>
+                                                                        <h3
+                                                                            className={`text-sm leading-snug font-bold wrap-break-word ${
+                                                                                isRowDisq
+                                                                                    ? 'text-destructive'
+                                                                                    : 'text-foreground'
+                                                                            }`}
                                                                         >
                                                                             {
                                                                                 penaltyName
                                                                             }
-                                                                        </span>
-                                                                        {pen.reason && (
-                                                                            <span
-                                                                                className={`rounded-md border px-2.5 py-1.5 text-xs italic ${isRowDisq ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/50 bg-background text-muted-foreground'}`}
-                                                                            >
-                                                                                "
-                                                                                {
-                                                                                    pen.reason
-                                                                                }
-
-                                                                                "
-                                                                            </span>
-                                                                        )}
-                                                                        <span className="mt-0.5 text-[11px] font-medium text-muted-foreground">
-                                                                            Auditor:{' '}
-                                                                            <span className="text-foreground">
-                                                                                {
-                                                                                    pen
-                                                                                        .committee
-                                                                                        ?.user
-                                                                                        ?.name
-                                                                                }
-                                                                            </span>{' '}
-                                                                            {isRowDisq
-                                                                                ? ''
-                                                                                : `• (Pengali: ${pen.occurrence_count}x)`}
-                                                                        </span>
+                                                                        </h3>
                                                                     </div>
-                                                                </TableCell>
-                                                                <TableCell className="py-3 text-center">
-                                                                    {isRowDisq ? (
-                                                                        <Badge
-                                                                            variant="destructive"
-                                                                            className="font-bold tracking-widest uppercase shadow-sm"
-                                                                        >
-                                                                            Diskualifikasi
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className="border-destructive/30 bg-destructive/10 px-2.5 py-1 text-sm font-bold text-destructive"
-                                                                        >
-                                                                            -{' '}
-                                                                            {
-                                                                                totalDeduction
-                                                                            }
-                                                                        </Badge>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell className="py-3 text-center">
+
                                                                     <Button
+                                                                        type="button"
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+                                                                        className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
                                                                         onClick={() =>
                                                                             setSelectedPenaltyId(
                                                                                 pen.team_penalty_id,
@@ -537,33 +509,243 @@ export default function TeamPenalty({
                                                                     >
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    },
-                                                )
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={4}
-                                                        className="h-40 text-center text-muted-foreground"
-                                                    >
-                                                        <div className="flex flex-col items-center justify-center gap-3">
-                                                            <div className="rounded-full bg-muted/50 p-3">
-                                                                <AlertTriangle className="h-6 w-6 text-muted-foreground/70" />
-                                                            </div>
-                                                            <p className="text-sm font-medium">
-                                                                Tim ini bersih
-                                                                dari penalti
-                                                                pelanggaran.
-                                                            </p>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                                                </div>
+
+                                                                {/* Catatan Auditor */}
+                                                                {pen.reason && (
+                                                                    <div
+                                                                        className={`rounded-md border px-2.5 py-2 text-xs leading-relaxed wrap-break-word italic ${
+                                                                            isRowDisq
+                                                                                ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                                                                : 'border-border/50 bg-muted/20 text-muted-foreground'
+                                                                        }`}
+                                                                    >
+                                                                        "
+                                                                        {
+                                                                            pen.reason
+                                                                        }
+                                                                        "
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Rincian Angka Potongan */}
+                                                                {isRowDisq ? (
+                                                                    <div className="flex items-center justify-between border-t border-border/50 pt-2.5">
+                                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                                            Sanksi
+                                                                        </span>
+                                                                        <Badge
+                                                                            variant="destructive"
+                                                                            className="font-bold tracking-wider uppercase"
+                                                                        >
+                                                                            Diskualifikasi
+                                                                        </Badge>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-3 gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 text-center">
+                                                                        <div>
+                                                                            <span className="block text-[10px] font-medium text-muted-foreground">
+                                                                                Potongan
+                                                                                Asli
+                                                                            </span>
+                                                                            <span className="text-xs font-semibold text-foreground tabular-nums">
+                                                                                -{' '}
+                                                                                {
+                                                                                    pen.penalty_value
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="border-x border-border/60">
+                                                                            <span className="block text-[10px] font-medium text-muted-foreground">
+                                                                                Frekuensi
+                                                                            </span>
+                                                                            <span className="text-xs font-semibold text-foreground tabular-nums">
+                                                                                {
+                                                                                    pen.occurrence_count
+                                                                                }
+
+                                                                                x
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="block text-[10px] font-medium text-muted-foreground">
+                                                                                Total
+                                                                            </span>
+                                                                            <span className="text-xs font-bold text-destructive tabular-nums">
+                                                                                -{' '}
+                                                                                {
+                                                                                    totalDeduction
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Footer Card: Info Auditor */}
+                                                                <div className="flex items-center gap-1.5 border-t border-border/50 pt-2 text-[11px] text-muted-foreground">
+                                                                    <UserCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                                                    <span className="truncate">
+                                                                        Auditor:{' '}
+                                                                        <strong className="font-medium text-foreground">
+                                                                            {pen
+                                                                                .committee
+                                                                                ?.user
+                                                                                ?.name ??
+                                                                                '-'}
+                                                                        </strong>
+                                                                    </span>
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* =========================================
+                                            TAMPILAN DESKTOP: TABLE (>= md)
+                                        ========================================= */}
+                                        <div className="hidden w-full overflow-x-auto md:block">
+                                            <Table className="w-full table-fixed">
+                                                <TableHeader className="border-b border-border/60 bg-muted/40">
+                                                    <TableRow className="hover:bg-transparent">
+                                                        <TableHead className="w-12 text-center font-bold text-foreground">
+                                                            No
+                                                        </TableHead>
+                                                        <TableHead className="font-bold text-foreground">
+                                                            Rincian Pelanggaran
+                                                        </TableHead>
+                                                        <TableHead className="w-28 text-center font-bold text-foreground">
+                                                            Potongan Asli
+                                                        </TableHead>
+                                                        <TableHead className="w-32 text-center font-bold text-foreground">
+                                                            Total Potongan
+                                                        </TableHead>
+                                                        <TableHead className="w-14 text-center font-bold text-foreground">
+                                                            Aksi
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody className="divide-y divide-border/60">
+                                                    {teamPenalties.map(
+                                                        (pen, idx) => {
+                                                            const penaltyName =
+                                                                getPenaltyName(
+                                                                    pen,
+                                                                );
+                                                            const isRowDisq =
+                                                                pen.penalty_action ===
+                                                                'disqualification';
+                                                            const totalDeduction =
+                                                                pen.penalty_value *
+                                                                pen.occurrence_count;
+
+                                                            return (
+                                                                <TableRow
+                                                                    key={
+                                                                        pen.team_penalty_id
+                                                                    }
+                                                                    className={`transition-colors ${isRowDisq ? 'bg-destructive/5 hover:bg-destructive/10' : 'hover:bg-muted/20'}`}
+                                                                >
+                                                                    <TableCell className="py-3 text-center font-medium text-muted-foreground">
+                                                                        {idx +
+                                                                            1}
+                                                                    </TableCell>
+                                                                    <TableCell className="py-3 wrap-break-word whitespace-normal">
+                                                                        <div className="flex flex-col gap-1.5">
+                                                                            <span
+                                                                                className={`font-bold ${isRowDisq ? 'text-destructive' : 'text-foreground'}`}
+                                                                            >
+                                                                                {
+                                                                                    penaltyName
+                                                                                }
+                                                                            </span>
+                                                                            {pen.reason && (
+                                                                                <span
+                                                                                    className={`rounded-md border px-2.5 py-1.5 text-xs italic ${isRowDisq ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border/50 bg-background text-muted-foreground'}`}
+                                                                                >
+                                                                                    "
+                                                                                    {
+                                                                                        pen.reason
+                                                                                    }
+
+                                                                                    "
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                                                                                Auditor:{' '}
+                                                                                <span className="text-foreground">
+                                                                                    {
+                                                                                        pen
+                                                                                            .committee
+                                                                                            ?.user
+                                                                                            ?.name
+                                                                                    }
+                                                                                </span>{' '}
+                                                                                {isRowDisq
+                                                                                    ? ''
+                                                                                    : `• (Frekuensi: ${pen.occurrence_count} x)`}
+                                                                            </span>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell className="py-3 text-center">
+                                                                        {isRowDisq ? (
+                                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                                                -
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-sm font-semibold text-muted-foreground tabular-nums">
+                                                                                -{' '}
+                                                                                {
+                                                                                    pen.penalty_value
+                                                                                }
+                                                                            </span>
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="py-3 text-center">
+                                                                        {isRowDisq ? (
+                                                                            <Badge
+                                                                                variant="destructive"
+                                                                                className="font-bold tracking-wider uppercase shadow-sm"
+                                                                            >
+                                                                                Diskualifikasi
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className="border-destructive/30 bg-destructive/10 px-2.5 py-1 text-sm font-bold text-destructive tabular-nums"
+                                                                            >
+                                                                                -{' '}
+                                                                                {
+                                                                                    totalDeduction
+                                                                                }
+                                                                            </Badge>
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="py-3 text-center">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-8 w-8 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+                                                                            onClick={() =>
+                                                                                setSelectedPenaltyId(
+                                                                                    pen.team_penalty_id,
+                                                                                )
+                                                                            }
+                                                                            title="Batal / Hapus Penalti"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        },
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

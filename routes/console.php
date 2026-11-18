@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Carbon;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -39,12 +40,7 @@ Schedule::call(function () {
 })->everyMinute()->name('update-event-statuses')->withoutOverlapping();
 
 Schedule::call(function () {
-    $files = Storage::disk('public')->files('temp');
-    $now = now()->timestamp;
-
-    foreach ($files as $file) {
-        if ($now - Storage::disk('public')->lastModified($file) > 86400) {
-            Storage::disk('public')->delete($file);
-        }
-    }
-})->daily();
+    Storage::disk('public')->delete(
+        Storage::disk('public')->allFiles('temp')
+    );
+})->daily()->name('remove-temp-files');

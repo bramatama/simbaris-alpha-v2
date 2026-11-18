@@ -9,7 +9,8 @@ import {
     Calendar,
     Building,
     MapPin,
-    DoorStairwell,
+    CheckCircle2,
+    Clock,
 } from 'lucide-react';
 
 export interface User {
@@ -17,6 +18,7 @@ export interface User {
     public_id: string;
     name: string;
     email: string;
+    email_verified_at?: string | null;
     role: 'admin' | 'official_team' | 'judge' | 'committee';
     contact_info?: string;
     created_at: string;
@@ -100,6 +102,28 @@ const getRoleLabel = (userRole: string) => {
     }
 };
 
+const VerificationStatusBadge = ({
+    verifiedAt,
+}: {
+    verifiedAt?: string | null;
+}) => {
+    if (verifiedAt) {
+        return (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                Terverifikasi
+            </span>
+        );
+    }
+
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-amber-700 dark:text-amber-400">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            Belum Verifikasi
+        </span>
+    );
+};
+
 /**
  * MOBILE CARD
  *
@@ -158,8 +182,14 @@ export function UserMobileCard({
                         )}
                     </div>
 
-                    {/* Detail berdasarkan role */}
                     <div className="space-y-2 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <span>Status:</span>
+                            <VerificationStatusBadge
+                                verifiedAt={user.email_verified_at}
+                            />
+                        </div>
+
                         {role === 'official_team' && (
                             <>
                                 <div className="flex items-start gap-2">
@@ -283,8 +313,6 @@ export function UserTableRow({
         </Button>
     );
 
-    console.log(user.official_team);
-
     return (
         <TableRow
             className="hidden md:table-row"
@@ -321,7 +349,6 @@ export function UserTableRow({
                 </>
             )}
 
-            {/* Kolom khusus committee */}
             {role === 'committee' && (
                 <>
                     <TableCell className="min-w-37.5">
@@ -342,7 +369,6 @@ export function UserTableRow({
                 </>
             )}
 
-            {/* Kolom default: admin, judge, atau halaman semua pengguna */}
             {role !== 'official_team' && role !== 'committee' && (
                 <>
                     <TableCell>
@@ -363,7 +389,10 @@ export function UserTableRow({
                 </>
             )}
 
-            {/* Aksi */}
+            <TableCell className="min-w-32">
+                <VerificationStatusBadge verifiedAt={user.email_verified_at} />
+            </TableCell>
+
             <TableCell className="w-20 text-right">
                 <div className="flex justify-end">{deleteButton}</div>
             </TableCell>

@@ -51,7 +51,7 @@ export default function CommitteeIndex({
                 committeePosition || undefined,
             )}
         >
-            <Head title={`Committees - ${event.event_name}`} />
+            <Head title={`Daftar Panitia - ${event.event_name}`} />
 
             <div className="mx-auto w-full max-w-6xl p-4 md:p-6 lg:p-8">
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -64,10 +64,10 @@ export default function CommitteeIndex({
                             Event
                         </Link>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Committee Roster
+                            Daftar Panitia
                         </h1>
                         <p className="mt-1 text-muted-foreground">
-                            Manage the team organizing{' '}
+                            Kelola tim penyelenggara{' '}
                             <strong>{event.event_name}</strong>.
                         </p>
                     </div>
@@ -82,12 +82,12 @@ export default function CommitteeIndex({
                 <Card>
                     <CardHeader>
                         <CardTitle>
-                            Assigned Personnel (
+                            Panitia yang Ditugaskan (
                             {event.event_committees?.length || 0})
                         </CardTitle>
                         <CardDescription>
-                            All members listed below have access to the
-                            committee dashboard for this event.
+                            Seluruh anggota yang tercantum di bawah ini memiliki
+                            akses ke dasbor kepanitiaan untuk event ini.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-6">
@@ -100,16 +100,16 @@ export default function CommitteeIndex({
                     </CardContent>
                 </Card>
 
-                {/* Dialog Konfirmasi Hapus Panitia Tetap di Level Halaman Utama */}
+                {/* Dialog Konfirmasi Penghapusan Panitia Tetap di Level Halaman Utama */}
                 <ConfirmationDialog
                     open={deleteId !== null}
                     onOpenChange={(open) => !open && setDeleteId(null)}
                     variant="destructive"
-                    title="Remove Committee Member?"
-                    description="This will revoke their access to manage this event. Their actual account will not be deleted."
+                    title="Hapus Anggota Panitia?"
+                    description="Tindakan ini akan mencabut akses anggota tersebut untuk mengelola event ini. Akun mereka tidak akan dihapus."
                     onConfirm={confirmDelete}
                     isProcessing={isDeleting}
-                    confirmText="Yes, Remove"
+                    confirmText="Ya, Hapus"
                 />
             </div>
         </InnerAppLayout>

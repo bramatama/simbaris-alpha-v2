@@ -146,7 +146,7 @@ export default function JudgeIndex({
                             {event.event_judges?.length ?? 0})
                         </CardTitle>
                         <CardDescription>
-                            Daftar juri yang ditugaskan ke acara ini beserta
+                            Daftar juri yang ditugaskan ke event ini beserta
                             keahlian kategorinya pada masing-masing jenjang
                             perlombaan.
                         </CardDescription>

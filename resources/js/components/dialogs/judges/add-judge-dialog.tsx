@@ -151,10 +151,10 @@ export default function AddJudgeDialog({
                     </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
+                <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
                     <form onSubmit={submitAdd}>
                         <DialogHeader>
-                            <DialogTitle>Tugaskan Juri ke Acara</DialogTitle>
+                            <DialogTitle>Tugaskan Juri ke event</DialogTitle>
                         </DialogHeader>
 
                         <div className="space-y-5 py-4">
@@ -338,7 +338,7 @@ export default function AddJudgeDialog({
                                     {expertises.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
                                             Belum ada kategori yang
-                                            dikonfigurasi pada acara ini.
+                                            dikonfigurasi pada event ini.
                                         </p>
                                     )}
                                 </div>

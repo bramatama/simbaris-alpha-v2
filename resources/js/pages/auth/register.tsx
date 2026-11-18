@@ -171,7 +171,7 @@ export default function Register() {
                                 </Label>
                                 <Input
                                     id="contact_info"
-                                    type="text"
+                                    type="number"
                                     tabIndex={4}
                                     name="contact_info"
                                     placeholder="Kontak"

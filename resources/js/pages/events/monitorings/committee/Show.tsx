@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -37,6 +38,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
 import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
@@ -53,6 +55,7 @@ import {
     Hash,
     UserCircle2,
     Laptop,
+    ShieldAlert,
 } from 'lucide-react';
 import { formatAuditTime } from '@/config/date_datetime';
 
@@ -64,6 +67,8 @@ interface MonitoringProps {
         status: 'waiting' | 'ongoing' | 'finished';
         start_time: string | null;
         end_time: string | null;
+        recording_mode?: 'auto' | 'manual';
+        manual_reason?: string | null;
     };
 }
 
@@ -87,6 +92,7 @@ export default function MonitoringShow({
 
     const isPaused = session.status === 'ongoing' && session.end_time !== null;
     const isRunning = session.status === 'ongoing' && session.end_time === null;
+    const isManualMode = session.recording_mode === 'manual';
 
     const parseSafeDate = (dateVal: string | number | null): Date | null => {
         if (!dateVal) return null;
@@ -145,11 +151,25 @@ export default function MonitoringShow({
         setData: setManualData,
         put,
         processing: manualProcessing,
+        errors: manualErrors,
+        clearErrors: clearManualErrors,
     } = useForm({
         status: session.status,
         start_time: formatDateTimeLocal(session.start_time),
         end_time: formatDateTimeLocal(session.end_time),
+        manual_reason: '',
     });
+
+    const openManualModal = () => {
+        clearManualErrors();
+        setManualData({
+            status: session.status,
+            start_time: formatDateTimeLocal(session.start_time),
+            end_time: formatDateTimeLocal(session.end_time),
+            manual_reason: '',
+        });
+        setIsManualModalOpen(true);
+    };
 
     const formatOnlyTime = (dateString: string | null) => {
         const d = parseSafeDate(dateString);
@@ -314,7 +334,11 @@ export default function MonitoringShow({
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/monitoring/manual-update`,
             {
                 preserveScroll: true,
-                onSuccess: () => setIsManualModalOpen(false),
+                onSuccess: () => {
+                    setFrozenEndTime(null);
+                    setIsManualModalOpen(false);
+                    window.location.reload();
+                },
             },
         );
     };
@@ -356,11 +380,20 @@ export default function MonitoringShow({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsManualModalOpen(true)}
+                            onClick={openManualModal}
                             className="w-full gap-2 text-muted-foreground sm:w-auto"
                         >
                             <Settings2 className="h-4 w-4" /> Input Manual
                         </Button>
+                        {isManualMode && (
+                            <Badge
+                                variant="outline"
+                                className="w-full justify-center gap-1.5 border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-sm font-semibold text-amber-700 sm:w-auto dark:text-amber-400"
+                            >
+                                <ShieldAlert className="h-3.5 w-3.5" /> Diubah
+                                Manual
+                            </Badge>
+                        )}
                         <Badge
                             variant="outline"
                             className={`w-full justify-center px-3 py-1.5 text-sm font-medium sm:w-auto ${isRunning ? 'animate-pulse border-info/20 bg-info/10 text-info' : isPaused ? 'border-amber-500/20 bg-amber-500/10 text-amber-600' : session.status === 'finished' ? 'bg-muted text-muted-foreground' : 'border-orange-500/20 bg-orange-500/10 text-orange-600'}`}
@@ -375,6 +408,21 @@ export default function MonitoringShow({
                         </Badge>
                     </div>
                 </div>
+
+                {/* BANNER AUDIT JIKA DIUBAH MANUAL */}
+                {isManualMode && session.manual_reason && (
+                    <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200">
+                        <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <div className="space-y-1">
+                            <p className="font-bold">
+                                Catatan Perubahan Waktu Manual (Audit Trail)
+                            </p>
+                            <p className="text-xs leading-relaxed opacity-90">
+                                "{session.manual_reason}"
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* TIMER & INSTRUCTIONS GRID */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
@@ -488,7 +536,8 @@ export default function MonitoringShow({
                                 </li>
                                 <li>
                                     Jika ada kesalahan sistem, klik{' '}
-                                    <strong>Input Manual</strong>.
+                                    <strong>Input Manual</strong> (wajib
+                                    menyertakan alasan perubahan untuk audit).
                                 </li>
                             </ul>
                         </CardContent>
@@ -746,8 +795,8 @@ export default function MonitoringShow({
                     <DialogHeader>
                         <DialogTitle>Input Manual Waktu Tampil</DialogTitle>
                         <DialogDescription>
-                            Gunakan fitur ini hanya jika terjadi kesalahan
-                            pencatatan atau anomali sistem.
+                            Perubahan manual akan ditandai dan dicatat dalam
+                            jejak audit sistem beserta alasan Anda.
                         </DialogDescription>
                     </DialogHeader>
                     <form
@@ -756,7 +805,8 @@ export default function MonitoringShow({
                     >
                         <div className="space-y-2">
                             <Label className="text-xs font-bold text-muted-foreground uppercase">
-                                Status Sesi
+                                Status Sesi{' '}
+                                <span className="text-destructive">*</span>
                             </Label>
                             <Select
                                 value={manualData.status}
@@ -779,6 +829,7 @@ export default function MonitoringShow({
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <InputError message={manualErrors.status} />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs font-bold text-muted-foreground uppercase">
@@ -792,6 +843,7 @@ export default function MonitoringShow({
                                     setManualData('start_time', e.target.value)
                                 }
                             />
+                            <InputError message={manualErrors.start_time} />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs font-bold text-muted-foreground uppercase">
@@ -805,6 +857,32 @@ export default function MonitoringShow({
                                     setManualData('end_time', e.target.value)
                                 }
                             />
+                            <InputError message={manualErrors.end_time} />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label
+                                    htmlFor="manual_reason"
+                                    className="text-xs font-bold text-muted-foreground uppercase"
+                                >
+                                    Alasan Perubahan Manual{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                            </div>
+                            <Textarea
+                                id="manual_reason"
+                                placeholder="Jelaskan alasan koreksi waktu..."
+                                value={manualData.manual_reason}
+                                onChange={(e) =>
+                                    setManualData(
+                                        'manual_reason',
+                                        e.target.value,
+                                    )
+                                }
+                                className="min-h-24 resize-y text-sm"
+                                required
+                            />
+                            <InputError message={manualErrors.manual_reason} />
                         </div>
                         <DialogFooter className="border-t border-border/50 pt-4">
                             <Button
@@ -816,7 +894,9 @@ export default function MonitoringShow({
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={manualProcessing}
+                                disabled={
+                                    manualProcessing
+                                }
                                 className="gap-2"
                             >
                                 <Settings2 className="h-4 w-4" /> Simpan

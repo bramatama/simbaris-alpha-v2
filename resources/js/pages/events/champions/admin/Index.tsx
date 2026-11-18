@@ -51,6 +51,13 @@ export default function MasterChampionCategoryIndex({
         Record<number, string>
     >({});
 
+    // State untuk Edit Inline Piala (Champion)
+    const [editingChampionId, setEditingChampionId] = useState<number | null>(
+        null,
+    );
+    const [editChampionValue, setEditChampionValue] = useState('');
+    const [isUpdatingChampion, setIsUpdatingChampion] = useState(false);
+
     // State untuk Hapus (Dinamis: Kategori atau Piala)
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteType, setDeleteType] = useState<
@@ -118,6 +125,34 @@ export default function MasterChampionCategoryIndex({
                         [categoryId]: '',
                     }));
                 },
+            },
+        );
+    };
+
+    const startEditingChampion = (champion: Champion) => {
+        setEditingChampionId(champion.champion_id);
+        setEditChampionValue(champion.champion_name);
+    };
+
+    const cancelEditingChampion = () => {
+        setEditingChampionId(null);
+        setEditChampionValue('');
+    };
+
+    const saveEditChampion = (championId: number) => {
+        if (!editChampionValue.trim()) return;
+
+        setIsUpdatingChampion(true);
+        router.put(
+            `/admin/master-champions/${championId}`,
+            { champion_name: editChampionValue },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setEditingChampionId(null);
+                    setEditChampionValue('');
+                },
+                onFinish: () => setIsUpdatingChampion(false),
             },
         );
     };
@@ -214,7 +249,10 @@ export default function MasterChampionCategoryIndex({
                             </div>
                             <Button
                                 type="submit"
-                                disabled={formAdd.processing}
+                                disabled={
+                                    formAdd.processing ||
+                                    !formAdd.data.champion_category_name.trim()
+                                }
                                 className="shrink-0 gap-2"
                             >
                                 <Plus className="h-4 w-4" /> Tambah Kategori
@@ -282,8 +320,8 @@ export default function MasterChampionCategoryIndex({
                                             </div>
                                         </div>
                                     ) : (
-                                        <AccordionTrigger className="w-full border-b-4 border-primary flex-1 p-4 hover:no-underline [&>svg]:ml-4">
-                                            <div className="flex w-full justify-between">
+                                        <AccordionTrigger className="w-full flex-1 border-b-4 border-primary p-4 hover:no-underline [&>svg]:ml-4">
+                                            <div className="flex w-full items-center justify-between">
                                                 <div className="flex items-center gap-2 text-left">
                                                     <Trophy className="h-4 w-4 shrink-0 text-primary" />
                                                     <span className="font-bold text-foreground">
@@ -293,7 +331,7 @@ export default function MasterChampionCategoryIndex({
                                                     </span>
                                                     <Badge
                                                         variant="secondary"
-                                                        className="ml-2 bg-background font-semibold text-muted-foreground hidden md:block"
+                                                        className="ml-2 hidden bg-background font-semibold text-muted-foreground md:block"
                                                     >
                                                         {cat.champions
                                                             ?.length || 0}{' '}
@@ -301,8 +339,14 @@ export default function MasterChampionCategoryIndex({
                                                     </Badge>
                                                 </div>
                                                 {/* TOMBOL AKSI KATEGORI */}
-                                                <div className="flex gap-1.5">
+                                                <div
+                                                    className="flex gap-1.5"
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
+                                                    }
+                                                >
                                                     <Button
+                                                        type="button"
                                                         variant="outline"
                                                         size="icon"
                                                         className="h-8 w-8"
@@ -311,11 +355,13 @@ export default function MasterChampionCategoryIndex({
                                                         }
                                                         disabled={
                                                             editingId !== null
-                                                        } // Disabled jika baris lain diedit
+                                                        }
+                                                        title="Edit Kategori"
                                                     >
                                                         <Edit3 className="h-3.5 w-3.5" />
                                                     </Button>
                                                     <Button
+                                                        type="button"
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8"
@@ -327,6 +373,7 @@ export default function MasterChampionCategoryIndex({
                                                         disabled={
                                                             editingId !== null
                                                         }
+                                                        title="Hapus Kategori"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                     </Button>
@@ -386,32 +433,138 @@ export default function MasterChampionCategoryIndex({
                                             </Button>
                                         </div>
 
-                                        {/* Daftar Badge Piala */}
+                                        {/* Daftar Badge Piala dengan Inline Edit */}
                                         <div className="flex flex-wrap gap-2">
                                             {cat.champions &&
                                             cat.champions.length > 0 ? (
-                                                cat.champions.map((champ) => (
-                                                    <Badge
-                                                        key={champ.champion_id}
-                                                        variant="outline"
-                                                        className="flex items-center gap-1.5 border-border/70 bg-muted/10 py-1.5 pr-1 pl-3 text-sm font-medium shadow-sm"
-                                                    >
-                                                        <Medal className="h-3.5 w-3.5 text-primary/70" />
-                                                        {champ.champion_name}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                confirmDeleteChampion(
-                                                                    champ,
-                                                                )
+                                                cat.champions.map((champ) =>
+                                                    editingChampionId ===
+                                                    champ.champion_id ? (
+                                                        <div
+                                                            key={
+                                                                champ.champion_id
                                                             }
-                                                            className="ml-1 rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive focus:outline-none"
-                                                            title="Hapus Piala"
+                                                            className="flex items-center gap-1.5 rounded-lg border border-primary/50 bg-background p-1 shadow-sm"
                                                         >
-                                                            <X className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </Badge>
-                                                ))
+                                                            <Input
+                                                                autoFocus
+                                                                value={
+                                                                    editChampionValue
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setEditChampionValue(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                onKeyDown={(
+                                                                    e,
+                                                                ) => {
+                                                                    if (
+                                                                        e.key ===
+                                                                        'Enter'
+                                                                    ) {
+                                                                        e.preventDefault();
+                                                                        saveEditChampion(
+                                                                            champ.champion_id,
+                                                                        );
+                                                                    }
+                                                                    if (
+                                                                        e.key ===
+                                                                        'Escape'
+                                                                    ) {
+                                                                        cancelEditingChampion();
+                                                                    }
+                                                                }}
+                                                                className="h-7 w-40 px-2 text-xs"
+                                                                disabled={
+                                                                    isUpdatingChampion
+                                                                }
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                size="icon"
+                                                                className="h-7 w-7 shrink-0"
+                                                                onClick={() =>
+                                                                    saveEditChampion(
+                                                                        champ.champion_id,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    isUpdatingChampion ||
+                                                                    !editChampionValue.trim()
+                                                                }
+                                                                title="Simpan"
+                                                            >
+                                                                <Check className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-7 w-7 shrink-0"
+                                                                onClick={
+                                                                    cancelEditingChampion
+                                                                }
+                                                                disabled={
+                                                                    isUpdatingChampion
+                                                                }
+                                                                title="Batal"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Badge
+                                                            key={
+                                                                champ.champion_id
+                                                            }
+                                                            variant="outline"
+                                                            className="flex items-center gap-1.5 border-border/70 bg-muted/10 py-1.5 pr-1.5 pl-3 text-sm font-medium shadow-sm"
+                                                        >
+                                                            <Medal className="h-3.5 w-3.5 text-primary/70" />
+                                                            <span>
+                                                                {
+                                                                    champ.champion_name
+                                                                }
+                                                            </span>
+                                                            <div className="ml-1 flex items-center gap-0.5 border-l border-border/60 pl-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        startEditingChampion(
+                                                                            champ,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        editingChampionId !==
+                                                                        null
+                                                                    }
+                                                                    className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary focus:outline-none disabled:opacity-40"
+                                                                    title="Edit Nama Piala"
+                                                                >
+                                                                    <Edit3 className="h-3 w-3" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        confirmDeleteChampion(
+                                                                            champ,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        editingChampionId !==
+                                                                        null
+                                                                    }
+                                                                    className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive focus:outline-none disabled:opacity-40"
+                                                                    title="Hapus Piala"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </button>
+                                                            </div>
+                                                        </Badge>
+                                                    ),
+                                                )
                                             ) : (
                                                 <p className="text-sm text-muted-foreground italic">
                                                     Belum ada piala yang

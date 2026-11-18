@@ -9,6 +9,7 @@ use App\Models\EventPenalty;
 use App\Models\TeamPenalty;
 use App\Services\ScoreRecapService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Concerns\HasEventAccess;
 
 class TeamPenaltyController extends Controller
@@ -51,11 +52,30 @@ class TeamPenaltyController extends Controller
         // Validasi Akses & Ambil Data Committee (Auditor)
         $committee = $this->validateEventAccess($event, ['auditor'], ['committee']);
 
+        $messages = [
+            'event_penalty_id.required' => 'Jenis pelanggaran wajib dipilih.',
+            'event_penalty_id.exists'   => 'Jenis pelanggaran tidak valid atau tidak aktif pada event ini.',
+            'event_penalty_id.unique'   => 'Jenis pelanggaran ini telah dijatuhkan. Hapus data sebelumnya untuk mengubah jumlah kejadian.',
+            'occurrence_count.required' => 'Jumlah kejadian wajib diisi.',
+            'occurrence_count.integer'  => 'Jumlah kejadian harus berupa bilangan bulat.',
+            'occurrence_count.min'      => 'Jumlah kejadian minimal 1.',
+            'reason.max'                => 'Catatan/alasan maksimal 1000 karakter.',
+        ];
+
         $validated = $request->validate([
-            'event_penalty_id' => 'required|exists:event_penalties,event_penalty_id',
+            'event_penalty_id' => [
+                'required',
+                Rule::exists('event_penalties', 'event_penalty_id')->where(function ($query) use ($event) {
+                    return $query->where('event_id', $event->event_id)
+                                 ->where('is_active', true);
+                }),
+                Rule::unique('team_penalties', 'event_penalty_id')->where(function ($query) use ($participation) {
+                    return $query->where('participation_id', $participation->participation_id);
+                }),
+            ],
             'occurrence_count' => 'required|integer|min:1',
             'reason' => 'nullable|string|max:1000',
-        ]);
+        ], $messages);
 
         // Ambil aturan penalti saat ini untuk di-snapshot
         $eventPenalty = EventPenalty::where('event_id', $event->event_id)

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventCommittee;
 use App\Models\Committee;
+use App\Models\Participation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -23,6 +24,13 @@ class EventController extends Controller
     public function index()
     {
         $role = auth()->user()?->role;
+
+        if ($role === 'committee'){
+            return redirect()->route('committee.events.my_events');
+        }
+        if ($role === 'judge'){
+            return redirect()->route('judge.events.assigned-events');
+        }
 
         $events = Event::query()
             ->when($role !== 'admin', function ($query) {
@@ -147,7 +155,7 @@ class EventController extends Controller
         
         $posterPath = null;
         if ($request->hasFile('poster_path')) {
-            $posterPath = $request->file('poster_path')->store('posters', 'public');
+            $posterPath = $request->file('poster_path')->store('event_posters', 'public');
         }
         try{
             DB::transaction(function () use ($validated, $request, $posterPath) {
@@ -398,11 +406,12 @@ class EventController extends Controller
     {
         $event = Event::where('public_id', $id)->firstOrFail();
         
-        $this->validateEventAccess($event, ['administration'], ['committee']);
+        abort_if(auth()->user()?->role !== 'admin', 403, 'Hanya Admin yang dapat membuat event baru.');
 
         $poster_path = $event->poster_path;
         DB::transaction(function () use ($event) {
             EventCommittee::where('event_id', $event->event_id)->delete();
+            Participation::where('event_id', $event->event_id)->delete();
             $event->delete();
         });
 
@@ -411,6 +420,6 @@ class EventController extends Controller
         }
 
         return redirect()->route('events.index')
-            ->with('message', 'Event Berhasil Dihapus.');
+            ->with('success', 'Event Berhasil Dihapus.');
     }
 }

@@ -13,7 +13,7 @@ import type { PageProps } from '@inertiajs/core';
 export default function VerifyEmail({ status }: { status?: string }) {
     const { auth } = usePage<PageProps>().props;
 
-    const [countdown, setCountdown] = useState(30);
+    const [countdown, setCountdown] = useState(15);
 
     useEffect(() => {
         if (countdown > 0) {
@@ -25,7 +25,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
     return (
         <AuthLayout
             title="Verifikasi Email Anda"
-            description={`Verifikasi email anda dengan menekan link yang kami kirim ke ${auth?.user?.email}`}
+            description={`Verifikasi email anda dengan menekan link yang kami kirim ke ${auth?.user?.email}. Tautan verifikasi ini akan kedaluwarsa dalam 60 menit.`}
             className="max-w-md"
         >
             <Head title="Email verification" />
@@ -38,23 +38,24 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </>
             )}
 
-            <Form {...send.form()} className="space-y-6 text-center">
+            <Form
+                {...send.form()}
+                onSuccess={() => setCountdown(15)}
+                className="space-y-6 text-center"
+            >
                 {({ processing }) => (
                     <>
                         <Button
                             type="submit"
                             disabled={processing || countdown > 0}
                             variant="secondary"
-                            onClick={() => {
-                                if (countdown === 0) {
-                                    setTimeout(() => setCountdown(30), 500);
-                                }
-                            }}
                         >
                             {processing && <Spinner />}
-                            {countdown > 0
-                                ? `Kirim ulang link verifikasi (${countdown}s)`
-                                : 'Kirim ulang link verifikasi'}
+                            {processing
+                                ? 'Mengirim ulang...'
+                                : countdown > 0
+                                  ? `Kirim ulang link verifikasi (${countdown}s)`
+                                  : 'Kirim ulang link verifikasi'}
                         </Button>
 
                         <TextLink

@@ -25,9 +25,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     Route::delete('events/{event:public_id}/committees/{event_committee:event_committee_id}', [EventCommitteeController::class, 'destroy'])->name('events.committees.destroy');
     Route::resource('events/{event:public_id}/committees', EventCommitteeController::class)->only(['index', 'store']);
-
-    Route::delete('events/{event:public_id}/judges/{event_judge:event_judge_id}', [EventJudgeController::class, 'destroy'])->name('events.judges.destroy');
-    Route::resource('events/{event:public_id}/judges', EventJudgeController::class)->only(['index', 'store']);
 });
 
 
@@ -35,10 +32,8 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
     Route::get('/my-events', [EventController::class, 'my_events'])->name('events.my_events');
     Route::resource('events', EventController::class)->only(['edit', 'update']);
 
-    Route::get('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'index'])
-        ->name('events.payment-methods.index');
-    Route::put('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'update'])
-        ->name('events.payment-methods.update');
+    Route::get('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'index'])->name('events.payment-methods.index');
+    Route::put('/events/{event:public_id}/payment-methods', [EventPaymentMethodController::class, 'update'])->name('events.payment-methods.update');
 
     Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 
@@ -59,7 +54,7 @@ Route::middleware(['auth', 'verified', 'role:committee'])->prefix('committee')->
 Route::middleware(['auth', 'verified', 'role:official_team'])->prefix('official_team')->name('official_team.')->group(function () {
     Route::get('events/{event:public_id}/information', [EventController::class, 'show'])->name('events.show');
 
-    Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('index','store', 'destroy');
+    Route::resource('/events/{event:public_id}/participations', ParticipationController::class)->only('store', 'destroy');
     Route::get('events/{event:public_id}/enroll', [ParticipationController::class, 'create'])->name('events.official_team.create');
     Route::post('events/{event:public_id}/check-quota', [ParticipationController::class, 'checkQuota'])->name('event.official_team.checkQuota');
 });

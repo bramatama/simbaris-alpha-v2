@@ -42,20 +42,23 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     );
     const [editCategoryName, setEditCategoryName] = useState('');
     const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
-
+    
     // ==========================================
     // STATE: KRITERIA (TAMBAH & EDIT)
     // ==========================================
     const [criteriaInputs, setCriteriaInputs] = useState<
-        Record<number, string>
+    Record<number, string>
     >({});
-
+    
     const [editingCriteriaId, setEditingCriteriaId] = useState<number | null>(
         null,
     );
     const [editCriteriaName, setEditCriteriaName] = useState('');
     const [isUpdatingCriteria, setIsUpdatingCriteria] = useState(false);
-
+    
+    const [processingCriteria, setProcessingCriteria] = useState<
+        Record<number, boolean>
+    >({});
     // ==========================================
     // STATE: HAPUS
     // ==========================================
@@ -108,6 +111,11 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
         const name = criteriaInputs[categoryId];
         if (!name?.trim()) return;
 
+        setProcessingCriteria((prev) => ({
+            ...prev,
+            [categoryId]: true,
+        }));
+
         router.post(
             '/admin/master-assessment-criteria',
             {
@@ -120,6 +128,12 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
                     setCriteriaInputs((prev) => ({
                         ...prev,
                         [categoryId]: '',
+                    }));
+                },
+                onFinish: () => {
+                    setProcessingCriteria((prev) => ({
+                        ...prev,
+                        [categoryId]: false,
                     }));
                 },
             },
@@ -231,7 +245,10 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
                             </div>
                             <Button
                                 type="submit"
-                                disabled={formAddCategory.processing}
+                                disabled={
+                                    formAddCategory.processing ||
+                                    !formAddCategory.data.category_name.trim()
+                                }
                                 className="shrink-0 gap-2"
                             >
                                 <Plus className="h-4 w-4" /> Tambah Kategori
@@ -417,7 +434,11 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
                                                         !criteriaInputs[
                                                             category
                                                                 .master_category_id
-                                                        ]?.trim()
+                                                        ]?.trim() ||
+                                                        processingCriteria[
+                                                            category
+                                                                .master_category_id
+                                                        ]
                                                     }
                                                     className="h-9 gap-1.5"
                                                 >

@@ -52,17 +52,17 @@ export default function EventIndex({ events }: { events: EventData[] }) {
 
     return (
         <AppLayout>
-            <Head title="Event Management" />
+            <Head title="Event Saya" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                            Event Management
+                            Event Saya
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground md:text-base">
-                            Kelola semua event kompetisi, jadwal, dan panitia.
+                            Event yang ditugaskan kepada saya.
                         </p>
                     </div>
                 </div>
@@ -122,7 +122,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                                                 className="w-full gap-1.5 text-xs"
                                             >
                                                 <Pen className="h-3.5 w-3.5" />
-                                                Kelola Event
+                                                Mulai Menilai
                                             </Button>
                                         </Link>
                                     </div>
@@ -205,7 +205,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                                                     className="gap-1.5"
                                                 >
                                                     <Pen className="h-3.5 w-3.5" />
-                                                    Kelola
+                                                    Mulai Menilai
                                                 </Button>
                                             </Link>
                                         </TableCell>

@@ -160,7 +160,10 @@ export default function MasterPenaltiesIndex({
                                 <div className="flex shrink-0 items-end sm:pt-6">
                                     <Button
                                         type="submit"
-                                        disabled={formAdd.processing}
+                                        disabled={
+                                            formAdd.processing ||
+                                            !formAdd.data.penalty_name.trim()
+                                        }
                                         className="w-full gap-2 sm:w-auto"
                                     >
                                         <Plus className="h-4 w-4" /> Tambah
@@ -188,7 +191,7 @@ export default function MasterPenaltiesIndex({
                                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
                                             <Gavel className="h-3.5 w-3.5" />
                                         </div>
-                                        <span className="font-semibold text-sm text-foreground">
+                                        <span className="text-sm font-semibold text-foreground">
                                             {penalty.penalty_name}
                                         </span>
                                     </div>
@@ -267,7 +270,10 @@ export default function MasterPenaltiesIndex({
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={formEdit.processing}
+                                disabled={
+                                    formEdit.processing ||
+                                    !formEdit.data.penalty_name.trim()
+                                }
                                 className="gap-2"
                             >
                                 <Save className="h-4 w-4" /> Simpan

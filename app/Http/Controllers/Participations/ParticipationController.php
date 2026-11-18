@@ -28,7 +28,6 @@ class ParticipationController extends Controller
             ->where('public_id', $public_id)
             ->firstOrFail();
 
-        // Validasi Akses Panitia Administrasi / Admin
         $this->validateEventAccess($event, ['administration'], ['committee']);
 
         $participations = Participation::where('event_id', $event->event_id)

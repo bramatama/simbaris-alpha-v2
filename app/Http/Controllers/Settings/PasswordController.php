@@ -19,6 +19,6 @@ class PasswordController extends Controller
             'password' => $request->password,
         ]);
 
-        return to_route('profile.edit')->with('status', 'Password updated successfully.');
+        return to_route('profile.edit')->with('success', 'Password berhasil diperbarui.');
     }
 }

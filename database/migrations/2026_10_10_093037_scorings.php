@@ -178,6 +178,12 @@ return new class extends Migration
             $table->id('session_id');
             $table->foreignId('participation_id')->constrained('participations', 'participation_id')->cascadeOnDelete();
             $table->enum('status', ['waiting', 'ongoing', 'finished'])->default('waiting');
+            $table->enum('recording_mode', ['auto', 'manual'])
+                ->default('auto')
+                ->after('recorded_by');
+            $table->text('manual_reason')
+                ->nullable()
+                ->after('recording_mode');
             $table->datetime('start_time')->nullable();
             $table->datetime('end_time')->nullable();
             $table->foreignId('recorded_by')->nullable()->constrained('event_committees','event_committee_id')->nullOnDelete();

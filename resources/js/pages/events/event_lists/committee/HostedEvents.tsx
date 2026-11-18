@@ -52,17 +52,17 @@ export default function EventIndex({ events }: { events: EventData[] }) {
 
     return (
         <AppLayout>
-            <Head title="Event Management" />
+            <Head title="Event Saya" />
 
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                            Event Management
+                            Event Saya
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground md:text-base">
-                            Kelola semua event kompetisi, jadwal, dan panitia.
+                            Kelola semua event yang ditugaskan.
                         </p>
                     </div>
                 </div>
@@ -71,8 +71,7 @@ export default function EventIndex({ events }: { events: EventData[] }) {
                 <div className="flex flex-col gap-3 md:hidden">
                     {events.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                            Tidak ada event yang ditemukan. Mulai dengan membuat
-                            event baru.
+                            Tidak ada event yang ditemukan. Hubungi Admin untuk mmebuat event baru.
                         </div>
                     ) : (
                         events.map((event) => (
