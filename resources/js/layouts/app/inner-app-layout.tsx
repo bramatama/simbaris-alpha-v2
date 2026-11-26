@@ -1,9 +1,9 @@
+import type { PageProps } from '@inertiajs/core';
 import { usePage } from '@inertiajs/react';
-import AppLayout from '../app-layout';
+import type { PropsWithChildren } from 'react';
 import InnerSidebar from '@/components/sidebars/inner-app-sidebar';
-import { PropsWithChildren } from 'react';
-import { NavItem } from '@/types';
-import { PageProps } from '@inertiajs/core';
+import type { NavItem } from '@/types';
+import AppLayout from '../app-layout';
 
 type InnerAppLayoutProps = PropsWithChildren<{
     sidebarNavItems: NavItem[];
@@ -18,6 +18,7 @@ export default function InnerAppLayout({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth?.user?.role || '';
     const committeePosition = auth?.user?.committee_position;
+
     return (
         <AppLayout isInnerLayout={true}>
             <div className="flex w-full flex-col gap-4 lg:flex-row lg:gap-8">

@@ -1,4 +1,19 @@
-import { Input } from '@/components/ui/input';
+import {
+    useSortable,
+    SortableContext,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+    GripVertical,
+    X,
+    Copy,
+    Trash2,
+    CheckSquare,
+    Plus,
+    AlertCircle,
+} from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -10,29 +25,14 @@ import {
     ComboboxEmpty,
     ComboboxGroup,
 } from '@/components/ui/combobox';
-import {
-    GripVertical,
-    X,
-    Copy,
-    Trash2,
-    CheckSquare,
-    Plus,
-    AlertCircle,
-} from 'lucide-react';
-import {
-    useSortable,
-    SortableContext,
-    horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
 
 // =========================================================================
 // INTERFACE & TYPES
 // =========================================================================
 export interface ScoreItem {
     id: string;
-    value: string;
+    value: number;
 }
 
 export interface GlobalRubric {
@@ -148,6 +148,8 @@ export function SortableScoreBox({
             </div>
             <Input
                 type="number"
+                inputMode='numeric'
+                min={1}
                 onWheel={(e) => e.currentTarget.blur()}
                 placeholder="0"
                 value={score.value}
@@ -207,6 +209,7 @@ export function SortableCriteriaRow({
             const matchedCriteria = availableMasterCriteria.find(
                 (mc: any) => mc.master_criteria_id.toString() === crit.name,
             );
+
             if (matchedCriteria && matchedCriteria.criteria_name !== uiName) {
                 setUiName(matchedCriteria.criteria_name);
                 setSearchValue(matchedCriteria.criteria_name);

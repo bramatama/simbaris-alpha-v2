@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { User, Clock, ClipboardPenLine } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function EvaluationHeader() {
     const { props } = usePage<any>();
@@ -23,6 +23,7 @@ export function EvaluationHeader() {
 
         updateClock();
         const timer = setInterval(updateClock, 1000);
+
         return () => clearInterval(timer);
     }, []);
 

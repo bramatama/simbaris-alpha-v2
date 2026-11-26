@@ -1,23 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { useState, useEffect } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-    CardFooter,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { FileUploader } from '@/components/ui/file-uploader';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -28,6 +10,24 @@ import {
     AlertTriangle,
     AlertCircle,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { route } from 'ziggy-js';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardFooter,
+} from '@/components/ui/card';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function OfficialTeamParticipationEdit({
     event,
@@ -58,6 +58,7 @@ export default function OfficialTeamParticipationEdit({
     useEffect(() => {
         if (Object.keys(errors).length > 0 || pageErrors?.error) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -81,7 +82,10 @@ export default function OfficialTeamParticipationEdit({
     }, [errors, pageErrors]);
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+            return null;
+        }
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -143,16 +147,6 @@ export default function OfficialTeamParticipationEdit({
                             Perbarui informasi administratif pendaftaran tim
                             Anda.
                         </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/documents`}
-                        >
-                            <Button variant="outline" className="gap-2">
-                                <FileText className="h-4 w-4" /> Kelola Dokumen
-                                Juknis
-                            </Button>
-                        </Link>
                     </div>
                 </div>
 

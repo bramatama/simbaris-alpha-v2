@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Calendar, ImageOff, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
 
 export interface EventData {
     event_id: number;
@@ -22,7 +22,9 @@ export default function EventCard({ event }: EventCardProps) {
     const hasPoster = Boolean(event.poster_path) && !imageError;
 
     const formatDate = (start: string, end?: string): string => {
-        if (!start) return '-';
+        if (!start) {
+return '-';
+}
 
         const startDate = new Date(start).toLocaleDateString('id-ID', {
             day: 'numeric',

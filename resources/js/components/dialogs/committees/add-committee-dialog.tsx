@@ -1,12 +1,10 @@
+import { useForm, usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-import { useForm, usePage } from '@inertiajs/react';
 
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-
-import { Input } from '@/components/ui/input';
-
-import { Label } from '@/components/ui/label';
 
 import {
     Dialog,
@@ -16,6 +14,10 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
 
 import {
     Select,
@@ -27,13 +29,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-import InputError from '@/components/input-error';
 
 import { Spinner } from '@/components/ui/spinner';
 
 import { ConfirmationDialog } from '../confirmation-dialog';
 
-import { Plus } from 'lucide-react';
 
 interface AddCommitteeDialogProps {
     eventPublicId: string;
@@ -111,6 +111,7 @@ export default function AddCommitteeDialog({
                 open={isAddOpen}
                 onOpenChange={(open) => {
                     setIsAddOpen(open);
+
                     if (!open) {
                         reset();
                         clearErrors();
@@ -142,6 +143,7 @@ export default function AddCommitteeDialog({
                                                 x.committee_id.toString() ===
                                                 val,
                                         );
+
                                         if (c) {
                                             setData({
                                                 ...data,
@@ -275,8 +277,10 @@ export default function AddCommitteeDialog({
                 open={showConfirm}
                 onOpenChange={(open) => {
                     setShowConfirm(open);
-                    if (!open)
-                        clearErrors('confirmation' as keyof typeof errors);
+
+                    if (!open) {
+clearErrors('confirmation' as keyof typeof errors);
+}
                 }}
                 title="Akun Panitia Ditemukan"
                 description={

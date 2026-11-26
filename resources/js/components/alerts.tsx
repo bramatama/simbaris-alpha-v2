@@ -1,6 +1,6 @@
 import { AlertCircleIcon, CheckCircle2Icon, X } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useEffect, useState, useRef } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function Alerts({
     title,
@@ -43,11 +43,15 @@ export default function Alerts({
                 setVisible(false);
                 onCloseRef.current?.();
             }, 250);
+
             return () => clearTimeout(removeTimer);
         }
     }, [closing]);
 
-    if (!visible) return null;
+    if (!visible) {
+return null;
+}
+
     return (
         <Alert
             variant={variant}

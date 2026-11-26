@@ -1,8 +1,10 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { Trash2, Key, ArrowLeftRightIcon, AlertCircle } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { FormDialog } from '@/components/dialogs/form-dialog';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Card,
     CardContent,
@@ -10,13 +12,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import InputError from '@/components/input-error';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AppLayout from '@/layouts/app-layout';
-import { Trash2, Key, ArrowLeftRightIcon, AlertCircle } from 'lucide-react';
-import { FormDialog } from '@/components/dialogs/form-dialog';
-import { FileUploader } from '@/components/ui/file-uploader';
-import { PageProps } from '@inertiajs/core';
 
 interface User {
     user_id: number;
@@ -115,6 +115,7 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
             onSuccess: () => {
                 setIsTransferOpen(false);
                 transferForm.clearErrors();
+
                 if (localStorage.getItem('last_login_email')) {
                     localStorage.setItem(
                         'last_login_email',
@@ -142,6 +143,7 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
                     passwordForm.reset('password', 'password_confirmation');
                     document.getElementById('password_new')?.focus();
                 }
+
                 if (errors.current_password) {
                     passwordForm.reset('current_password');
                     document.getElementById('current_password')?.focus();
@@ -417,7 +419,11 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
                                     open={isPasswordOpen}
                                     onOpenChange={(open) => {
                                         setIsPasswordOpen(open);
-                                        if (!open) passwordForm.reset();
+
+                                        if (!open) {
+passwordForm.reset();
+}
+
                                         passwordForm.clearErrors();
                                     }}
                                     onSubmit={submitPassword}
@@ -575,7 +581,11 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
                                     open={isTransferOpen}
                                     onOpenChange={(open) => {
                                         setIsTransferOpen(open);
-                                        if (!open) transferForm.reset();
+
+                                        if (!open) {
+transferForm.reset();
+}
+
                                         transferForm.clearErrors();
                                     }}
                                     onSubmit={submitTransfer}
@@ -652,7 +662,11 @@ export default function ProfileEdit({ user }: ProfilePageProps) {
                                         open={isDeleteOpen}
                                         onOpenChange={(open) => {
                                             setIsDeleteOpen(open);
-                                            if (!open) deleteForm.reset();
+
+                                            if (!open) {
+deleteForm.reset();
+}
+
                                             deleteForm.clearErrors();
                                         }}
                                         onSubmit={submitDelete}

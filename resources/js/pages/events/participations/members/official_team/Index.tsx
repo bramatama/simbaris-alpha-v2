@@ -1,22 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { useEffect } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import InputError from '@/components/input-error';
-import { ParticipationLockState } from '@/components/states/participation-lock-state';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -28,6 +11,20 @@ import {
     UserCheck,
     AlertCircle,
 } from 'lucide-react';
+import { useEffect } from 'react';
+import { route } from 'ziggy-js';
+import InputError from '@/components/input-error';
+import { ParticipationLockState } from '@/components/states/participation-lock-state';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -35,6 +32,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface MemberForm {
     team_member_id: number | null;
@@ -57,7 +57,7 @@ export default function OfficialTeamParticipationMembers({
 
     const isApproved = participation.status === 'approved';
 
-    let initialMembers: MemberForm[] =
+    const initialMembers: MemberForm[] =
         participation.team_members?.length > 0
             ? participation.team_members.map((m: any) => ({
                   team_member_id: m.team_member_id,
@@ -83,6 +83,7 @@ export default function OfficialTeamParticipationMembers({
             photo: null,
             preview_url: null,
         });
+
         for (let i = 0; i < 3; i++) {
             initialMembers.push({
                 team_member_id: null,
@@ -103,6 +104,7 @@ export default function OfficialTeamParticipationMembers({
     useEffect(() => {
         if (Object.keys(errors).length > 0 || pageErrors?.error) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -150,11 +152,14 @@ export default function OfficialTeamParticipationMembers({
 
     const removeMember = (absoluteIndex: number) => {
         const newMembers = [...data.members];
+
         if (
             newMembers[absoluteIndex].photo &&
             newMembers[absoluteIndex].preview_url
-        )
-            URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
+        ) {
+URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
+}
+
         newMembers.splice(absoluteIndex, 1);
         setData('members', newMembers);
     };
@@ -175,13 +180,17 @@ export default function OfficialTeamParticipationMembers({
         e: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = e.target.files?.[0];
+
         if (file) {
             const newMembers = [...data.members];
+
             if (
                 newMembers[absoluteIndex].photo &&
                 newMembers[absoluteIndex].preview_url
-            )
-                URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
+            ) {
+URL.revokeObjectURL(newMembers[absoluteIndex].preview_url!);
+}
+
             newMembers[absoluteIndex].photo = file;
             newMembers[absoluteIndex].preview_url = URL.createObjectURL(file);
             setData('members', newMembers);
@@ -190,7 +199,10 @@ export default function OfficialTeamParticipationMembers({
     };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"

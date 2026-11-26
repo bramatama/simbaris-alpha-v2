@@ -33,8 +33,6 @@ return new class extends Migration
 
         /*
          * Aturan penalti per event.
-         * Target kategori juara ditentukan melalui pivot
-         * event_penalty_champion_categories, bukan scoring_category_id.
          */
         Schema::create('event_penalties', function (Blueprint $table) {
             $table->id('event_penalty_id');
@@ -73,8 +71,6 @@ return new class extends Migration
         /*
          * Formula per kategori juara yang diaktifkan pada event dan jenjang.
          * component_type score menggunakan scoring_category_id.
-         * Penalti ditangani lewat pivot target kategori juara, jadi formula
-         * tidak menyimpan komponen penalty lagi.
          */
         Schema::create('event_champion_formulas', function (Blueprint $table) {
             $table->id('formula_id');
@@ -159,7 +155,7 @@ return new class extends Migration
         Schema::create('team_penalties', function (Blueprint $table) {
             $table->id('team_penalty_id');
             $table->foreignId('participation_id')->index()->constrained('participations', 'participation_id')->cascadeOnDelete();
-            $table->foreignId('event_penalty_id')->constrained('event_penalties', 'event_penalty_id')->restrictOnDelete();
+            $table->foreignId('event_penalty_id')->constrained('event_penalties', 'event_penalty_id')->cascadeOnDelete();
             $table->foreignId('committee_id')->nullable()->constrained('committees', 'committee_id')->nullOnDelete();
             $table->decimal('penalty_value', 8, 2)->nullable();
             $table->enum('calculation_type', ['fixed','per_occurrence','per_second',])->default('fixed');
@@ -178,12 +174,8 @@ return new class extends Migration
             $table->id('session_id');
             $table->foreignId('participation_id')->constrained('participations', 'participation_id')->cascadeOnDelete();
             $table->enum('status', ['waiting', 'ongoing', 'finished'])->default('waiting');
-            $table->enum('recording_mode', ['auto', 'manual'])
-                ->default('auto')
-                ->after('recorded_by');
-            $table->text('manual_reason')
-                ->nullable()
-                ->after('recording_mode');
+            $table->enum('recording_mode', ['auto', 'manual'])->default('auto');
+            $table->text('manual_reason')->nullable();
             $table->datetime('start_time')->nullable();
             $table->datetime('end_time')->nullable();
             $table->foreignId('recorded_by')->nullable()->constrained('event_committees','event_committee_id')->nullOnDelete();

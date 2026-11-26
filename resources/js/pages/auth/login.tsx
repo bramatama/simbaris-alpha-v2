@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -8,10 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
-import { store as registerStore } from '@/routes/register';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { store as registerStore } from '@/routes/register';
 
 type Props = {
     status?: string;
@@ -32,6 +32,7 @@ export default function Login({
 
     useEffect(() => {
         const savedEmail = localStorage.getItem('last_login_email');
+
         if (savedEmail) {
             setEmail(savedEmail);
         }

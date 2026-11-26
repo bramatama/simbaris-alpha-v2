@@ -1,15 +1,22 @@
 export const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return '';
+    if (!dateString) {
+return '';
+}
+
     const date = new Date(dateString);
     const offset = date.getTimezoneOffset() * 60000;
     const localISOTime = new Date(date.getTime() - offset)
         .toISOString()
         .slice(0, 16);
+
     return localISOTime;
 };
 
 export const formatDate = (start: string, end?: string): string => {
-    if (!start) return '-';
+    if (!start) {
+return '-';
+}
+
     const startDate = new Date(start).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'short',
@@ -27,7 +34,10 @@ export const formatDate = (start: string, end?: string): string => {
 };
 
 export const formatAuditTime = (dateString: string) => {
-    if (!dateString) return '-';
+    if (!dateString) {
+return '-';
+}
+
     return new Intl.DateTimeFormat('id-ID', {
         day: '2-digit',
         month: 'short',

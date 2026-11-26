@@ -1,5 +1,5 @@
-import { useAppearance } from '@/hooks/use-appearance';
 import { Moon, Sun } from 'lucide-react';
+import { useAppearance } from '@/hooks/use-appearance';
 
 export function AppearanceToggle() {
     const { resolvedAppearance, updateAppearance } = useAppearance();

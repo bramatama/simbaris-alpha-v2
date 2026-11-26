@@ -1,16 +1,4 @@
 import { Head, Link } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import {
     Calculator,
     ArrowLeft,
@@ -20,6 +8,18 @@ import {
     Timer,
     ShieldAlert,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface EvaluationSessionData {
     session_id: number;
@@ -50,30 +50,39 @@ export default function MyRecap({
     };
 
     const parseSafeDate = (dateVal: string | number | null): Date | null => {
-        if (!dateVal) return null;
+        if (!dateVal) {
+return null;
+}
 
         if (typeof dateVal === 'number') {
             const date = new Date(dateVal);
+
             return isNaN(date.getTime()) ? null : date;
         }
 
         let normalized = dateVal;
+
         if (normalized.includes(' ') && !normalized.includes('T')) {
             normalized = normalized.replace(' ', 'T');
         }
 
         const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(normalized);
+
         if (!hasTimezone) {
             normalized += '+08:00';
         }
 
         const date = new Date(normalized);
+
         return isNaN(date.getTime()) ? null : date;
     };
 
     const formatOnlyTime = (dateString: string | null) => {
         const d = parseSafeDate(dateString);
-        if (!d) return '-';
+
+        if (!d) {
+return '-';
+}
 
         return new Intl.DateTimeFormat('id-ID', {
             hour: '2-digit',
@@ -85,14 +94,22 @@ export default function MyRecap({
     };
 
     const calculateDuration = () => {
-        if (!session?.start_time || !session?.end_time) return '-';
+        if (!session?.start_time || !session?.end_time) {
+return '-';
+}
 
         const startDate = parseSafeDate(session.start_time);
         const endDate = parseSafeDate(session.end_time);
-        if (!startDate || !endDate) return '-';
+
+        if (!startDate || !endDate) {
+return '-';
+}
 
         let diff = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
-        if (diff < 0) diff = 0;
+
+        if (diff < 0) {
+diff = 0;
+}
 
         const hours = Math.floor(diff / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
@@ -369,6 +386,7 @@ export default function MyRecap({
                                                                 const deduction =
                                                                     pen.penalty_value *
                                                                     pen.occurrence_count;
+
                                                                 return (
                                                                     <div
                                                                         key={
@@ -510,6 +528,7 @@ export default function MyRecap({
                                                                 const deduction =
                                                                     pen.penalty_value *
                                                                     pen.occurrence_count;
+
                                                                 return (
                                                                     <TableRow
                                                                         key={

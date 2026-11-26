@@ -1,10 +1,10 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     Pagination as ShadcnPagination,
     PaginationContent,
     PaginationItem,
     PaginationLink,
 } from '@/components/ui/pagination';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationLinkType {
     url: string | null;
@@ -19,7 +19,9 @@ interface PaginationProps {
 
 export function Pagination({ links, lastPage }: PaginationProps) {
     // Sembunyikan pagination jika tidak ada data atau hanya ada 1 halaman
-    if (!links || (lastPage && lastPage <= 1)) return null;
+    if (!links || (lastPage && lastPage <= 1)) {
+return null;
+}
 
     return (
         <ShadcnPagination className="mt-6 mb-2">

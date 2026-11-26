@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
@@ -12,6 +14,8 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -21,11 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import InputError from '@/components/input-error';
 import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { Plus } from 'lucide-react';
 
 type Expertise = {
     scoring_category_id: number;
@@ -120,10 +120,13 @@ export default function AddJudgeDialog({
     const expertisesByCategory = expertises.reduce<Record<string, Expertise[]>>(
         (groups, expertise) => {
             const catName = expertise.category_name || 'Kategori lainnya';
+
             if (!groups[catName]) {
                 groups[catName] = [];
             }
+
             groups[catName].push(expertise);
+
             return groups;
         },
         {},
@@ -169,6 +172,7 @@ export default function AddJudgeDialog({
                                                 item.judge_id.toString() ===
                                                 value,
                                         );
+
                                         if (judge) {
                                             setData((p) => ({
                                                 ...p,
@@ -388,7 +392,10 @@ export default function AddJudgeDialog({
                 open={showConfirm}
                 onOpenChange={(open) => {
                     setShowConfirm(open);
-                    if (!open) clearErrors('confirmation' as any);
+
+                    if (!open) {
+clearErrors('confirmation' as any);
+}
                 }}
                 title="Akun Juri Ditemukan"
                 description={

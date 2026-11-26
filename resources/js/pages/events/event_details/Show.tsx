@@ -1,15 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import LandingPageLayout from '@/layouts/landing-page-layout';
-import {
-    getEventInnerNav,
-    getMasterDataInnerNav,
-} from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Calendar,
     MapPin,
@@ -34,9 +24,19 @@ import {
     Phone,
     ImageOff,
 } from 'lucide-react';
-import { PageProps } from '@inertiajs/core';
-import { formatDate } from '@/config/date_datetime';
+import { useState } from 'react';
 import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/config/date_datetime';
+import {
+    getEventInnerNav,
+    getMasterDataInnerNav,
+} from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import AppLayout from '@/layouts/app-layout';
+import LandingPageLayout from '@/layouts/landing-page-layout';
 
 export default function EventShow({
     event,
@@ -368,8 +368,9 @@ export default function EventShow({
                                                         event.event_levels ||
                                                         [];
 
-                                                    if (levels.length === 0)
-                                                        return 'Gratis';
+                                                    if (levels.length === 0) {
+return 'Gratis';
+}
 
                                                     const fees = levels.map(
                                                         (level: any) =>
@@ -385,11 +386,13 @@ export default function EventShow({
                                                         ...fees,
                                                     );
 
-                                                    if (maxFee === 0)
-                                                        return 'Gratis';
+                                                    if (maxFee === 0) {
+return 'Gratis';
+}
 
-                                                    if (minFee === maxFee)
-                                                        return `Rp ${minFee.toLocaleString('id-ID')}`;
+                                                    if (minFee === maxFee) {
+return `Rp ${minFee.toLocaleString('id-ID')}`;
+}
 
                                                     return `${
                                                         minFee === 0

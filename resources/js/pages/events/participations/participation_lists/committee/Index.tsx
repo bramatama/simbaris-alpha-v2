@@ -1,16 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { PageProps } from '@inertiajs/core';
 import {
     Search,
     Users,
@@ -20,7 +9,18 @@ import {
     Filter,
     Layers,
 } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { ParticipationTable } from '@/components/tables/participation_table/participation_table';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function CommitteeParticipationIndex({
     event,
@@ -49,10 +49,12 @@ export default function CommitteeParticipationIndex({
         const levelsMap = new Map();
         participations.forEach((p) => {
             const levelObj = p.event_level?.level;
+
             if (levelObj && !levelsMap.has(levelObj.level_id)) {
                 levelsMap.set(levelObj.level_id, levelObj.level_name);
             }
         });
+
         return Array.from(levelsMap.entries()).map(([id, name]) => ({
             id: String(id),
             name,

@@ -1,5 +1,5 @@
+import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import type { Auth } from '@/types/auth';
-import { PageProps as InertiaPageProps } from '@inertiajs/core';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

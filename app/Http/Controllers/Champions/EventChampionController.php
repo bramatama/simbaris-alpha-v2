@@ -8,6 +8,7 @@ use App\Models\EventLevel;
 use App\Models\ChampionCategory;
 use App\Models\EventChampionCategory;
 use App\Models\EventChampion;
+use App\Models\EventPenalty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -190,8 +191,27 @@ class EventChampionController extends Controller
 
         $validated = $this->validateChampionBuilder($request, true);
 
-        DB::transaction(function () use ($validated, $eventLevel, $champion_category_id) {
+        DB::transaction(function () use ($validated, $event, $eventLevel, $champion_category_id) {
             $this->syncChampions($eventLevel->event_level_id, $champion_category_id, $validated['champions'], true);
+
+            if (empty($validated['champions'])) {
+                $isCategoryStillUsed = EventChampion::whereHas('eventLevel', function ($q) use ($event) {
+                        $q->where('event_id', $event->event_id);
+                    })
+                    ->whereHas('champion', function ($q) use ($champion_category_id) {
+                        $q->where('champion_category_id', $champion_category_id);
+                    })->exists();
+
+                if (!$isCategoryStillUsed) {
+                    EventChampionCategory::where('event_id', $event->event_id)
+                        ->where('champion_category_id', $champion_category_id)
+                        ->delete();
+
+                    EventPenalty::where('event_id', $event->event_id)
+                        ->whereDoesntHave('eventChampionCategories')
+                        ->delete();
+                }
+            }
         });
 
         return redirect()->route('committee.champions.index', [
@@ -207,24 +227,31 @@ class EventChampionController extends Controller
     {
         $event = Event::where('public_id', $public_id)->firstOrFail();
         $this->validateEventAccess($event, ['administration'], ['committee']);
-        
-        EventChampion::where('event_level_id', $event_level_id)
-            ->whereHas('champion', function($q) use ($champion_category_id) {
-                $q->where('champion_category_id', $champion_category_id);
-            })->delete();
 
-        $isCategoryStillUsed = EventChampion::whereHas('eventLevel', function($q) use ($event) {
-                $q->where('event_id', $event->event_id);
-            })
-            ->whereHas('champion', function($q) use ($champion_category_id) {
-                $q->where('champion_category_id', $champion_category_id);
-            })->exists();
+        DB::transaction(function () use ($event, $event_level_id, $champion_category_id) {
+            EventChampion::where('event_level_id', $event_level_id)
+                ->whereHas('champion', function ($q) use ($champion_category_id) {
+                    $q->where('champion_category_id', $champion_category_id);
+                })->delete();
 
-        if (!$isCategoryStillUsed) {
-            EventChampionCategory::where('event_id', $event->event_id)
-                ->where('champion_category_id', $champion_category_id)
-                ->delete();
-        }
+            $isCategoryStillUsed = EventChampion::whereHas('eventLevel', function ($q) use ($event) {
+                    $q->where('event_id', $event->event_id);
+                })
+                ->whereHas('champion', function ($q) use ($champion_category_id) {
+                    $q->where('champion_category_id', $champion_category_id);
+                })->exists();
+
+            if (!$isCategoryStillUsed) {
+                EventChampionCategory::where('event_id', $event->event_id)
+                    ->where('champion_category_id', $champion_category_id)
+                    ->delete();
+
+                // Hapus aturan penalti pada event ini yang sudah tidak memiliki target kategori juara
+                EventPenalty::where('event_id', $event->event_id)
+                    ->whereDoesntHave('eventChampionCategories')
+                    ->delete();
+            }
+        });
 
         return redirect()->back()->with('success', 'Kategori penghargaan berhasil dikosongkan dari jenjang ini.');
     }

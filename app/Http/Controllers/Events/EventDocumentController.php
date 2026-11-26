@@ -70,6 +70,7 @@ class EventDocumentController extends Controller
                     ]);
                 }
             });
+            session()->flash('success', 'Dokumen juknis berhasil diunggah.');
             return response()->json([
                     'status' => 'success',
                     'message' => 'Dokumen juknis berhasil diunggah.',

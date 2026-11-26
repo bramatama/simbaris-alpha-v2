@@ -1,14 +1,22 @@
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    TouchSensor,
+    MouseSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import InputError from '@/components/input-error';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -18,6 +26,24 @@ import {
     CheckSquare,
     AlertCircle,
 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+
+// Import Komponen Reusable
+import type {
+    GlobalRubric,
+    UICriteria,
+    ScoreItem,
+} from '@/components/form-builder/sortable-scoring-components';
+import {
+    SortableRubricBadge,
+    SortableCriteriaRow,
+} from '@/components/form-builder/sortable-scoring-components';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -25,34 +51,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    TouchSensor,
-    MouseSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-    horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-
-// Import Komponen Reusable
-import {
-    GlobalRubric,
-    UICriteria,
-    ScoreItem,
-    SortableRubricBadge,
-    SortableCriteriaRow,
-} from '@/components/form-builder/sortable-scoring-components';
+import { Spinner } from '@/components/ui/spinner';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 const toTitleCase = (str: string) => {
     return str
@@ -96,9 +97,11 @@ export default function DynamicScoringBuilderCreate({
 
         Object.entries(serverErrors).forEach(([key, msg]) => {
             const match = key.match(/^criteria\.(\d+)\./);
+
             if (match) {
                 const cIdx = Number(match[1]);
                 const crit = uiCriteria[cIdx];
+
                 if (crit && !combined[`crit_${crit.id}`]) {
                     combined[`crit_${crit.id}`] = msg;
                 }
@@ -115,9 +118,13 @@ export default function DynamicScoringBuilderCreate({
 
     const clearLocalError = (key: string) => {
         setLocalErrors((prev) => {
-            if (!prev[key]) return prev;
+            if (!prev[key]) {
+                return prev;
+            }
+
             const newErrors = { ...prev };
             delete newErrors[key];
+
             return newErrors;
         });
     };
@@ -140,9 +147,13 @@ export default function DynamicScoringBuilderCreate({
         selectedMasterCategory?.master_assessment_criteria || [];
 
     const isLevelDisabled = (level: any) => {
-        if (!data.master_category_id) return true;
+        if (!data.master_category_id) {
+            return true;
+        }
+
         const existingCategories =
             level.scoring_categories || level.scoringCategories || [];
+
         return existingCategories.some(
             (sc: any) =>
                 sc.master_category_id.toString() ===
@@ -151,22 +162,31 @@ export default function DynamicScoringBuilderCreate({
     };
 
     const handleLevelToggle = (levelId: number, checked: boolean) => {
-        if (checked)
+        if (checked) {
             setData('event_level_ids', [...data.event_level_ids, levelId]);
-        else
+        } else {
             setData(
                 'event_level_ids',
                 data.event_level_ids.filter((id) => id !== levelId),
             );
+        }
+
         clearErrors('event_level_ids');
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
         const activeData = active.data.current;
         const overData = over.data.current;
-        if (!activeData || !overData) return;
+
+        if (!activeData || !overData) {
+            return;
+        }
 
         if (activeData.type === 'rubric' && overData.type === 'rubric') {
             setGlobalRubrics((items) =>
@@ -194,8 +214,12 @@ export default function DynamicScoringBuilderCreate({
             ) {
                 setUiCriteria((prev) =>
                     prev.map((c) => {
-                        if (c.id !== activeData.critId) return c;
+                        if (c.id !== activeData.critId) {
+                            return c;
+                        }
+
                         const scores = [...c.rubricData[activeData.rubricId]];
+
                         return {
                             ...c,
                             rubricData: {
@@ -225,6 +249,7 @@ export default function DynamicScoringBuilderCreate({
                 ...prev,
                 global: 'Nama kolom kategori rubrik dan jumlah opsi wajib diisi.',
             }));
+
             return;
         }
 
@@ -233,6 +258,7 @@ export default function DynamicScoringBuilderCreate({
                 ...prev,
                 global: 'Nama kategori rubrik maksimal 255 karakter.',
             }));
+
             return;
         }
 
@@ -241,6 +267,7 @@ export default function DynamicScoringBuilderCreate({
                 ...prev,
                 global: 'Jumlah opsi minimal 1 dan harus berupa bilangan bulat.',
             }));
+
             return;
         }
 
@@ -276,7 +303,10 @@ export default function DynamicScoringBuilderCreate({
 
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }, 150);
     };
     const removeCriteriaRow = (id: string) =>
@@ -308,17 +338,21 @@ export default function DynamicScoringBuilderCreate({
             };
             const newArray = [...prev];
             newArray.splice(cIndex + 1, 0, newCrit);
+
             return newArray;
         });
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }, 150);
     };
 
     const addScore = (critId: string, rubricId: string) => {
-        setUiCriteria((prev) =>
-            prev.map((c) =>
+        setUiCriteria((prev: any) =>
+            prev.map((c: UICriteria) =>
                 c.id === critId
                     ? {
                           ...c,
@@ -362,7 +396,7 @@ export default function DynamicScoringBuilderCreate({
         critId: string,
         rubricId: string,
         scoreId: string,
-        value: string,
+        value: number,
     ) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
@@ -386,6 +420,7 @@ export default function DynamicScoringBuilderCreate({
     const scrollToError = () => {
         setTimeout(() => {
             const firstError = document.querySelector('.is-error-msg');
+
             if (firstError) {
                 firstError.scrollIntoView({
                     behavior: 'smooth',
@@ -414,7 +449,7 @@ export default function DynamicScoringBuilderCreate({
             hasError = true;
         } else if (uiCriteria.length === 0) {
             newLocalErrors['global'] =
-                'Tambahkan minimal 1 baris komponen materi gerakan.';
+                'Tambahkan minimal 1 baris komponen penilaian.';
             hasError = true;
         }
 
@@ -424,6 +459,7 @@ export default function DynamicScoringBuilderCreate({
                 newLocalErrors[`crit_${crit.id}`] =
                     'Kriteria utama wajib dipilih.';
                 hasError = true;
+
                 return;
             }
 
@@ -439,10 +475,7 @@ export default function DynamicScoringBuilderCreate({
                 }
 
                 const hasEmptyScore = scores.some(
-                    (s) =>
-                        s.value === '' ||
-                        s.value === null ||
-                        s.value === undefined,
+                    (s) => s.value === null || s.value === undefined,
                 );
 
                 if (hasEmptyScore) {
@@ -454,6 +487,7 @@ export default function DynamicScoringBuilderCreate({
 
                 const hasInvalidNumber = scores.some((s) => {
                     const num = Number(s.value);
+
                     return Number.isNaN(num) || num < 0;
                 });
 
@@ -469,6 +503,7 @@ export default function DynamicScoringBuilderCreate({
         if (hasError) {
             setLocalErrors(newLocalErrors);
             scrollToError();
+
             return;
         }
 
@@ -638,6 +673,7 @@ export default function DynamicScoringBuilderCreate({
                                             {eventLevels.map((level: any) => {
                                                 const disabled =
                                                     isLevelDisabled(level);
+
                                                 return (
                                                     <div
                                                         key={
@@ -716,6 +752,7 @@ export default function DynamicScoringBuilderCreate({
                                             <Input
                                                 type="number"
                                                 min="1"
+                                                inputMode="numeric"
                                                 onWheel={(e) =>
                                                     e.currentTarget.blur()
                                                 }

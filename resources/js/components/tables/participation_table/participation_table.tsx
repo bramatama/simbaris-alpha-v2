@@ -1,4 +1,8 @@
 import { Link } from '@inertiajs/react';
+import { Eye, Settings2, ShieldAlert, Trophy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -7,11 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/config/date_datetime';
-import { Eye, Settings2, ShieldAlert, Trophy } from 'lucide-react';
 
 interface ParticipationTableProps {
     event?: any | null;

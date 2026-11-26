@@ -30,95 +30,88 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-if (!function_exists('createAdminUser')) {
-    function createAdminUser(): User {
-        $userId = DB::table('users')->insertGetId([
-            'public_id' => (string) Str::uuid(),
-            'name' => 'Admin Utama',
-            'email' => 'admin.event.' . Str::random(5) . '@simbaris.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password123'),
-            'role' => 'admin',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+function createAdminUser(): User {
+    $userId = DB::table('users')->insertGetId([
+        'public_id' => (string) Str::uuid(),
+        'name' => 'Admin Utama',
+        'email' => 'admin.event.' . Str::random(5) . '@simbaris.com',
+        'email_verified_at' => now(),
+        'password' => bcrypt('password123'),
+        'role' => 'admin',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
-        DB::table('admins')->insert([
-            'admin_id' => $userId,
-            'user_id' => $userId,
-        ]);
+    DB::table('admins')->insert([
+        'admin_id' => $userId,
+        'user_id' => $userId,
+    ]);
 
-        return User::find($userId);
-    }
+    return User::find($userId);
 }
 
-if (!function_exists('createOfficialUser')) {
-    function createOfficialUser(): User {
-        $userId = DB::table('users')->insertGetId([
-            'public_id' => (string) Str::uuid(),
-            'name' => 'Official Tim',
-            'email' => 'official.team.' . Str::random(5) . '@simbaris.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password123'),
-            'role' => 'official_team',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+function createOfficialUser(): User {
+    $userId = DB::table('users')->insertGetId([
+        'public_id' => (string) Str::uuid(),
+        'name' => 'Official Tim',
+        'email' => 'official.team.' . Str::random(5) . '@simbaris.com',
+        'email_verified_at' => now(),
+        'password' => bcrypt('password123'),
+        'role' => 'official_team',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
-        DB::table('official_teams')->insert([
-            'user_id' => $userId,
-            'province' => 'Kalimantan Timur',
-            'city' => 'Balikpapan',
-            'institution' => 'SMPN 18 Balikpapan',
-        ]);
+    DB::table('official_teams')->insert([
+        'user_id' => $userId,
+        'province' => 'Kalimantan Timur',
+        'city' => 'Balikpapan',
+        'institution' => 'SMPN 18 Balikpapan',
+    ]);
 
-        return User::find($userId);
-    }
+    return User::find($userId);
 }
 
-if (!function_exists('createEventForTechnicalTest')) {
-    function createEventForTechnicalTest(User $creator): Event {
-        return Event::create([
-            'public_id' => (string) Str::uuid(),
-            'event_name' => 'LPBB Pantera III 2026',
-            'description' => 'Kompetisi Paskibra dan Marching Drill',
-            'location' => 'GOR Tennis Indoor BJBJ',
-            'status' => 'draft',
-            'registration_start_time' => now(),
-            'registration_end_time' => now()->addDays(10),
-            'start_time' => now()->addDays(15),
-            'end_time' => now()->addDays(17),
-            'created_by' => $creator->user_id,
-        ]);
-    }
+
+function createEventForTechnicalTest(User $creator): Event {
+    return Event::create([
+        'public_id' => (string) Str::uuid(),
+        'event_name' => 'LPBB Pantera III 2026',
+        'description' => 'Kompetisi Paskibra dan Marching Drill',
+        'location' => 'GOR Tennis Indoor BJBJ',
+        'status' => 'draft',
+        'registration_start_time' => now(),
+        'registration_end_time' => now()->addDays(10),
+        'start_time' => now()->addDays(15),
+        'end_time' => now()->addDays(17),
+        'created_by' => $creator->user_id,
+    ]);
 }
 
-if (!function_exists('createCommitteeUserForEvent')) {
-    function createCommitteeUserForEvent(int $eventId, string $position = 'administration'): User {
-        $userId = DB::table('users')->insertGetId([
-            'public_id' => (string) Str::uuid(),
-            'name' => 'Panitia Teknis',
-            'email' => 'committee.tech.' . Str::random(5) . '@simbaris.com',
-            'email_verified_at' => now(),
-            'password' => bcrypt('password123'),
-            'role' => 'committee',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+function createCommitteeUserForEvent(int $eventId, string $position = 'administration'): User {
+    $userId = DB::table('users')->insertGetId([
+        'public_id' => (string) Str::uuid(),
+        'name' => 'Panitia Teknis',
+        'email' => 'committee.tech.' . Str::random(5) . '@simbaris.com',
+        'email_verified_at' => now(),
+        'password' => bcrypt('password123'),
+        'role' => 'committee',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
-        $committeeId = DB::table('committees')->insertGetId([
-            'user_id' => $userId,
-            'department' => 'Seksi Acara & Administrasi',
-        ]);
+    $committeeId = DB::table('committees')->insertGetId([
+        'user_id' => $userId,
+        'department' => 'Seksi Acara & Administrasi',
+    ]);
 
-        DB::table('event_committees')->insert([
-            'event_id' => $eventId,
-            'committee_id' => $committeeId,
-            'position' => $position,
-        ]);
+    DB::table('event_committees')->insert([
+        'event_id' => $eventId,
+        'committee_id' => $committeeId,
+        'position' => $position,
+    ]);
 
-        return User::find($userId);
-    }
+    return User::find($userId);
 }
 
 /*
@@ -605,7 +598,7 @@ test('panitia dapat mengelola urutan tampil peserta', function () {
     ]));
 
     $resetResponse->assertRedirect();
-    $resetResponse->assertSessionHas('success', 'Nomor urut tampil berhasil di-reset menjadi kosong.');
+    $resetResponse->assertSessionHas('success', 'Nomor urut tampil berhasil di-reset.');
 
     $team1->refresh();
     $team2->refresh();

@@ -1,7 +1,16 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
+import {
+    Plus,
+    Search,
+    Filter,
+    Clock,
+    CalendarX,
+    RotateCcw,
+} from 'lucide-react';
 import { useState, useMemo } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import LandingPageLayout from '@/layouts/landing-page-layout';
+import type { EventData } from '@/components/event-card';
+import EventCard from '@/components/event-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,16 +20,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Plus,
-    Search,
-    Filter,
-    Clock,
-    CalendarX,
-    RotateCcw,
-} from 'lucide-react';
-import EventCard, { EventData } from '@/components/event-card';
-import type { PageProps } from '@inertiajs/core';
+import AppLayout from '@/layouts/app-layout';
+import LandingPageLayout from '@/layouts/landing-page-layout';
 
 export default function EventIndex({ events = [] }: { events: EventData[] }) {
     const { auth } = usePage<PageProps>().props;
@@ -61,15 +62,18 @@ export default function EventIndex({ events = [] }: { events: EventData[] }) {
                         new Date(a.start_time).getTime()
                     );
                 }
+
                 if (sortBy === 'oldest') {
                     return (
                         new Date(a.start_time).getTime() -
                         new Date(b.start_time).getTime()
                     );
                 }
+
                 if (sortBy === 'name') {
                     return a.event_name.localeCompare(b.event_name);
                 }
+
                 return 0; // Default order dari controller
             });
     }, [events, searchQuery, statusFilter, sortBy]);

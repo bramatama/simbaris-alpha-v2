@@ -1,18 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import {
     Trash2,
     PlusCircle,
@@ -28,7 +14,18 @@ import {
     CheckCircle2,
     AlertCircle,
 } from 'lucide-react';
-
+import { useState, useEffect, useRef } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectLabel,
@@ -38,7 +35,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+
+import AppLayout from '@/layouts/app-layout';
 
 export default function EventCreate({
     existingCommittees = [],
@@ -78,7 +78,7 @@ export default function EventCreate({
                 });
             } else {
                 const firstErrorKey = Object.keys(errors)[0];
-                let targetElement =
+                const targetElement =
                     document.getElementById(firstErrorKey) ||
                     document.querySelector(`[name="${firstErrorKey}"]`);
 
@@ -95,21 +95,26 @@ export default function EventCreate({
 
     const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             setData('poster_path', file);
+
             if (posterPreview) {
                 URL.revokeObjectURL(posterPreview);
             }
+
             setPosterPreview(URL.createObjectURL(file));
         }
     };
 
     const removePoster = () => {
         setData('poster_path', null);
+
         if (posterPreview) {
             URL.revokeObjectURL(posterPreview);
             setPosterPreview(null);
         }
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -130,6 +135,7 @@ export default function EventCreate({
         setSelectedCommittees((prev) => {
             const updated = [...prev];
             updated[index] = null;
+
             return updated;
         });
     };
@@ -141,7 +147,9 @@ export default function EventCreate({
     }, [errors['confirmation' as keyof typeof errors]]);
 
     const addCommittee = () => {
-        if (data.committees.length >= 3) return;
+        if (data.committees.length >= 3) {
+return;
+}
 
         setData('committees', [
             ...data.committees,
@@ -195,7 +203,10 @@ export default function EventCreate({
 
     // Helper untuk render Ikon Error + Tooltip di sebelah Label
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -869,6 +880,7 @@ export default function EventCreate({
                                                                                 index
                                                                             ] =
                                                                                 val;
+
                                                                             return updated;
                                                                         },
                                                                     );
@@ -1147,6 +1159,7 @@ export default function EventCreate({
                         open={showConfirm}
                         onOpenChange={(open) => {
                             setShowConfirm(open);
+
                             if (!open) {
                                 clearErrors(
                                     'confirmation' as keyof typeof errors,

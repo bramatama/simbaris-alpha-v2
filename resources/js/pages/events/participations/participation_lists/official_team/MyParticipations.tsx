@@ -1,5 +1,9 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, usePage } from '@inertiajs/react';
+import { Search, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
+import { ParticipationTable } from '@/components/tables/participation_table/participation_table';
 import {
     Card,
     CardContent,
@@ -7,10 +11,6 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { PageProps } from '@inertiajs/core';
-import { Search, Star } from 'lucide-react';
-import { ParticipationTable } from '@/components/tables/participation_table/participation_table';
-import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
 import AppLayout from '@/layouts/app-layout';
 
 // 1. TAMBAHKAN INTERFACE EVENT DISINI

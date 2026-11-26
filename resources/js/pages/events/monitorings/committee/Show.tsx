@@ -1,45 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, router, useForm } from '@inertiajs/react';
-import { useState, useEffect, Fragment } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import InputError from '@/components/input-error';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Clock,
@@ -57,7 +17,47 @@ import {
     Laptop,
     ShieldAlert,
 } from 'lucide-react';
+import { useState, useEffect, Fragment } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { formatAuditTime } from '@/config/date_datetime';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface MonitoringProps {
     event: any;
@@ -95,10 +95,13 @@ export default function MonitoringShow({
     const isManualMode = session.recording_mode === 'manual';
 
     const parseSafeDate = (dateVal: string | number | null): Date | null => {
-        if (!dateVal) return null;
+        if (!dateVal) {
+return null;
+}
 
         if (typeof dateVal === 'number') {
             const date = new Date(dateVal);
+
             return isNaN(date.getTime()) ? null : date;
         }
 
@@ -122,11 +125,15 @@ export default function MonitoringShow({
     };
 
     const formatDateTimeLocal = (dateString: string | null): string => {
-        if (!dateString) return '';
+        if (!dateString) {
+return '';
+}
 
         const date = parseSafeDate(dateString);
 
-        if (!date) return '';
+        if (!date) {
+return '';
+}
 
         const parts = new Intl.DateTimeFormat('en-CA', {
             timeZone: 'Asia/Makassar',
@@ -174,7 +181,9 @@ export default function MonitoringShow({
     const formatOnlyTime = (dateString: string | null) => {
         const d = parseSafeDate(dateString);
 
-        if (!d) return '-';
+        if (!d) {
+return '-';
+}
 
         return new Intl.DateTimeFormat('id-ID', {
             hour: '2-digit',
@@ -193,8 +202,10 @@ export default function MonitoringShow({
 
         const calculateAndSetDuration = () => {
             const startDate = parseSafeDate(session.start_time);
+
             if (!startDate) {
                 setLiveDuration('00:00:00');
+
                 return;
             }
 
@@ -218,7 +229,9 @@ export default function MonitoringShow({
 
             let diff = Math.floor((endMs - startMs) / 1000);
 
-            if (diff < 0) diff = 0;
+            if (diff < 0) {
+diff = 0;
+}
 
             const hours = Math.floor(diff / 3600);
             const minutes = Math.floor((diff % 3600) / 60);
@@ -236,7 +249,9 @@ export default function MonitoringShow({
         }
 
         return () => {
-            if (interval) clearInterval(interval);
+            if (interval) {
+clearInterval(interval);
+}
         };
     }, [
         session.status,
@@ -263,7 +278,10 @@ export default function MonitoringShow({
                     },
                 );
                 const data = await response.json();
-                if (data.data) setAuditTrails(data.data);
+
+                if (data.data) {
+setAuditTrails(data.data);
+}
             } catch (error) {
                 console.error('Gagal menarik data audit trail', error);
             }
@@ -280,7 +298,9 @@ export default function MonitoringShow({
         }
 
         return () => {
-            if (pollingInterval) clearInterval(pollingInterval);
+            if (pollingInterval) {
+clearInterval(pollingInterval);
+}
         };
     }, [session.status, event.public_id, participation.public_id, userRole]);
 

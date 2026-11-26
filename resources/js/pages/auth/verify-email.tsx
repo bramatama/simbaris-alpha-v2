@@ -1,13 +1,13 @@
 // Components
-import { useEffect, useState } from 'react';
+import type { PageProps } from '@inertiajs/core';
 import { Form, Head, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
-import type { PageProps } from '@inertiajs/core';
 
 
 export default function VerifyEmail({ status }: { status?: string }) {
@@ -18,6 +18,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
     useEffect(() => {
         if (countdown > 0) {
             const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+
             return () => clearTimeout(timer);
         }
     }, [countdown]);

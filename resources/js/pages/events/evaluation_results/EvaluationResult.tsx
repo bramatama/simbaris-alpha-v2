@@ -1,12 +1,11 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { PageProps } from '@inertiajs/core';
+import { ArrowLeft, Filter, Unlock, EyeOff } from 'lucide-react';
 import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
     Select,
     SelectContent,
@@ -14,8 +13,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Filter, Unlock, EyeOff } from 'lucide-react';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 /* =========================================================
    TYPES
@@ -81,7 +81,10 @@ export default function EvaluationResult({
     };
 
     const confirmUnlockRequest = () => {
-        if (!activeCategory) return;
+        if (!activeCategory) {
+return;
+}
+
         setIsProcessingUnlock(true);
         router.post(
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/evaluation_result/unlock`,
@@ -261,6 +264,7 @@ export default function EvaluationResult({
                                         {judgeHeaders.map((j) => {
                                             const score =
                                                 row.scores[j.judge_id];
+
                                             return (
                                                 <div
                                                     key={j.judge_id}
@@ -340,6 +344,7 @@ export default function EvaluationResult({
                                             const status =
                                                 judgeStatuses[j.judge_id] ||
                                                 'draft';
+
                                             return (
                                                 <th
                                                     key={j.judge_id}
@@ -385,6 +390,7 @@ export default function EvaluationResult({
                                             {judgeHeaders.map((j) => {
                                                 const score =
                                                     row.scores[j.judge_id];
+
                                                 return (
                                                     <td
                                                         key={j.judge_id}

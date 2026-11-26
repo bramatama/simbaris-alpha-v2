@@ -1,9 +1,10 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { dashboard, login, register } from '@/routes';
-import LandingPageLayout from '@/layouts/landing-page-layout';
-import { PageProps } from '@inertiajs/core';
-import EventCard, { EventData } from '@/components/event-card';
 import { ArrowRight, CalendarX, Trophy, ShieldCheck, Zap } from 'lucide-react';
+import type { EventData } from '@/components/event-card';
+import EventCard from '@/components/event-card';
+import LandingPageLayout from '@/layouts/landing-page-layout';
+import { dashboard, login, register } from '@/routes';
 
 interface WelcomeProps {
     events?: EventData[];

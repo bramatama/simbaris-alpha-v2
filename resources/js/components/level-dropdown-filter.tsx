@@ -1,3 +1,4 @@
+import { Filter } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -5,7 +6,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Filter } from 'lucide-react';
 
 interface EventLevel {
     event_level_id: number;
@@ -29,7 +29,9 @@ export function LevelDropdownFilter({
     placeholder = 'Pilih jenjang perlombaan...',
     className = 'w-full sm:w-64',
 }: LevelDropdownFilterProps) {
-    if (eventLevels.length === 0) return null;
+    if (eventLevels.length === 0) {
+return null;
+}
 
     return (
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto">

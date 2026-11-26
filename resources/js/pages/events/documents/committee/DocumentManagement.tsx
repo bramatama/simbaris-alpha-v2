@@ -1,19 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
-import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import FileUploader
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     FileText,
@@ -22,7 +8,21 @@ import {
     FileCode2,
     Eye,
 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import { FileUploader } from '@/components/ui/file-uploader'; // <-- Import FileUploader
 import { formatDate } from '@/config/date_datetime';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 type EventDocument = {
     document_id: number;
@@ -61,7 +61,10 @@ export default function DocumentManagement({
     } | null>(null);
 
     const confirmDelete = () => {
-        if (deleteId === null) return;
+        if (deleteId === null) {
+            return;
+        }
+
         setIsDeleting(true);
 
         router.delete(
@@ -126,7 +129,7 @@ export default function DocumentManagement({
                                     maxSizeMB={10}
                                     endpoint={`/${userRole}/events/${event.public_id}/documents`}
                                     onUploadSuccess={() => {
-                                        router.reload({ only: ['documents'] });
+                                        router.reload({ only: ['documents', 'flash'] });
                                     }}
                                     onRemove={() => {}}
                                 />

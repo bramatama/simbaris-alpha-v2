@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from '@inertiajs/react';
 import {
     ClipboardList,
     CalendarDays,
@@ -6,9 +6,9 @@ import {
     ShieldAlert,
     Sparkles,
 } from 'lucide-react';
-import { Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formatEventStatus = (status: string): string => {
     switch (status) {

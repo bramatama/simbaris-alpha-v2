@@ -1,7 +1,12 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, router } from '@inertiajs/react';
+import { ArrowLeft, FileText, Eye, FileCode2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { route } from 'ziggy-js';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
+import { ParticipationLockState } from '@/components/states/participation-lock-state';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -9,14 +14,9 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
-import { ParticipationLockState } from '@/components/states/participation-lock-state';
-import { PageProps } from '@inertiajs/core';
-import { ArrowLeft, FileText, Eye, FileCode2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { FileUploader } from '@/components/ui/file-uploader';
+import { getParticipationInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function OfficialTeamParticipationDocuments({
     event,
@@ -38,7 +38,10 @@ export default function OfficialTeamParticipationDocuments({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const confirmDelete = () => {
-        if (deleteId === null) return;
+        if (deleteId === null) {
+return;
+}
+
         setIsDeleting(true);
 
         router.delete(
@@ -110,7 +113,7 @@ export default function OfficialTeamParticipationDocuments({
                                         endpoint={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/documents`}
                                         onUploadSuccess={() =>
                                             router.reload({
-                                                only: ['participation'],
+                                                only: ['participation', 'flash'],
                                             })
                                         }
                                         onRemove={() => {}}

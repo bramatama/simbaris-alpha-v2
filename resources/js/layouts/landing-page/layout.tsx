@@ -1,6 +1,6 @@
 import { AppContent } from '@/components/app-content';
-import { LandingPageHeader } from '@/components/landing-page-header';
 import { AppShell } from '@/components/app-shell';
+import { LandingPageHeader } from '@/components/landing-page-header';
 import type { AppLayoutProps } from '@/types';
 
 export default function LandingPageLayout({

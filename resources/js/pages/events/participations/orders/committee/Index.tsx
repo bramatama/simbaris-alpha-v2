@@ -1,20 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import {
     ArrowLeft,
     Settings2,
@@ -28,7 +13,22 @@ import {
     Layers,
     Plus,
 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 const renderEvaluationStatusBadge = (evaluationSession: any) => {
     const status = evaluationSession?.status;
@@ -91,7 +91,10 @@ export default function ParticipationOrderIndex({
     };
 
     const handleReset = () => {
-        if (!activeLevel) return;
+        if (!activeLevel) {
+return;
+}
+
         setIsResetting(true);
         router.delete(
             `/${userRole}/events/${event.public_id}/participation-orders/levels/${activeLevel.event_level_id}`,

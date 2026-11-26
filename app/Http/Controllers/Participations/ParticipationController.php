@@ -443,7 +443,7 @@ class ParticipationController extends Controller
                     ]);
                 }
             });
-
+            session()->flash('success', 'Dokumen berhasil diunggah');
             return response()->json([
                 'status' => 'success',
                 'message' => 'Dokumen berhasil diunggah'

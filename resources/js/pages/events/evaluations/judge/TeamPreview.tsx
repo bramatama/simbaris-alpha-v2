@@ -1,10 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     ChevronDown,
@@ -13,7 +8,12 @@ import {
     Play,
     Lock,
 } from 'lucide-react';
+import { useState } from 'react';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
 
 /* ==========================================
    TYPES & STATUS HELPERS
@@ -232,6 +232,7 @@ const CategoryAccordion = ({
                                                                             es.rubric_score_id ===
                                                                             score.rubric_score_id,
                                                                     );
+
                                                                 return (
                                                                     <div
                                                                         key={
@@ -319,6 +320,7 @@ const CategoryAccordion = ({
                                                                                 es.rubric_score_id ===
                                                                                 score.rubric_score_id,
                                                                         );
+
                                                                     return (
                                                                         <div
                                                                             key={

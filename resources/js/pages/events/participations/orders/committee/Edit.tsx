@@ -1,21 +1,12 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { PageProps } from '@inertiajs/core';
-import { ArrowLeft, Save, GripVertical, AlertCircle } from 'lucide-react';
-
+import type {
+    DragEndEvent} from '@dnd-kit/core';
 import {
     DndContext,
     closestCenter,
     KeyboardSensor,
     PointerSensor,
     useSensor,
-    useSensors,
-    DragEndEvent,
+    useSensors
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -25,6 +16,16 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { PageProps } from '@inertiajs/core';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { ArrowLeft, Save, GripVertical, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+
 
 /* =========================================================
    KOMPONEN SORTABLE ITEM
@@ -114,6 +115,7 @@ export default function ParticipationOrderEdit({
 
     const handleDragEnd = (e: DragEndEvent) => {
         const { active, over } = e;
+
         if (over && active.id !== over.id) {
             setItems((prevItems: any[]) => {
                 const oldIndex = prevItems.findIndex(
@@ -122,6 +124,7 @@ export default function ParticipationOrderEdit({
                 const newIndex = prevItems.findIndex(
                     (i) => i.participation_id === over.id,
                 );
+
                 return arrayMove(prevItems, oldIndex, newIndex);
             });
         }

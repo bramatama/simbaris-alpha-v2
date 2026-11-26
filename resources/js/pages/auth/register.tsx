@@ -1,12 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { Separator } from '@/components/ui/separator';
 import {
     Combobox,
     ComboboxInput,
@@ -16,10 +13,13 @@ import {
     ComboboxEmpty,
     ComboboxGroup,
 } from '@/components/ui/combobox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 interface Region {
     id: string;
@@ -65,7 +65,9 @@ export default function Register() {
     }, []);
 
     const handleProvinceChange = (provinceName: string | null) => {
-        if (!provinceName) return;
+        if (!provinceName) {
+return;
+}
 
         setSelectedProvinceName(provinceName);
         setSelectedCityName('');

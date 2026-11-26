@@ -1,7 +1,3 @@
-import { TableCell, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Trash2,
     Mail,
@@ -12,6 +8,10 @@ import {
     CheckCircle2,
     Clock,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { TableCell, TableRow } from '@/components/ui/table';
 
 export interface User {
     user_id: number;

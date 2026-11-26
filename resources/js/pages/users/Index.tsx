@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
+import { Users, Filter, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-import AppLayout from '@/layouts/app-layout';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { Pagination } from '@/components/pagination';
 
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -14,13 +15,13 @@ import {
 } from '@/components/ui/select';
 
 import { Table, TableBody } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Users, Filter, Trash2 } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
 
 import UserTableHeaders from '../../components/tables/user_table/UserTableHeaders';
+import type {
+    User} from '../../components/tables/user_table/UserTableRow';
 import {
     UserTableRow,
-    User,
     UserMobileCard,
 } from '../../components/tables/user_table/UserTableRow';
 
@@ -95,7 +96,9 @@ export default function UserManagementIndex({
         !isAllSelected;
 
     const handleDelete = () => {
-        if (deleteUserId === null) return;
+        if (deleteUserId === null) {
+return;
+}
 
         setIsDeleting(true);
 
@@ -108,7 +111,9 @@ export default function UserManagementIndex({
     };
 
     const handleBulkDelete = () => {
-        if (selectedUserIds.length === 0) return;
+        if (selectedUserIds.length === 0) {
+return;
+}
 
         setIsDeleting(true);
 

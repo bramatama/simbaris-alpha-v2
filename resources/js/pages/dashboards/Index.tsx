@@ -1,11 +1,11 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { PageProps } from '@inertiajs/core';
 
 import AdminDashboard from './Partials/admin';
 import CommitteeDashboard from './Partials/committee';
-import OfficialTeamDashboard from './Partials/official_team';
 import JudgeDashboard from './Partials/judge';
+import OfficialTeamDashboard from './Partials/official_team';
 
 export default function Dashboard({ stats }: { stats: any }) {
     const { auth } = usePage<PageProps>().props;

@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import type { ComponentProps } from 'react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

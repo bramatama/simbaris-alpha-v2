@@ -1,6 +1,10 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, router, Link, usePage } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import AddJudgeDialog from '@/components/dialogs/judges/add-judge-dialog';
+import JudgeTable from '@/components/tables/judge_table/judge_table';
 import {
     Card,
     CardContent,
@@ -8,12 +12,8 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { ArrowLeft } from 'lucide-react';
+import { getEventInnerNav } from '@/config/inner_sidebar';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import JudgeTable from '@/components/tables/judge_table/judge_table';
-import AddJudgeDialog from '@/components/dialogs/judges/add-judge-dialog';
-import type { PageProps } from '@inertiajs/core';
 import type { Auth } from '@/types';
 
 type Expertise = {
@@ -77,7 +77,10 @@ export default function JudgeIndex({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const confirmDelete = () => {
-        if (deleteId === null) return;
+        if (deleteId === null) {
+return;
+}
+
         setIsDeleting(true);
         router.delete(
             `/${userRole}/events/${event.public_id}/judges/${deleteId}`,
@@ -93,10 +96,13 @@ export default function JudgeIndex({
     const expertisesByCategory = expertises.reduce<Record<string, Expertise[]>>(
         (groups, expertise) => {
             const catName = expertise.category_name || 'Kategori lainnya';
+
             if (!groups[catName]) {
                 groups[catName] = [];
             }
+
             groups[catName].push(expertise);
+
             return groups;
         },
         {},

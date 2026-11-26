@@ -1,9 +1,11 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Plus, Edit3, Trash2, AlertOctagon, Save, Gavel } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -11,12 +13,10 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import InputError from '@/components/input-error';
-import { PageProps } from '@inertiajs/core';
-import { Plus, Edit3, Trash2, AlertOctagon, Save, Gavel } from 'lucide-react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { getMasterDataInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface MasterPenalty {
     master_penalty_id: number;
@@ -72,7 +72,10 @@ export default function MasterPenaltiesIndex({
 
     const handleEdit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editingPenalty) return;
+
+        if (!editingPenalty) {
+return;
+}
 
         formEdit.put(
             `/admin/master-penalties/${editingPenalty.master_penalty_id}`,
@@ -92,7 +95,10 @@ export default function MasterPenaltiesIndex({
     };
 
     const handleDelete = () => {
-        if (!itemToDelete) return;
+        if (!itemToDelete) {
+return;
+}
+
         router.delete(
             `/admin/master-penalties/${itemToDelete.master_penalty_id}`,
             {
@@ -231,7 +237,10 @@ export default function MasterPenaltiesIndex({
                 open={isEditOpen}
                 onOpenChange={(open) => {
                     setIsEditOpen(open);
-                    if (!open) formEdit.reset();
+
+                    if (!open) {
+formEdit.reset();
+}
                 }}
             >
                 <DialogContent className="sm:max-w-md">

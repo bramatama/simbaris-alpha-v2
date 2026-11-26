@@ -1,8 +1,10 @@
+import type { PageProps } from '@inertiajs/core';
 import { usePage } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Mail, UserX } from 'lucide-react';
+import { useRoute } from 'ziggy-js';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -11,8 +13,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { PageProps } from '@inertiajs/core';
-import { useRoute } from 'ziggy-js';
 
 interface CommitteeTableProps {
     committees: any[];

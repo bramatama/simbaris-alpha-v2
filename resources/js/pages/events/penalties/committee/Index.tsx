@@ -1,34 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/ui/spinner';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    Combobox,
-    ComboboxInput,
-    ComboboxContent,
-    ComboboxList,
-    ComboboxItem,
-    ComboboxEmpty,
-    ComboboxGroup,
-} from '@/components/ui/combobox';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -39,6 +10,35 @@ import {
     AlertCircle,
     X,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Combobox,
+    ComboboxInput,
+    ComboboxContent,
+    ComboboxList,
+    ComboboxItem,
+    ComboboxEmpty,
+    ComboboxGroup,
+} from '@/components/ui/combobox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function EventPenaltiesIndex({
     event,
@@ -76,6 +76,7 @@ export default function EventPenaltiesIndex({
     useEffect(() => {
         if (Object.keys(errors).length > 0 || pageErrors?.error) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -183,13 +184,17 @@ export default function EventPenaltiesIndex({
     };
 
     const executeDelete = () => {
-        if (!itemToDelete) return;
+        if (!itemToDelete) {
+return;
+}
+
         router.delete(
             `/committee/events/${event.public_id}/penalties/${itemToDelete.event_penalty_id}`,
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     setIsDeleteOpen(false);
+
                     // Jika sedang mengedit item yang dihapus, reset formnya
                     if (isEditing && editId === itemToDelete.event_penalty_id) {
                         handleCancelEdit();
@@ -200,7 +205,10 @@ export default function EventPenaltiesIndex({
     };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -221,6 +229,7 @@ export default function EventPenaltiesIndex({
             per_occurrence: 'Per Kejadian (Akumulasi)',
             per_second: 'Per Detik (Durasi)',
         };
+
         return types[type] || type;
     };
 

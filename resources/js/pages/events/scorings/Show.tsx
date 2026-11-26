@@ -1,11 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Edit,
@@ -14,6 +8,10 @@ import {
     CheckSquare,
     Lock,
 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -22,6 +20,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function ScoringCategoryShow({
     event,
@@ -50,7 +50,10 @@ export default function ScoringCategoryShow({
     };
 
     const getTableHeaders = (criteriaList: any[]) => {
-        if (!criteriaList || criteriaList.length === 0) return [];
+        if (!criteriaList || criteriaList.length === 0) {
+return [];
+}
+
         return criteriaList[0].rubric_categories || [];
     };
 

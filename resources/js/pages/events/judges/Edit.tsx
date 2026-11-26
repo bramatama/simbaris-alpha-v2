@@ -1,6 +1,8 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { ArrowLeft, Save, UserCheck, ShieldAlert } from 'lucide-react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -8,13 +10,11 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import InputError from '@/components/input-error';
-import { ArrowLeft, Save, UserCheck, ShieldAlert } from 'lucide-react';
-import type { PageProps } from '@inertiajs/core';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import type { Auth } from '@/types';
 
 type Expertise = {
@@ -77,10 +77,13 @@ export default function EditJudge({
     const expertisesByCategory = expertises.reduce<Record<string, Expertise[]>>(
         (groups, exp) => {
             const catName = exp.category_name || 'Kategori Lainnya';
+
             if (!groups[catName]) {
                 groups[catName] = [];
             }
+
             groups[catName].push(exp);
+
             return groups;
         },
         {},
@@ -309,6 +312,7 @@ export default function EditJudge({
                                                                         data.expertise_ids.includes(
                                                                             category.scoring_category_id,
                                                                         );
+
                                                                     return (
                                                                         <Label
                                                                             key={

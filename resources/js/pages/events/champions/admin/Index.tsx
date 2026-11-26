@@ -1,21 +1,21 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Plus, Edit3, Trash2, Check, X, Trophy, Medal } from 'lucide-react';
 import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getMasterDataInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import InputError from '@/components/input-error';
-import { PageProps } from '@inertiajs/core';
-import { Plus, Edit3, Trash2, Check, X, Trophy, Medal } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { getMasterDataInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface Champion {
     champion_id: number;
@@ -87,7 +87,9 @@ export default function MasterChampionCategoryIndex({
     };
 
     const saveEdit = (id: number) => {
-        if (!editValue.trim()) return;
+        if (!editValue.trim()) {
+return;
+}
 
         setIsUpdating(true);
         router.put(
@@ -109,7 +111,10 @@ export default function MasterChampionCategoryIndex({
     // ==========================================
     const handleAddChampion = (categoryId: number) => {
         const name = championInputs[categoryId];
-        if (!name?.trim()) return;
+
+        if (!name?.trim()) {
+return;
+}
 
         router.post(
             '/admin/master-champions',
@@ -140,7 +145,9 @@ export default function MasterChampionCategoryIndex({
     };
 
     const saveEditChampion = (championId: number) => {
-        if (!editChampionValue.trim()) return;
+        if (!editChampionValue.trim()) {
+return;
+}
 
         setIsUpdatingChampion(true);
         router.put(
@@ -173,7 +180,9 @@ export default function MasterChampionCategoryIndex({
     };
 
     const handleDelete = () => {
-        if (!itemToDelete) return;
+        if (!itemToDelete) {
+return;
+}
 
         if (deleteType === 'category') {
             router.delete(
@@ -286,12 +295,15 @@ export default function MasterChampionCategoryIndex({
                                                 }
                                                 className="h-9 max-w-sm bg-background"
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter')
-                                                        saveEdit(
+                                                    if (e.key === 'Enter') {
+saveEdit(
                                                             cat.champion_category_id,
                                                         );
-                                                    if (e.key === 'Escape')
-                                                        cancelEditing();
+}
+
+                                                    if (e.key === 'Escape') {
+cancelEditing();
+}
                                                 }}
                                             />
                                             <div className="flex gap-2">
@@ -469,6 +481,7 @@ export default function MasterChampionCategoryIndex({
                                                                             champ.champion_id,
                                                                         );
                                                                     }
+
                                                                     if (
                                                                         e.key ===
                                                                         'Escape'

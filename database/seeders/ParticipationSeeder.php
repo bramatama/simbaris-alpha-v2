@@ -140,7 +140,7 @@ class ParticipationSeeder extends Seeder
                     'participation_id' => $participationId,
                     'member_name' => fake()->name(),
                     'member_role' => 'commander',
-                    'member_position' => 'Danton Utama',
+                    'member_position' => 'Komandan',
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

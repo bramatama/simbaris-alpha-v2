@@ -171,6 +171,6 @@ class ParticipationOrderController extends Controller
             ->where('status', 'approved')
             ->update(['appearance_order' => null]);
 
-        return redirect()->back()->with('success', 'Nomor urut tampil berhasil di-reset menjadi kosong.');
+        return redirect()->back()->with('success', 'Nomor urut tampil berhasil di-reset.');
     }
 }

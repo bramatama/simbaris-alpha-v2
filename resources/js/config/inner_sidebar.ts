@@ -1,4 +1,3 @@
-import type { NavItem } from '@/types';
 import {
     InfoIcon,
     Gavel,
@@ -21,6 +20,7 @@ import {
     ClipboardCheck,
     CreditCard,
 } from 'lucide-react';
+import type { NavItem } from '@/types';
 
 export const getMasterDataInnerNav = (): NavItem[] => {
     const items: NavItem[] = [
@@ -45,6 +45,7 @@ export const getMasterDataInnerNav = (): NavItem[] => {
             icon: TriangleAlert,
         },
     ];
+
     return items;
 };
 
@@ -78,6 +79,7 @@ export const getEventInnerNav = (
 
     if (role === 'committee') {
         const normalizedPosition = position?.toLowerCase();
+
         if (normalizedPosition === 'administration') {
             items.push(
                 {
@@ -294,6 +296,7 @@ export const getParticipationInnerNav = (
             icon: Podium,
         },
     ];
+
     return items;
 };
 
@@ -310,5 +313,6 @@ export const getEvaluationInnerNav = (eventPublicId: string): NavItem[] => {
             icon: NotebookPen,
         },
     ];
+
     return items;
 };

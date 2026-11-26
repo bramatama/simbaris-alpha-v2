@@ -1,4 +1,7 @@
 import { useForm } from '@inertiajs/react';
+import { Save } from 'lucide-react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -6,11 +9,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/input-error';
-import { Save } from 'lucide-react';
 
 interface ChampionCategoryDialogProps {
     open: boolean;
@@ -47,7 +47,10 @@ export function ChampionCategoryDialog({
             open={open}
             onOpenChange={(isOpen) => {
                 onOpenChange(isOpen);
-                if (!isOpen) reset();
+
+                if (!isOpen) {
+reset();
+}
             }}
         >
             <DialogContent className="max-w-md">

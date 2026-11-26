@@ -1,10 +1,13 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageProps } from '@inertiajs/core';
 import { ArrowLeft, Calculator, CheckSquare } from 'lucide-react';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -13,12 +16,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import AppLayout from '@/layouts/app-layout';
 
 export default function PreviewLevel({
     event,

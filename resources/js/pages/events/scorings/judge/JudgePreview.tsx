@@ -1,9 +1,13 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEvaluationInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageProps } from '@inertiajs/core';
 import { Calculator, CheckSquare, ListFilter } from 'lucide-react';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -20,12 +24,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
+import { getEvaluationInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function JudgePreviewForm({
     event,
@@ -116,6 +116,7 @@ export default function JudgePreviewForm({
                         const tableHeaders =
                             category.assessment_criteria?.[0]
                                 ?.rubric_categories || [];
+
                         return (
                             <AccordionItem
                                 key={category.scoring_category_id}

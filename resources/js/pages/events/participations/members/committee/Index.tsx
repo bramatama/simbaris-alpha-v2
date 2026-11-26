@@ -1,6 +1,8 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { ArrowLeft, ShieldAlert, Users, UserCheck, User } from 'lucide-react';
+import { route } from 'ziggy-js';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -8,10 +10,8 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { PageProps } from '@inertiajs/core';
-import { ArrowLeft, ShieldAlert, Users, UserCheck, User } from 'lucide-react';
-import { route } from 'ziggy-js';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function CommitteeParticipationMembers({
     event,

@@ -1,11 +1,28 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import {
+    Trophy,
+    ArrowLeft,
+    Medal,
+    AlertTriangle,
+    FileText,
+    Star,
+    CheckCircle2,
+    Calculator,
+    Shield,
+} from 'lucide-react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -24,25 +41,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog';
-import {
-    Trophy,
-    ArrowLeft,
-    Medal,
-    AlertTriangle,
-    FileText,
-    Star,
-    CheckCircle2,
-    Calculator,
-} from 'lucide-react';
-import type { PageProps } from '@inertiajs/core';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import AppLayout from '@/layouts/app-layout';
 
 /* =========================================================
    TYPES
@@ -64,6 +65,50 @@ interface LeaderboardProps {
     };
     activeEventChampions?: any[];
     isVisible: boolean;
+}
+
+/* =========================================================
+   SUB-COMPONENT: LOGO TIM DENGAN FALLBACK EMPTY STATE
+========================================================= */
+function TeamAvatar({
+    participation,
+    sizeClass = 'h-10 w-10',
+    iconClass = 'h-4 w-4',
+}: {
+    participation: any;
+    sizeClass?: string;
+    iconClass?: string;
+}) {
+    const [imgError, setImgError] = useState(false);
+
+    const rawPath = participation?.team_logo_path;
+    const logoSrc = rawPath
+        ? rawPath.startsWith('http') || rawPath.startsWith('/storage/')
+            ? rawPath
+            : `/storage/${rawPath}`
+        : null;
+
+    return (
+        <div
+            className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-muted/30 shadow-xs ${sizeClass}`}
+        >
+            {logoSrc && !imgError ? (
+                <img
+                    src={logoSrc}
+                    alt={`Logo ${participation?.team_name || 'Tim'}`}
+                    onError={() => setImgError(true)}
+                    className="h-full w-full object-cover"
+                />
+            ) : (
+                <div
+                    className="flex h-full w-full items-center justify-center bg-muted/40 text-muted-foreground"
+                    title="Logo tim belum tersedia"
+                >
+                    <Shield className={`opacity-50 ${iconClass}`} />
+                </div>
+            )}
+        </div>
+    );
 }
 
 /* =========================================================
@@ -202,7 +247,10 @@ export default function Leaderboard({
     const checkIsTie = (index: number, dataArray: any[]) => {
         const currentScore =
             dataArray[index]?.final_score ?? dataArray[index]?.total_score;
-        if (currentScore == null) return false;
+
+        if (currentScore == null) {
+            return false;
+        }
 
         const prevScore =
             index > 0
@@ -453,14 +501,23 @@ export default function Leaderboard({
                                                 }
                                                 className={`relative flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-4 shadow-sm ${isMyTeam ? 'ring-2 ring-primary/50' : ''}`}
                                             >
-                                                {/* Header Card: Peringkat & Nama Tim */}
-                                                <div className="flex items-start gap-3 border-b border-border/50 pb-3">
+                                                {/* Header Card: Peringkat, Logo Tim & Nama Tim */}
+                                                <div className="flex items-center gap-3 border-b border-border/50 pb-3">
                                                     <div
-                                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold ${getRankClassName(Number())}`}
+                                                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${getRankClassName(Number(actualRank))}`}
                                                     >
                                                         {visualRowNumber}
                                                     </div>
-                                                    <div className="flex min-w-0 flex-col">
+
+                                                    <TeamAvatar
+                                                        participation={
+                                                            participation
+                                                        }
+                                                        sizeClass="h-11 w-11"
+                                                        iconClass="h-5 w-5"
+                                                    />
+
+                                                    <div className="flex min-w-0 flex-1 flex-col">
                                                         <span className="leading-tight font-bold text-foreground">
                                                             {
                                                                 participation?.team_name
@@ -477,8 +534,12 @@ export default function Leaderboard({
                                                         </span>
                                                         {championTitle ? (
                                                             <span className="mt-1 flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-500">
-                                                                <Trophy className="h-3.5 w-3.5" />
-                                                                {championTitle}
+                                                                <Trophy className="h-3.5 w-3.5 shrink-0" />
+                                                                <span className="truncate">
+                                                                    {
+                                                                        championTitle
+                                                                    }
+                                                                </span>
                                                             </span>
                                                         ) : (
                                                             <span className="mt-0.5 text-xs text-muted-foreground">
@@ -519,6 +580,7 @@ export default function Leaderboard({
                                                                     const val =
                                                                         raw *
                                                                         f.weight_multiplier;
+
                                                                     return (
                                                                         <div
                                                                             key={
@@ -676,7 +738,7 @@ export default function Leaderboard({
                                             <TableHead className="w-20 text-center font-bold">
                                                 No / Peringkat
                                             </TableHead>
-                                            <TableHead className="min-w-50 font-bold">
+                                            <TableHead className="min-w-60 font-bold">
                                                 Nama Tim / Peserta
                                             </TableHead>
                                             {isChampion ? (
@@ -790,39 +852,48 @@ export default function Leaderboard({
                                                                 </div>
                                                             </TableCell>
 
-                                                            {/* Sel Nama Tim */}
+                                                            {/* Sel Logo & Nama Tim */}
                                                             <TableCell>
-                                                                <div className="flex flex-col">
-                                                                    <span className="flex items-center gap-2 font-bold text-foreground">
-                                                                        {
-                                                                            participation?.team_name
+                                                                <div className="flex items-center gap-3">
+                                                                    <TeamAvatar
+                                                                        participation={
+                                                                            participation
                                                                         }
-                                                                        {isMyTeam && (
-                                                                            <Badge
-                                                                                variant="default"
-                                                                                className="h-5 px-1.5 text-[10px]"
-                                                                            >
-                                                                                <Star className="mr-1 h-3 w-3" />{' '}
-                                                                                Tim
-                                                                                Anda
-                                                                            </Badge>
-                                                                        )}
-                                                                    </span>
-                                                                    {championTitle ? (
-                                                                        <span className="mt-1 flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-500">
-                                                                            <Trophy className="h-3.5 w-3.5" />
+                                                                        sizeClass="h-10 w-10"
+                                                                        iconClass="h-4 w-4"
+                                                                    />
+                                                                    <div className="flex min-w-0 flex-col">
+                                                                        <span className="flex items-center gap-2 font-bold text-foreground">
                                                                             {
-                                                                                championTitle
+                                                                                participation?.team_name
                                                                             }
+                                                                            {isMyTeam && (
+                                                                                <Badge
+                                                                                    variant="default"
+                                                                                    className="h-5 px-1.5 text-[10px]"
+                                                                                >
+                                                                                    <Star className="mr-1 h-3 w-3" />{' '}
+                                                                                    Tim
+                                                                                    Anda
+                                                                                </Badge>
+                                                                            )}
                                                                         </span>
-                                                                    ) : (
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            No.
-                                                                            Urut:{' '}
-                                                                            {participation?.appearance_order ??
-                                                                                '-'}
-                                                                        </span>
-                                                                    )}
+                                                                        {championTitle ? (
+                                                                            <span className="mt-1 flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-500">
+                                                                                <Trophy className="h-3.5 w-3.5 shrink-0" />
+                                                                                {
+                                                                                    championTitle
+                                                                                }
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                No.
+                                                                                Urut:{' '}
+                                                                                {participation?.appearance_order ??
+                                                                                    '-'}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </TableCell>
 
@@ -857,6 +928,7 @@ export default function Leaderboard({
                                                                             const val =
                                                                                 raw *
                                                                                 f.weight_multiplier;
+
                                                                             return (
                                                                                 <TableCell
                                                                                     key={
@@ -1038,7 +1110,7 @@ export default function Leaderboard({
                                 <Table className="min-w-full">
                                     <TableHeader className="bg-muted/40">
                                         <TableRow>
-                                            <TableHead className="min-w-40 font-bold whitespace-nowrap">
+                                            <TableHead className="min-w-48 font-bold whitespace-nowrap">
                                                 Tim Peserta
                                             </TableHead>
 
@@ -1088,7 +1160,18 @@ export default function Leaderboard({
                                             return (
                                                 <TableRow key={ov.recap_id}>
                                                     <TableCell className="font-medium">
-                                                        {ov.team_name}
+                                                        <div className="flex items-center gap-2.5">
+                                                            <TeamAvatar
+                                                                participation={
+                                                                    ov.participation
+                                                                }
+                                                                sizeClass="h-8 w-8"
+                                                                iconClass="h-3.5 w-3.5"
+                                                            />
+                                                            <span>
+                                                                {ov.team_name}
+                                                            </span>
+                                                        </div>
                                                     </TableCell>
 
                                                     {isChampion &&
@@ -1117,6 +1200,7 @@ export default function Leaderboard({
                                                                 const val =
                                                                     raw *
                                                                     f.weight_multiplier;
+
                                                                 return (
                                                                     <TableCell
                                                                         key={`modal-td-${f.formula_id}`}

@@ -1,16 +1,6 @@
-import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
+import type { PageProps } from '@inertiajs/core';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import InputError from '@/components/input-error';
-import { FileUploader } from '@/components/ui/file-uploader';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -20,7 +10,13 @@ import {
     QrCode,
     Wallet,
     Building2,
+    ZoomIn,
+    AlertCircle,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Combobox,
     ComboboxInput,
@@ -35,7 +31,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { ZoomIn } from 'lucide-react';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface BankOption {
     code: string;
@@ -60,7 +61,12 @@ export default function CommitteePaymentMethodsIndex({
     event: any;
     paymentMethods: any[];
 }) {
-    const { auth } = usePage<PageProps>().props;
+    const {
+        auth,
+        errors: pageErrors,
+        flash,
+    } = usePage<PageProps & { flash?: { error?: string; success?: string } }>()
+        .props;
     const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
 
@@ -124,12 +130,31 @@ export default function CommitteePaymentMethodsIndex({
             is_active: Boolean(pm.is_active),
         })) ?? [];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm({
         _method: 'put',
         methods: initialMethods,
     });
 
+    // Gabungkan error dari useForm dan pageErrors agar terdeteksi menyeluruh
+    const mergedErrors: Record<string, string> = {
+        ...(pageErrors as Record<string, string>),
+        ...(errors as Record<string, string>),
+    };
+
+    // Metode 3: Deteksi error global / banner (baik dari flash.error, errors.error, maupun ringkasan error validasi)
+    const validationErrorMessages = Object.entries(mergedErrors)
+        .filter(([key]) => key !== 'error')
+        .map(([, message]) => message);
+
+    const globalBannerError =
+        flash?.error ||
+        mergedErrors.error ||
+        (validationErrorMessages.length > 0
+            ? 'Terdapat kesalahan pada data metode pembayaran yang Anda masukkan. Silakan periksa kembali kolom yang ditandai.'
+            : null);
+
     const addMethod = (type: 'bank_transfer' | 'qris') => {
+        clearErrors();
         setData('methods', [
             ...data.methods,
             {
@@ -146,6 +171,7 @@ export default function CommitteePaymentMethodsIndex({
     };
 
     const removeMethod = (index: number) => {
+        clearErrors();
         const updated = [...data.methods];
         updated.splice(index, 1);
         setData('methods', updated);
@@ -156,6 +182,14 @@ export default function CommitteePaymentMethodsIndex({
         field: keyof PaymentMethodForm,
         value: any,
     ) => {
+        // Metode 1: Bersihkan error spesifik field saat pengguna memperbaiki input
+        clearErrors(`methods.${index}.${field}` as any);
+
+        if (field === 'bank_name' || field === 'account_number') {
+            clearErrors(`methods.${index}.account_number` as any);
+            clearErrors(`methods.${index}.bank_name` as any);
+        }
+
         const updated = [...data.methods];
         updated[index] = {
             ...updated[index],
@@ -167,7 +201,11 @@ export default function CommitteePaymentMethodsIndex({
     // Fungsi pembantu untuk memfilter daftar bank sesuai ketikan user
     const getFilteredBanks = (index: number) => {
         const query = (bankSearchQueries[index] || '').toLowerCase().trim();
-        if (!query) return bankList;
+
+        if (!query) {
+return bankList;
+}
+
         return bankList.filter(
             (b) =>
                 b.name.toLowerCase().includes(query) ||
@@ -177,11 +215,15 @@ export default function CommitteePaymentMethodsIndex({
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+        clearErrors();
 
         post(`/${userRole}/events/${event.public_id}/payment-methods`, {
-            preserveScroll: false,
+            preserveScroll: true,
             onSuccess: () => {
                 window.location.reload();
+            },
+            onError: () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
         });
     };
@@ -193,6 +235,13 @@ export default function CommitteePaymentMethodsIndex({
     const qrisCount = data.methods.filter(
         (method) => method.type === 'qris',
     ).length;
+
+    // Cek apakah card pada index tertentu memiliki error
+    const hasCardError = (index: number) => {
+        return Object.keys(mergedErrors).some((key) =>
+            key.startsWith(`methods.${index}.`),
+        );
+    };
 
     return (
         <InnerAppLayout
@@ -236,6 +285,33 @@ export default function CommitteePaymentMethodsIndex({
                     </div>
                 </div>
 
+                {/* METODE 3: GLOBAL ERROR BANNER */}
+                {globalBannerError && (
+                    <div
+                        role="alert"
+                        className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+                    >
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div className="space-y-1">
+                            <p className="font-semibold">
+                                Gagal Menyimpan Konfigurasi
+                            </p>
+                            <p className="text-xs leading-relaxed opacity-95">
+                                {globalBannerError}
+                            </p>
+                            {validationErrorMessages.length > 0 && (
+                                <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs">
+                                    {Array.from(
+                                        new Set(validationErrorMessages),
+                                    ).map((msg, idx) => (
+                                        <li key={idx}>{msg}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Summary */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
@@ -269,290 +345,338 @@ export default function CommitteePaymentMethodsIndex({
 
                 <form onSubmit={submit} className="space-y-5">
                     {/* Payment Methods */}
-                    {data.methods.map((method, index) => (
-                        <Card
-                            key={method.payment_method_id ?? `new-${index}`}
-                            className="overflow-hidden border-border/70 shadow-sm"
-                        >
-                            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b bg-muted/20 px-4 py-4 sm:px-6">
-                                <div className="flex min-w-0 items-center gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        {method.type === 'bank_transfer' ? (
-                                            <CreditCard className="h-5 w-5" />
-                                        ) : (
-                                            <QrCode className="h-5 w-5" />
-                                        )}
-                                    </div>
+                    {data.methods.map((method, index) => {
+                        const cardError = hasCardError(index);
 
-                                    <div className="min-w-0 space-y-0.5">
-                                        <CardTitle className="text-sm font-semibold sm:text-base">
-                                            {method.type === 'bank_transfer'
-                                                ? `Bank Transfer #${index + 1}`
-                                                : `QRIS Pembayaran #${index + 1}`}
-                                        </CardTitle>
-
-                                        <p className="text-xs text-muted-foreground">
-                                            {method.type === 'bank_transfer'
-                                                ? 'Informasi rekening tujuan transfer'
-                                                : 'Gambar kode QR pembayaran'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                    onClick={() => removeMethod(index)}
-                                    title="Hapus metode pembayaran"
+                        return (
+                            <Card
+                                key={method.payment_method_id ?? `new-${index}`}
+                                className={`overflow-hidden shadow-sm transition-colors ${
+                                    cardError
+                                        ? 'border-destructive/60 ring-1 ring-destructive/20'
+                                        : 'border-border/70'
+                                }`}
+                            >
+                                <CardHeader
+                                    className={`flex flex-row items-center justify-between gap-3 border-b px-4 py-4 sm:px-6 ${
+                                        cardError
+                                            ? 'border-destructive/30 bg-destructive/5'
+                                            : 'bg-muted/20'
+                                    }`}
                                 >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </CardHeader>
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <div
+                                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                                                cardError
+                                                    ? 'bg-destructive/15 text-destructive'
+                                                    : 'bg-primary/10 text-primary'
+                                            }`}
+                                        >
+                                            {method.type === 'bank_transfer' ? (
+                                                <CreditCard className="h-5 w-5" />
+                                            ) : (
+                                                <QrCode className="h-5 w-5" />
+                                            )}
+                                        </div>
 
-                            <CardContent className="p-4 sm:p-6">
-                                {method.type === 'bank_transfer' ? (
-                                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label requirement="required">
-                                                Nama Bank
-                                            </Label>
-                                            <Combobox
-                                                value={method.bank_name}
-                                                onValueChange={(val) => {
-                                                    const selectedValue =
-                                                        val ?? '';
-                                                    updateField(
-                                                        index,
-                                                        'bank_name',
-                                                        selectedValue,
-                                                    );
-                                                    setBankSearchQueries(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            [index]:
-                                                                selectedValue,
-                                                        }),
-                                                    );
-                                                }}
-                                            >
-                                                <ComboboxInput
-                                                    placeholder={
-                                                        isLoadingBanks
-                                                            ? 'Memuat daftar bank...'
-                                                            : 'Cari atau pilih bank...'
-                                                    }
-                                                    className="w-full"
-                                                    value={
-                                                        bankSearchQueries[
-                                                            index
-                                                        ] ?? method.bank_name
-                                                    }
-                                                    onChange={(e) => {
-                                                        const query =
-                                                            e.target.value;
-                                                        setBankSearchQueries(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                [index]: query,
-                                                            }),
-                                                        );
+                                        <div className="min-w-0 space-y-0.5">
+                                            <CardTitle className="text-sm font-semibold sm:text-base">
+                                                {method.type === 'bank_transfer'
+                                                    ? `Bank Transfer #${index + 1}`
+                                                    : `QRIS Pembayaran #${index + 1}`}
+                                            </CardTitle>
+
+                                            <p className="text-xs text-muted-foreground">
+                                                {method.type === 'bank_transfer'
+                                                    ? 'Informasi rekening tujuan transfer'
+                                                    : 'Gambar kode QR pembayaran'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() => removeMethod(index)}
+                                        title="Hapus metode pembayaran"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </CardHeader>
+
+                                <CardContent className="p-4 sm:p-6">
+                                    {method.type === 'bank_transfer' ? (
+                                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label requirement="required">
+                                                    Nama Bank
+                                                </Label>
+                                                <Combobox
+                                                    value={method.bank_name}
+                                                    onValueChange={(val) => {
+                                                        const selectedValue =
+                                                            val ?? '';
                                                         updateField(
                                                             index,
                                                             'bank_name',
-                                                            query,
+                                                            selectedValue,
+                                                        );
+                                                        setBankSearchQueries(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [index]:
+                                                                    selectedValue,
+                                                            }),
                                                         );
                                                     }}
-                                                    showClear={true}
-                                                />
-                                                <ComboboxContent>
-                                                    <ComboboxList>
-                                                        {getFilteredBanks(
-                                                            index,
-                                                        ).map((bank) => (
-                                                            <ComboboxItem
-                                                                key={`${bank.code}-${bank.name}`}
-                                                                value={
-                                                                    bank.name
-                                                                }
-                                                            >
-                                                                {bank.name}
-                                                            </ComboboxItem>
-                                                        ))}
-                                                        {getFilteredBanks(index)
-                                                            .length === 0 && (
-                                                            <ComboboxEmpty className="py-3 text-xs text-muted-foreground">
-                                                                Bank tidak
-                                                                ditemukan. Anda
-                                                                dapat
-                                                                melanjutkan
-                                                                dengan nama bank
-                                                                ini.
-                                                            </ComboboxEmpty>
-                                                        )}
-                                                    </ComboboxList>
-                                                </ComboboxContent>
-                                            </Combobox>
-                                            <InputError
-                                                message={
-                                                    (errors as any)[
-                                                        `methods.${index}.bank_name`
-                                                    ]
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label requirement="required">
-                                                Nomor Rekening
-                                            </Label>
-                                            <Input
-                                                placeholder="Masukkan nomor rekening"
-                                                type="number"
-                                                value={method.account_number}
-                                                onChange={(e) =>
-                                                    updateField(
-                                                        index,
-                                                        'account_number',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <InputError
-                                                message={
-                                                    (errors as any)[
-                                                        `methods.${index}.account_number`
-                                                    ]
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label requirement="required">
-                                                Atas Nama (A.N)
-                                            </Label>
-                                            <Input
-                                                placeholder="Contoh: Panitia Event"
-                                                value={method.account_holder}
-                                                onChange={(e) =>
-                                                    updateField(
-                                                        index,
-                                                        'account_holder',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <InputError
-                                                message={
-                                                    (errors as any)[
-                                                        `methods.${index}.account_holder`
-                                                    ]
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="space-y-1">
-                                            <Label requirement="required">
-                                                Gambar QRIS
-                                            </Label>
-                                            <p className="text-xs text-muted-foreground">
-                                                Unggah gambar QRIS dengan format
-                                                gambar dan ukuran maksimal 2 MB.
-                                            </p>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-[160px_minmax(0,1fr)]">
-                                            {/* QRIS Preview */}
-                                            <div className="group relative flex aspect-square w-full max-w-40 cursor-pointer items-center justify-center overflow-hidden rounded-xl border bg-muted/20 p-3 transition-all hover:border-primary/50">
-                                                {method.qris_preview_url ? (
-                                                    <>
-                                                        <img
-                                                            src={
-                                                                method.qris_preview_url
-                                                            }
-                                                            alt="QRIS Preview"
-                                                            className="h-full w-full object-contain"
-                                                        />
-                                                        {/* Overlay Hover untuk Perbesar */}
-                                                        <div
-                                                            onClick={() =>
-                                                                setPreviewImage(
-                                                                    {
-                                                                        url: method.qris_preview_url!,
-                                                                        title: `QRIS Pembayaran #${index + 1}`,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
-                                                        >
-                                                            <ZoomIn className="h-6 w-6 text-white" />
-                                                            <span className="mt-1 text-[11px] font-medium text-white">
-                                                                Klik untuk
-                                                                Perbesar
-                                                            </span>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    /* Blank state jika belum ada gambar */
-                                                    <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
-                                                        <QrCode className="h-10 w-10 opacity-40" />
-                                                        <span className="text-xs">
-                                                            Belum ada gambar
-                                                            QRIS
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Upload */}
-                                            <div className="min-w-0 space-y-2">
-                                                <FileUploader
-                                                    variant="image"
-                                                    endpoint="/upload-temp-file"
-                                                    maxSizeMB={2}
-                                                    multiple={false}
-                                                    onUploadSuccess={(
-                                                        _,
-                                                        path,
-                                                    ) => {
-                                                        updateField(
-                                                            index,
-                                                            'temp_qris_path',
-                                                            path,
-                                                        );
-                                                    }}
-                                                    onRemove={() => {
-                                                        updateField(
-                                                            index,
-                                                            'temp_qris_path',
-                                                            null,
-                                                        );
-                                                    }}
-                                                />
-
-                                                <p className="text-xs leading-relaxed text-muted-foreground">
-                                                    Pastikan kode QR terlihat
-                                                    jelas dan dapat dipindai
-                                                    oleh peserta.
-                                                </p>
-
+                                                >
+                                                    <ComboboxInput
+                                                        placeholder={
+                                                            isLoadingBanks
+                                                                ? 'Memuat daftar bank...'
+                                                                : 'Cari atau pilih bank...'
+                                                        }
+                                                        className="w-full"
+                                                        value={
+                                                            bankSearchQueries[
+                                                                index
+                                                            ] ??
+                                                            method.bank_name
+                                                        }
+                                                        onChange={(e) => {
+                                                            const query =
+                                                                e.target.value;
+                                                            setBankSearchQueries(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    [index]:
+                                                                        query,
+                                                                }),
+                                                            );
+                                                            updateField(
+                                                                index,
+                                                                'bank_name',
+                                                                query,
+                                                            );
+                                                        }}
+                                                        showClear={true}
+                                                    />
+                                                    <ComboboxContent>
+                                                        <ComboboxList>
+                                                            {getFilteredBanks(
+                                                                index,
+                                                            ).map((bank) => (
+                                                                <ComboboxItem
+                                                                    key={`${bank.code}-${bank.name}`}
+                                                                    value={
+                                                                        bank.name
+                                                                    }
+                                                                >
+                                                                    {bank.name}
+                                                                </ComboboxItem>
+                                                            ))}
+                                                            {getFilteredBanks(
+                                                                index,
+                                                            ).length === 0 && (
+                                                                <ComboboxEmpty className="py-3 text-xs text-muted-foreground">
+                                                                    Bank tidak
+                                                                    ditemukan.
+                                                                    Anda dapat
+                                                                    melanjutkan
+                                                                    dengan nama
+                                                                    bank ini.
+                                                                </ComboboxEmpty>
+                                                            )}
+                                                        </ComboboxList>
+                                                    </ComboboxContent>
+                                                </Combobox>
+                                                {/* METODE 1: INLINE ERROR */}
                                                 <InputError
                                                     message={
-                                                        (errors as any)[
-                                                            `methods.${index}.temp_qris_path`
+                                                        mergedErrors[
+                                                            `methods.${index}.bank_name`
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label requirement="required">
+                                                    Nomor Rekening
+                                                </Label>
+                                                <Input
+                                                    placeholder="Masukkan nomor rekening"
+                                                    type="number"
+                                                    onWheel={(e) =>
+                                                        e.currentTarget.blur()
+                                                    }
+
+                                                    value={
+                                                        method.account_number
+                                                    }
+                                                    className={
+                                                        mergedErrors[
+                                                            `methods.${index}.account_number`
+                                                        ]
+                                                            ? 'border-destructive focus-visible:ring-destructive'
+                                                            : ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateField(
+                                                            index,
+                                                            'account_number',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                {/* METODE 1: INLINE ERROR */}
+                                                <InputError
+                                                    message={
+                                                        mergedErrors[
+                                                            `methods.${index}.account_number`
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2 md:col-span-2">
+                                                <Label requirement="required">
+                                                    Pemilik Rekening
+                                                </Label>
+                                                <Input
+                                                    placeholder="Contoh: Panitia Event"
+                                                    value={
+                                                        method.account_holder
+                                                    }
+                                                    className={
+                                                        mergedErrors[
+                                                            `methods.${index}.account_holder`
+                                                        ]
+                                                            ? 'border-destructive focus-visible:ring-destructive'
+                                                            : ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        updateField(
+                                                            index,
+                                                            'account_holder',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                {/* METODE 1: INLINE ERROR */}
+                                                <InputError
+                                                    message={
+                                                        mergedErrors[
+                                                            `methods.${index}.account_holder`
                                                         ]
                                                     }
                                                 />
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="space-y-1">
+                                                <Label requirement="required">
+                                                    Gambar QRIS
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Unggah gambar QRIS dengan
+                                                    format gambar dan ukuran
+                                                    maksimal 2 MB.
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-[160px_minmax(0,1fr)]">
+                                                {/* QRIS Preview */}
+                                                <div className="group relative flex aspect-square w-full max-w-40 cursor-pointer items-center justify-center overflow-hidden rounded-xl border bg-muted/20 p-3 transition-all hover:border-primary/50">
+                                                    {method.qris_preview_url ? (
+                                                        <>
+                                                            <img
+                                                                src={
+                                                                    method.qris_preview_url
+                                                                }
+                                                                alt="QRIS Preview"
+                                                                className="h-full w-full object-contain"
+                                                            />
+                                                            <div
+                                                                onClick={() =>
+                                                                    setPreviewImage(
+                                                                        {
+                                                                            url: method.qris_preview_url!,
+                                                                            title: `QRIS Pembayaran #${index + 1}`,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
+                                                            >
+                                                                <ZoomIn className="h-6 w-6 text-white" />
+                                                                <span className="mt-1 text-[11px] font-medium text-white">
+                                                                    Klik untuk
+                                                                    Perbesar
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
+                                                            <QrCode className="h-10 w-10 opacity-40" />
+                                                            <span className="text-xs">
+                                                                Belum ada gambar
+                                                                QRIS
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Upload */}
+                                                <div className="min-w-0 space-y-2">
+                                                    <FileUploader
+                                                        variant="image"
+                                                        endpoint="/upload-temp-file"
+                                                        maxSizeMB={2}
+                                                        multiple={false}
+                                                        onUploadSuccess={(
+                                                            _,
+                                                            path,
+                                                        ) => {
+                                                            updateField(
+                                                                index,
+                                                                'temp_qris_path',
+                                                                path,
+                                                            );
+                                                        }}
+                                                        onRemove={() => {
+                                                            updateField(
+                                                                index,
+                                                                'temp_qris_path',
+                                                                null,
+                                                            );
+                                                        }}
+                                                    />
+
+                                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                                        Pastikan kode QR
+                                                        terlihat jelas dan dapat
+                                                        dipindai oleh peserta.
+                                                    </p>
+
+                                                    {/* METODE 1: INLINE ERROR */}
+                                                    <InputError
+                                                        message={
+                                                            mergedErrors[
+                                                                `methods.${index}.temp_qris_path`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
 
                     {/* Empty State */}
                     {data.methods.length === 0 && (
@@ -593,7 +717,7 @@ export default function CommitteePaymentMethodsIndex({
                             >
                                 <Plus className="h-4 w-4" />
                                 <CreditCard className="h-4 w-4" />
-                                Tambah Bank Transfer
+                                Tambah Nomor Rekening
                             </Button>
 
                             <Button

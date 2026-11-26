@@ -1,19 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
-import { Button } from '@/components/ui/button';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Trophy,
@@ -24,6 +10,20 @@ import {
     ScrollText,
     Layers,
 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function ChampionsIndex({ event, groupedChampions }: any) {
     const { auth } = usePage<PageProps>().props;
@@ -58,7 +58,9 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
     const handleLevelChange = (levelIdStr: string) => {
         const levelId = Number(levelIdStr);
 
-        if (!levelId) return;
+        if (!levelId) {
+            return;
+        }
 
         setActiveLevelId(levelId);
 
@@ -71,7 +73,10 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
     };
 
     const executeDelete = () => {
-        if (!categoryToDelete || !activeLevelId) return;
+        if (!categoryToDelete || !activeLevelId) {
+            return;
+        }
+
         router.delete(
             `/committee/events/${event.public_id}/levels/${activeLevelId}/champions/categories/${categoryToDelete.id}`,
             {
@@ -90,12 +95,18 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
     };
 
     const getRankBadge = (rank: number) => {
-        if (rank === 1)
+        if (rank === 1) {
             return 'bg-yellow-400/20 text-yellow-600 border-yellow-400/30';
-        if (rank === 2)
+        }
+
+        if (rank === 2) {
             return 'bg-slate-300/30 text-slate-300 border-slate-300/40';
-        if (rank === 3)
+        }
+
+        if (rank === 3) {
             return 'bg-amber-600/20 text-amber-700 border-amber-600/30';
+        }
+
         return 'bg-muted/50 text-muted-foreground border-border/50';
     };
 
@@ -347,7 +358,7 @@ export default function ChampionsIndex({ event, groupedChampions }: any) {
                 open={isDeleteOpen}
                 onOpenChange={setIsDeleteOpen}
                 title="Kosongkan Kategori?"
-                description={`Apakah Anda yakin ingin menghapus seluruh piala untuk kategori "${categoryToDelete?.name}" pada jenjang ini? Aksi ini tidak dapat dibatalkan.`}
+                description={`Apakah Anda yakin ingin menghapus seluruh piala untuk kategori "${categoryToDelete?.name}" pada jenjang ini? Aksi ini akan berdampak pada ketentuan penalti.`}
                 confirmText="Ya, Hapus"
                 variant="destructive"
                 onConfirm={executeDelete}

@@ -1,10 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, MapPin, Pen } from 'lucide-react';
-import { EventData } from '@/components/event-card';
+import type { EventData } from '@/components/event-card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Table,
     TableBody,
@@ -13,11 +12,15 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
 
 export default function EventIndex({ events }: { events: EventData[] }) {
     // Fungsi pembantu untuk memformat tanggal
     const formatDate = (start: string, end?: string): string => {
-        if (!start) return '-';
+        if (!start) {
+return '-';
+}
+
         const startDate = new Date(start).toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'short',

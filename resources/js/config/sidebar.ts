@@ -1,5 +1,3 @@
-import { NavItem } from '@/types';
-import { dashboard } from '@/routes';
 import {
     FolderGit2,
     CalendarCheckIcon,
@@ -7,6 +5,8 @@ import {
     CalendarClockIcon,
     User,
 } from 'lucide-react';
+import { dashboard } from '@/routes';
+import type { NavItem } from '@/types';
 
 export const getMainNavItems = (userRole?: string): NavItem[] => {
     const items: NavItem[] = [
@@ -62,5 +62,6 @@ export const getMainNavItems = (userRole?: string): NavItem[] => {
             icon: CalendarClockIcon,
         });
     }
+
     return items;
 };

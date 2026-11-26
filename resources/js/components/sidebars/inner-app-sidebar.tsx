@@ -1,7 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
-import { NavItem } from '@/types';
 import { ShieldCheck, ChevronDown, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavMain } from '@/components/sidebars/nav-main';
+import { Button } from '@/components/ui/button';
 import {
     Drawer,
     DrawerContent,
@@ -10,9 +11,8 @@ import {
     DrawerTrigger,
     DrawerClose,
 } from '@/components/ui/drawer';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
 import { toUrl } from '@/lib/utils';
+import type { NavItem } from '@/types';
 
 interface InnerSidebarProps {
     items: NavItem[];
@@ -28,10 +28,15 @@ export default function InnerSidebar({
     const { url } = usePage();
     const [open, setOpen] = useState(false);
 
-    if (!items || items.length === 0) return null;
+    if (!items || items.length === 0) {
+return null;
+}
 
     const formatText = (text?: string) => {
-        if (!text) return '';
+        if (!text) {
+return '';
+}
+
         return text
             .replace(/_/g, ' ')
             .toLowerCase()
@@ -42,18 +47,28 @@ export default function InnerSidebar({
     const formattedPosition = formatText(position);
 
     const getHeaderTitle = () => {
-        if (!formattedPosition) return formattedRole;
+        if (!formattedPosition) {
+return formattedRole;
+}
+
         if (formattedRole.toLowerCase() === 'committee') {
             return `Panitia - ${formattedPosition}`;
         }
+
         return `${formattedRole} - ${formattedPosition}`;
     };
 
     const headerTitle = getHeaderTitle();
 
     const getStringUrl = (href: any): string => {
-        if (typeof href === 'string') return href;
-        if (href && typeof href === 'object' && 'url' in href) return href.url;
+        if (typeof href === 'string') {
+return href;
+}
+
+        if (href && typeof href === 'object' && 'url' in href) {
+return href.url;
+}
+
         return toUrl(href);
     };
 
@@ -71,6 +86,7 @@ export default function InnerSidebar({
         };
 
         window.addEventListener('scroll', handleScroll);
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 

@@ -1,8 +1,18 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { PageProps } from '@inertiajs/core';
+import {
+    ArrowLeft,
+    Trash2,
+    Gavel,
+    AlertTriangle,
+    Scale,
+    Ban,
+    UserCheck,
+} from 'lucide-react';
 import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -10,9 +20,7 @@ import {
     CardTitle,
     CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -29,17 +37,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    ArrowLeft,
-    Trash2,
-    Gavel,
-    AlertTriangle,
-    Scale,
-    Ban,
-    UserCheck,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 /* =========================================================
    TYPES
@@ -123,7 +123,10 @@ export default function TeamPenalty({
     };
 
     const confirmDeletePenalty = () => {
-        if (!selectedPenaltyId) return;
+        if (!selectedPenaltyId) {
+return;
+}
+
         setIsDeleting(true);
         router.delete(
             `/${userRole}/events/${event.public_id}/participations/${participation.public_id}/penalties/${selectedPenaltyId}`,
@@ -138,7 +141,10 @@ export default function TeamPenalty({
     };
 
     const totalDeductions = teamPenalties.reduce((sum, item) => {
-        if (item.penalty_action === 'disqualification') return sum;
+        if (item.penalty_action === 'disqualification') {
+return sum;
+}
+
         return sum + item.penalty_value * item.occurrence_count;
     }, 0);
 
@@ -255,6 +261,7 @@ export default function TeamPenalty({
                                                             p.event_penalty_id.toString() ===
                                                             val,
                                                     );
+
                                                 if (
                                                     sel?.penalty_action ===
                                                     'disqualification'
@@ -282,6 +289,7 @@ export default function TeamPenalty({
                                                         const isDisq =
                                                             pen.penalty_action ===
                                                             'disqualification';
+
                                                         return (
                                                             <SelectItem
                                                                 key={

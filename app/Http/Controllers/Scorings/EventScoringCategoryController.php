@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class EventScoringCategoryController extends Controller
 {   
@@ -548,13 +549,24 @@ class EventScoringCategoryController extends Controller
     /** Memastikan kategori belum memiliki nilai yang mulai diinput juri. */
     private function checkIfEditable($scoringCategoryId)
     {
-        $hasScores = TeamScoreDetail::whereHas('criterion', function($q) use ($scoringCategoryId) {
+        $scoringCategory = ScoringCategory::with('eventLevel.event')->find($scoringCategoryId);
+
+        // 1. Cek apakah event sudah berstatus ongoing
+        if ($scoringCategory?->eventLevel?->event?->status === 'ongoing') {
+            throw new HttpResponseException(
+                back()->with('error', 'Kategori ini tidak dapat diubah atau dihapus karena event sedang berlangsung')
+            );
+        }
+
+        // 2. Cek apakah juri sudah mulai memasukkan nilai pada kategori ini
+        $hasScores = TeamScoreDetail::whereHas('criterion', function ($q) use ($scoringCategoryId) {
             $q->where('scoring_category_id', $scoringCategoryId);
         })->exists();
 
         if ($hasScores) {
-            return back()->with('error', 'Kategori ini tidak dapat diubah atau dihapus karena juri sudah mulai memasukkan nilai.')->send();
-            // exit;
+            throw new HttpResponseException(
+                back()->with('error', 'Kategori ini tidak dapat diubah atau dihapus karena juri sudah mulai memasukkan nilai.')
+            );
         }
     }
 }

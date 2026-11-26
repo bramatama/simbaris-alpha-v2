@@ -1,15 +1,10 @@
+import type { PageProps } from '@inertiajs/core';
 import { Link, usePage } from '@inertiajs/react';
 import { Calendar, Home, Info, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggle } from '@/components/appearance-toggle';
 import { Button } from '@/components/ui/button';
-import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
 import {
     Drawer,
     DrawerContent,
@@ -18,11 +13,16 @@ import {
     DrawerTrigger,
     DrawerClose,
 } from '@/components/ui/drawer';
+import {
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuList,
+    navigationMenuTriggerStyle,
+} from '@/components/ui/navigation-menu';
 
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
 import type { Auth, NavItem } from '@/types';
-import { PageProps } from '@inertiajs/core';
 
 const mainNavItems: NavItem[] = [
     {

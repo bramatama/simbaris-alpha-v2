@@ -1,23 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, useForm, router } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { useState } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import {
-    getEventInnerNav,
-    getParticipationInnerNav,
-} from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Building2,
@@ -34,12 +16,37 @@ import {
     Trash2,
     AlertTriangle,
     ShieldCheck,
+    Shield,
 } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from 'react';
+import { route } from 'ziggy-js';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    getEventInnerNav,
+    getParticipationInnerNav,
+} from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function ParticipationShow({
     event,
@@ -59,6 +66,8 @@ export default function ParticipationShow({
 
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [logoError, setLogoError] = useState(false);
+    const [isLogoPreviewOpen, setIsLogoPreviewOpen] = useState(false);
 
     const { data, setData, patch, processing, errors } = useForm({
         status: participation.status || 'pending',
@@ -114,6 +123,13 @@ export default function ParticipationShow({
 
     const statusConfig = getStatusConfig(participation.status);
 
+    const teamLogoSrc = participation.team_logo_path
+        ? participation.team_logo_path.startsWith('http') ||
+          participation.team_logo_path.startsWith('/storage/')
+            ? participation.team_logo_path
+            : `/storage/${participation.team_logo_path}`
+        : null;
+
     return (
         <InnerAppLayout
             sidebarNavItems={
@@ -134,31 +150,75 @@ export default function ParticipationShow({
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
                 {/* HEADER */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div className="space-y-3">
                         <Link
                             href={
                                 userRole === 'official_team'
                                     ? `/${userRole}/my-participations`
                                     : `/${userRole}/events/${event.public_id}/participations`
                             }
-                            className="mb-2 inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                            className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                         >
                             <ArrowLeft className="mr-1.5 h-4 w-4" />
                             {userRole === 'official_team'
                                 ? 'Kembali ke Pendaftaran Saya'
                                 : 'Kembali ke Daftar Peserta'}
                         </Link>
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                            {participation.team_name}
-                        </h1>
-                        <p className="mt-1 flex items-center gap-2 text-muted-foreground">
-                            {event.event_name} • Jenjang{' '}
-                            {participation.event_level?.level?.level_name}
-                        </p>
+
+                        <div className="flex items-center gap-4">
+                            <div
+                                onClick={() =>
+                                    teamLogoSrc &&
+                                    !logoError &&
+                                    setIsLogoPreviewOpen(true)
+                                }
+                                className={`relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/70 bg-muted/30 shadow-md sm:h-28 sm:w-28 md:h-32 md:w-32 ${
+                                    teamLogoSrc && !logoError
+                                        ? 'cursor-pointer transition-transform hover:scale-105'
+                                        : ''
+                                }`}
+                            >
+                                {teamLogoSrc && !logoError ? (
+                                    <img
+                                        src={teamLogoSrc}
+                                        alt={`Logo ${participation.team_name}`}
+                                        onError={() => setLogoError(true)}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div
+                                        className="flex h-full w-full flex-col items-center justify-center bg-muted/40 text-muted-foreground"
+                                        title="Logo tim belum diunggah"
+                                    >
+                                        <Shield className="h-9 w-9 opacity-50 sm:h-11 sm:w-11" />
+                                        <span className="mt-1 text-xs font-medium tracking-tight opacity-75">
+                                            No Logo
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="min-w-0">
+                                <h1 className="truncate text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                    {participation.team_name}
+                                </h1>
+                                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground sm:text-base">
+                                    <span>{event.event_name}</span>
+                                    <span>•</span>
+                                    <span>
+                                        Jenjang{' '}
+                                        {
+                                            participation.event_level?.level
+                                                ?.level_name
+                                        }
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     {userRole === 'official_team' && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 self-start sm:self-center">
                             <Link
                                 href={`/${userRole}/events/${event.public_id}/participations/${participation.public_id}/edit`}
                             >
@@ -392,11 +452,13 @@ export default function ParticipationShow({
                                             value={data.status}
                                             onValueChange={(value) => {
                                                 setData('status', value);
-                                                if (value === 'approved')
+
+                                                if (value === 'approved') {
                                                     setData(
                                                         'status_message',
                                                         '',
                                                     );
+                                                }
                                             }}
                                             className="grid grid-cols-1 gap-3 sm:grid-cols-3"
                                         >
@@ -560,6 +622,28 @@ export default function ParticipationShow({
                     isProcessing={isDeleting}
                     onConfirm={handleDeleteParticipation}
                 />
+
+                <Dialog
+                    open={isLogoPreviewOpen}
+                    onOpenChange={setIsLogoPreviewOpen}
+                >
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>
+                                Logo {participation.team_name}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="flex items-center justify-center p-4">
+                            {teamLogoSrc && (
+                                <img
+                                    src={teamLogoSrc}
+                                    alt={`Logo ${participation.team_name}`}
+                                    className="max-h-[60vh] w-auto rounded-xl object-contain"
+                                />
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </InnerAppLayout>
     );

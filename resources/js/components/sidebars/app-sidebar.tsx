@@ -20,10 +20,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { getMainNavItems } from '@/config/sidebar';
+import { useAppearance } from '@/hooks/use-appearance';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
-import { useAppearance } from '@/hooks/use-appearance';
-import { getMainNavItems } from '@/config/sidebar';
 
 export function AppSidebar() {
     const { props } = usePage();
@@ -44,7 +44,10 @@ export function AppSidebar() {
     ];
 
     const formatText = (text?: string) => {
-        if (!text) return '';
+        if (!text) {
+return '';
+}
+
         return text
             .replace(/_/g, ' ')
             .toLowerCase()

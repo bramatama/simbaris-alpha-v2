@@ -1,32 +1,6 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import AppLayout from '@/layouts/app-layout';
-
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-    CardFooter,
-} from '@/components/ui/card';
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { FileUploader } from '@/components/ui/file-uploader';
-import { PageProps } from '@inertiajs/core';
 
 import {
     ArrowLeft,
@@ -47,7 +21,33 @@ import {
     Copy,
     Check,
 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardFooter,
+} from '@/components/ui/card';
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+
+import { FileUploader } from '@/components/ui/file-uploader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+
+import AppLayout from '@/layouts/app-layout';
 
 interface TeamForm {
     event_level_id: string;
@@ -111,6 +111,7 @@ export default function OfficialTeamParticipationCreate({
     useEffect(() => {
         if (Object.keys(errors).length > 0 || pageErrors?.error) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -179,7 +180,10 @@ export default function OfficialTeamParticipationCreate({
     };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -235,7 +239,9 @@ export default function OfficialTeamParticipationCreate({
     // ==========================================
 
     const handleNextStep = async () => {
-        if (!canGoToStep2 || isValidating) return;
+        if (!canGoToStep2 || isValidating) {
+return;
+}
 
         setIsValidating(true);
         clearErrors('teams' as any);

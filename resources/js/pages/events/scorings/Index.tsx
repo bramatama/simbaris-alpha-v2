@@ -1,11 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage, router } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Plus,
@@ -17,6 +11,12 @@ import {
     Lock,
     Layers,
 } from 'lucide-react';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface MasterCategory {
     category_name: string;
@@ -63,7 +63,9 @@ export default function ScoringCategoryIndex({
     const handleLevelChange = (levelIdStr: string) => {
         const levelId = Number(levelIdStr);
 
-        if (!levelId) return;
+        if (!levelId) {
+return;
+}
 
         router.get(
             `/${userRole}/events/${event.public_id}/scoring-categories`,

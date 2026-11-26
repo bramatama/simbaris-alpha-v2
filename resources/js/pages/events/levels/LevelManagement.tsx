@@ -1,11 +1,8 @@
-import { useEffect } from 'react';
+import type { PageProps } from '@inertiajs/core';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
+import { ArrowLeft, Save, CheckSquare, AlertCircle } from 'lucide-react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
     CardContent,
@@ -14,9 +11,12 @@ import {
     CardDescription,
     CardFooter,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import type { PageProps } from '@inertiajs/core';
-import { ArrowLeft, Save, CheckSquare, AlertCircle } from 'lucide-react';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import { cn } from '@/lib/utils';
 
 type MasterLevel = {
@@ -84,7 +84,7 @@ export default function LevelManagement({
                 });
             } else {
                 const firstErrorKey = Object.keys(errors)[0];
-                let targetElement =
+                const targetElement =
                     document.getElementById(firstErrorKey) ||
                     document.querySelector(`[name="${firstErrorKey}"]`);
 
@@ -138,13 +138,20 @@ export default function LevelManagement({
 
     const getError = (uniqueId: string, field: string) => {
         const index = data.levels.findIndex((l) => l.unique_id === uniqueId);
-        if (index === -1) return null;
+
+        if (index === -1) {
+return null;
+}
+
         return errors[`levels.${index}.${field}` as keyof typeof errors] as
             string | undefined;
     };
 
     const renderErrorBadge = (errorMsg?: string | null) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -158,6 +165,7 @@ export default function LevelManagement({
 
     const cleanCurrencyInput = (val: string): number => {
         const numericOnly = val.replace(/[^0-9]/g, '');
+
         return numericOnly ? parseInt(numericOnly, 10) : 0;
     };
 

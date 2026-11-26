@@ -1,19 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import InputError from '@/components/input-error';
-import { PageProps } from '@inertiajs/core';
 import {
     Plus,
     Edit3,
@@ -24,8 +10,22 @@ import {
     ListChecks,
     AlertCircle,
 } from 'lucide-react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import { useState } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import InputError from '@/components/input-error';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { getMasterDataInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+import AppLayout from '@/layouts/app-layout';
 
 export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     const { errors: pageErrors } = usePage<PageProps>().props;
@@ -91,7 +91,10 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     };
 
     const saveEditCategory = (id: number) => {
-        if (!editCategoryName.trim()) return;
+        if (!editCategoryName.trim()) {
+return;
+}
+
         setIsUpdatingCategory(true);
         router.put(
             `/admin/master-scorings/${id}`,
@@ -109,7 +112,10 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     // ==========================================
     const handleAddCriteria = (categoryId: number) => {
         const name = criteriaInputs[categoryId];
-        if (!name?.trim()) return;
+
+        if (!name?.trim()) {
+return;
+}
 
         setProcessingCriteria((prev) => ({
             ...prev,
@@ -151,7 +157,10 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     };
 
     const saveEditCriteria = (criteriaId: number, categoryId: number) => {
-        if (!editCriteriaName.trim()) return;
+        if (!editCriteriaName.trim()) {
+return;
+}
+
         setIsUpdatingCriteria(true);
         router.put(
             `/admin/master-assessment-criteria/${criteriaId}`,
@@ -180,7 +189,9 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     };
 
     const executeDelete = () => {
-        if (!deleteConfig) return;
+        if (!deleteConfig) {
+return;
+}
 
         const endpoint =
             deleteConfig.type === 'category'
@@ -292,12 +303,15 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
                                                     }
                                                     className="h-9 max-w-md bg-background"
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter')
-                                                            saveEditCategory(
+                                                        if (e.key === 'Enter') {
+saveEditCategory(
                                                                 category.master_category_id,
                                                             );
-                                                        if (e.key === 'Escape')
-                                                            cancelEditCategory();
+}
+
+                                                        if (e.key === 'Escape') {
+cancelEditCategory();
+}
                                                     }}
                                                 />
                                                 <div className="flex gap-2">
@@ -488,16 +502,19 @@ export default function MasterScoringsIndex({ masterScoringCategories }: any) {
                                                                                 if (
                                                                                     e.key ===
                                                                                     'Enter'
-                                                                                )
-                                                                                    saveEditCriteria(
+                                                                                ) {
+saveEditCriteria(
                                                                                         criteria.master_criteria_id,
                                                                                         category.master_category_id,
                                                                                     );
+}
+
                                                                                 if (
                                                                                     e.key ===
                                                                                     'Escape'
-                                                                                )
-                                                                                    cancelEditCriteria();
+                                                                                ) {
+cancelEditCriteria();
+}
                                                                             }}
                                                                         />
                                                                         <Button

@@ -1,13 +1,13 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, router, usePage, Link } from '@inertiajs/react';
-import { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { debounce, isEqual } from 'lodash';
-import EvaluationAppLayout from '@/layouts/evaluation-page-layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PageProps } from '@inertiajs/core';
 import { ArrowLeft, CheckCircle2, Loader2, Save, XCircle } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import EvaluationAppLayout from '@/layouts/evaluation-page-layout';
 
 /* ==========================================
    TYPES
@@ -82,9 +82,12 @@ export default function ScoringForm({
     ========================================== */
     const debouncedSave = useCallback(
         debounce(async (scoresToSave: LocalScore[]) => {
-            if (isEqual(scoresToSave, lastSavedPayloadRef.current)) return;
+            if (isEqual(scoresToSave, lastSavedPayloadRef.current)) {
+return;
+}
 
             setSaveStatus('saving');
+
             try {
                 await axios.post(autosaveUrl, {
                     category_id: activeCategory.scoring_category_id,
@@ -112,6 +115,7 @@ export default function ScoringForm({
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () =>
             window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [saveStatus]);
@@ -131,6 +135,7 @@ export default function ScoringForm({
         };
 
         window.addEventListener('pageshow', handlePageShow);
+
         return () => {
             window.removeEventListener('pageshow', handlePageShow);
         };
@@ -160,6 +165,7 @@ export default function ScoringForm({
 
             debouncedSave(Object.values(updated));
             setSaveStatus('idle');
+
             return updated;
         });
     };
@@ -183,6 +189,7 @@ export default function ScoringForm({
                     'Apakah Anda yakin ingin menyimpan seluruh nilai dan beralih dari kategori ini?',
             });
         }
+
         setShowSubmitDialog(true);
     };
 

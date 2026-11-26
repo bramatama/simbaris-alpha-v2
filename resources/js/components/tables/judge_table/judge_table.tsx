@@ -1,8 +1,8 @@
 import { Link } from '@inertiajs/react';
+import { Mail, UserX, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mail, UserX, Edit } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -73,8 +73,13 @@ export default function JudgeTable({
     const totalLevelsPerCategory = allExpertises.reduce(
         (acc, exp) => {
             const catName = exp.category_name || 'Unknown';
-            if (!acc[catName]) acc[catName] = new Set();
+
+            if (!acc[catName]) {
+acc[catName] = new Set();
+}
+
             acc[catName].add(exp.event_level_id);
+
             return acc;
         },
         {} as Record<string, Set<number>>,
@@ -98,8 +103,13 @@ export default function JudgeTable({
                                 const levelName =
                                     je.scoring_category?.event_level?.level
                                         ?.level_name || 'Jenjang Lainnya';
-                                if (!acc[catName]) acc[catName] = [];
+
+                                if (!acc[catName]) {
+acc[catName] = [];
+}
+
                                 acc[catName].push(levelName);
+
                                 return acc;
                             },
                             {} as Record<string, string[]>,
@@ -245,8 +255,13 @@ export default function JudgeTable({
                                             je.scoring_category?.event_level
                                                 ?.level?.level_name ||
                                             'Jenjang Lainnya';
-                                        if (!acc[catName]) acc[catName] = [];
+
+                                        if (!acc[catName]) {
+acc[catName] = [];
+}
+
                                         acc[catName].push(levelName);
+
                                         return acc;
                                     },
                                     {} as Record<string, string[]>,

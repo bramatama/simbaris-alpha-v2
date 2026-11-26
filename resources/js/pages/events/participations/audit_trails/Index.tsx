@@ -1,27 +1,5 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Fragment } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import {
-    getParticipationInnerNav,
-    getEventInnerNav,
-} from '@/config/inner_sidebar';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Clock,
@@ -34,7 +12,29 @@ import {
     Square,
     EyeOff,
 } from 'lucide-react';
+import { Fragment } from 'react';
+import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { formatAuditTime } from '@/config/date_datetime';
+import {
+    getParticipationInnerNav,
+    getEventInnerNav,
+} from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 interface AuditTrailProps {
     event: {
@@ -64,7 +64,9 @@ export default function ParticipantAuditTrailIndex({
     const isOfficialTeam = userRole === 'official_team';
 
     const formatOnlyTime = (dateString: string | null) => {
-        if (!dateString) return '-';
+        if (!dateString) {
+return '-';
+}
 
         return new Intl.DateTimeFormat('id-ID', {
             hour: '2-digit',
@@ -74,7 +76,9 @@ export default function ParticipantAuditTrailIndex({
     };
 
     const calculateDuration = () => {
-        if (!session?.start_time) return '00:00:00';
+        if (!session?.start_time) {
+return '00:00:00';
+}
 
         const start = new Date(session.start_time).getTime();
         const end = session.end_time
@@ -83,7 +87,9 @@ export default function ParticipantAuditTrailIndex({
 
         const diff = Math.floor((end - start) / 1000);
 
-        if (diff < 0) return '00:00:00';
+        if (diff < 0) {
+return '00:00:00';
+}
 
         const hours = Math.floor(diff / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
@@ -99,6 +105,7 @@ export default function ParticipantAuditTrailIndex({
               userRole,
               committeePosition || undefined,
           );
+
     return (
         <InnerAppLayout sidebarNavItems={sidebarNav}>
             <Head title={`Log Penilaian - ${participation.team_name}`} />

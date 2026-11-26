@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -8,7 +9,6 @@ import {
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
-import { ShieldCheck } from 'lucide-react';
 
 interface NavMainProps {
     items: Array<NavItem>;

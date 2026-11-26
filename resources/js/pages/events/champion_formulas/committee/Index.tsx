@@ -1,25 +1,5 @@
-import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { useEffect, type FormEvent } from 'react';
 import type { PageProps } from '@inertiajs/core';
-
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import InputError from '@/components/input-error';
-
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     Save,
@@ -31,6 +11,27 @@ import {
     Layers,
     AlertCircle,
 } from 'lucide-react';
+import { useEffect  } from 'react';
+import type {FormEvent} from 'react';
+
+import InputError from '@/components/input-error';
+import { LevelDropdownFilter } from '@/components/level-dropdown-filter';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
+
 
 /* =========================================================
    TYPES & HELPERS
@@ -107,6 +108,7 @@ const getCategoryRows = (
             (item) => Number(item.event_champion_category_id) === categoryId,
         );
     }
+
     return formulas[String(categoryId)] ?? [];
 };
 
@@ -134,6 +136,7 @@ export default function ChampionFormulaIndex({
     useEffect(() => {
         if (Object.keys(errors).length > 0 || pageErrors?.error) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -164,6 +167,7 @@ export default function ChampionFormulaIndex({
                     existingFormulas,
                     item.event_champion_category_id,
                 );
+
                 return {
                     event_champion_category_id: item.event_champion_category_id,
                     champion_category_name:
@@ -190,7 +194,9 @@ export default function ChampionFormulaIndex({
     const handleLevelChange = (levelIdStr: string) => {
         const levelId = Number(levelIdStr);
 
-        if (!levelId) return;
+        if (!levelId) {
+return;
+}
 
         router.get(
             `/${userRole}/events/${event.public_id}/formulas`,
@@ -242,7 +248,10 @@ export default function ChampionFormulaIndex({
         value: string,
     ): void => {
         const updatedFormulas = data.formulas.map((formula, index) => {
-            if (index !== formulaIndex) return formula;
+            if (index !== formulaIndex) {
+return formula;
+}
+
             return {
                 ...formula,
                 components: formula.components.map((item, itemIdx) =>
@@ -256,7 +265,10 @@ export default function ChampionFormulaIndex({
     };
 
     const isFormulaComplete = (formula: Formula): boolean => {
-        if (formula.components.length === 0) return true;
+        if (formula.components.length === 0) {
+return true;
+}
+
         return formula.components.every(
             (component) =>
                 component.master_category_id !== '' &&
@@ -270,11 +282,15 @@ export default function ChampionFormulaIndex({
         const selectedIds = formula.components
             .map((component) => component.master_category_id)
             .filter(Boolean);
+
         return new Set(selectedIds).size !== selectedIds.length;
     };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -296,7 +312,10 @@ export default function ChampionFormulaIndex({
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
-        if (!canSubmit) return;
+
+        if (!canSubmit) {
+return;
+}
 
         transform((currentData) => ({
             event_level_id: currentData.event_level_id,

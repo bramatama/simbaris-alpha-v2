@@ -74,16 +74,31 @@ class EventSeeder extends Seeder
         // 3. SETUP PANITIA EVENT
         // =========================================================
 
-        $committee = DB::table('committees')->first();
+        $committeeConfigs = [
+            'panitia@lomba.com' => 'administration',
+            'auditor@lomba.com' => 'auditor',
+        ];
 
-        if ($committee) {
-            DB::table('event_committees')->insert([
-                'event_id' => $eventId1,
-                'committee_id' => $committee->committee_id,
-                'position' => 'administration',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+        foreach ($committeeConfigs as $email => $position) {
+            $committee = DB::table('committees')
+                ->join('users', 'committees.user_id', '=', 'users.user_id')
+                ->where('users.email', $email)
+                ->select('committees.committee_id')
+                ->first();
+
+            if ($committee) {
+                DB::table('event_committees')->updateOrInsert(
+                    [
+                        'event_id'     => $eventId1,
+                        'committee_id' => $committee->committee_id,
+                    ],
+                    [
+                        'position'   => $position,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]
+                );
+            }
         }
     }
 }

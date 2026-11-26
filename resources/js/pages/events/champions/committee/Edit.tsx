@@ -1,14 +1,11 @@
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/ui/spinner';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Combobox,
     ComboboxInput,
@@ -18,10 +15,13 @@ import {
     ComboboxEmpty,
     ComboboxGroup,
 } from '@/components/ui/combobox';
-import InputError from '@/components/input-error';
-import { ArrowLeft, Save, Plus, Trash2, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { PageProps } from '@inertiajs/core';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 export default function ChampionsEdit({
     event,
@@ -64,9 +64,16 @@ export default function ChampionsEdit({
 
     // Formatter Rupiah dengan titik
     const formatNumberWithDots = (val: string | number) => {
-        if (!val && val !== 0) return '';
+        if (!val && val !== 0) {
+return '';
+}
+
         const raw = val.toString().replace(/\D/g, '');
-        if (!raw) return '';
+
+        if (!raw) {
+return '';
+}
+
         return new Intl.NumberFormat('id-ID').format(parseInt(raw, 10));
     };
 
@@ -78,6 +85,7 @@ export default function ChampionsEdit({
     useEffect(() => {
         if (Object.keys(errors).length > 0) {
             const errorBanner = document.querySelector('.is-error-banner');
+
             if (errorBanner) {
                 errorBanner.scrollIntoView({
                     behavior: 'smooth',
@@ -102,6 +110,7 @@ export default function ChampionsEdit({
 
     const getFilteredChampions = (index: number) => {
         const query = champSearch[index] || '';
+
         return availableChampions.filter((c: any) =>
             c.champion_name.toLowerCase().includes(query.toLowerCase()),
         );
@@ -141,7 +150,10 @@ export default function ChampionsEdit({
     };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"
@@ -445,6 +457,7 @@ export default function ChampionsEdit({
                                                                                 champIdStr,
                                                                                 index,
                                                                             );
+
                                                                         return (
                                                                             <ComboboxItem
                                                                                 key={

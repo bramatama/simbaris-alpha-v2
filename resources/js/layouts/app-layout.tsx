@@ -1,10 +1,10 @@
 import { router } from '@inertiajs/react';
-import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
-import { useEffect, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'sonner';
+import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 
 function SidebarStateManager({ isInnerLayout }: { isInnerLayout: boolean }) {
     const { setOpen } = useSidebar();

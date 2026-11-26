@@ -1,20 +1,5 @@
-import { useState, useEffect } from 'react';
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
 import {
     ArrowLeft,
     Eye,
@@ -30,6 +15,22 @@ import {
     CheckCircle2,
     Trash2,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
+import { FormDialog } from '@/components/dialogs/form-dialog';
+import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -39,20 +40,23 @@ import {
     SelectGroup,
     SelectLabel,
 } from '@/components/ui/select';
-import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
-import { FormDialog } from '@/components/dialogs/form-dialog';
-import { FileUploader } from '@/components/ui/file-uploader';
-import InputError from '@/components/input-error';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { getEventInnerNav } from '@/config/inner_sidebar';
-import type { PageProps } from '@inertiajs/core';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return '';
+    if (!dateString) {
+return '';
+}
+
     const date = new Date(dateString);
     const offset = date.getTimezoneOffset() * 60000;
     const localISOTime = new Date(date.getTime() - offset)
         .toISOString()
         .slice(0, 16);
+
     return localISOTime;
 };
 
@@ -94,7 +98,7 @@ export default function EventEdit({ event }: { event: any }) {
                 });
             } else {
                 const firstErrorKey = Object.keys(errors)[0];
-                let targetElement =
+                const targetElement =
                     document.getElementById(firstErrorKey) ||
                     document.querySelector(`[name="${firstErrorKey}"]`);
 
@@ -134,7 +138,10 @@ export default function EventEdit({ event }: { event: any }) {
    };
 
     const renderErrorBadge = (errorMsg?: string) => {
-        if (!errorMsg) return null;
+        if (!errorMsg) {
+return null;
+}
+
         return (
             <span
                 className="flex animate-in cursor-help items-center gap-1 text-xs font-medium text-destructive duration-200 fade-in"

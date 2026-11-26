@@ -1,3 +1,4 @@
+import type { PageProps } from '@inertiajs/core';
 import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
 import {
@@ -14,7 +15,6 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { PageProps } from '@inertiajs/core';
 
 export function NavUser() {
     const { auth } = usePage<PageProps>().props;

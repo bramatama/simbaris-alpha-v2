@@ -1,14 +1,22 @@
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    TouchSensor,
+    MouseSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import type { PageProps } from '@inertiajs/core';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
-import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import { getEventInnerNav } from '@/config/inner_sidebar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import { PageProps } from '@inertiajs/core';
 import {
     ArrowLeft,
     Save,
@@ -18,33 +26,26 @@ import {
     CheckSquare,
     AlertCircle,
 } from 'lucide-react';
-
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    TouchSensor,
-    MouseSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-    horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { useState, useEffect, useMemo } from 'react';
 
 // Import Komponen Reusable
-import {
+import type {
     GlobalRubric,
     UICriteria,
     ScoreItem,
+} from '@/components/form-builder/sortable-scoring-components';
+import {
     SortableRubricBadge,
     SortableCriteriaRow,
 } from '@/components/form-builder/sortable-scoring-components';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { getEventInnerNav } from '@/config/inner_sidebar';
+import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 const toTitleCase = (str: string) => {
     return str
@@ -75,7 +76,11 @@ export default function DynamicScoringBuilderEdit({
 
     const [globalRubrics, setGlobalRubrics] = useState<GlobalRubric[]>(() => {
         const firstCrit = scoringCategory.assessment_criteria[0];
-        if (!firstCrit || !firstCrit.rubric_categories) return [];
+
+        if (!firstCrit || !firstCrit.rubric_categories) {
+            return [];
+        }
+
         return firstCrit.rubric_categories.map((rc: any, idx: number) => ({
             id: `col_visual_${idx}`,
             name: rc.category_label,
@@ -97,6 +102,7 @@ export default function DynamicScoringBuilderEdit({
                             value: rs.score_value.toString(),
                         })) || [];
                 });
+
                 return {
                     id: crit.criteria_id.toString(),
                     name: crit.master_criteria_id.toString(),
@@ -118,9 +124,11 @@ export default function DynamicScoringBuilderEdit({
 
         Object.entries(serverErrors).forEach(([key, msg]) => {
             const match = key.match(/^criteria\.(\d+)\./);
+
             if (match) {
                 const cIdx = Number(match[1]);
                 const crit = uiCriteria[cIdx];
+
                 if (crit && !combined[`crit_${crit.id}`]) {
                     combined[`crit_${crit.id}`] = msg;
                 }
@@ -137,9 +145,13 @@ export default function DynamicScoringBuilderEdit({
 
     const clearLocalError = (key: string) => {
         setLocalErrors((prev) => {
-            if (!prev[key]) return prev;
+            if (!prev[key]) {
+                return prev;
+            }
+
             const newErrors = { ...prev };
             delete newErrors[key];
+
             return newErrors;
         });
     };
@@ -163,10 +175,17 @@ export default function DynamicScoringBuilderEdit({
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
         const activeData = active.data.current;
         const overData = over.data.current;
-        if (!activeData || !overData) return;
+
+        if (!activeData || !overData) {
+            return;
+        }
 
         if (activeData.type === 'rubric' && overData.type === 'rubric') {
             setGlobalRubrics((items) =>
@@ -194,8 +213,12 @@ export default function DynamicScoringBuilderEdit({
             ) {
                 setUiCriteria((prev) =>
                     prev.map((c) => {
-                        if (c.id !== activeData.critId) return c;
+                        if (c.id !== activeData.critId) {
+                            return c;
+                        }
+
                         const scores = [...c.rubricData[activeData.rubricId]];
+
                         return {
                             ...c,
                             rubricData: {
@@ -225,6 +248,7 @@ export default function DynamicScoringBuilderEdit({
                 ...prev,
                 global: 'Nama kolom kategori rubrik dan jumlah opsi wajib diisi.',
             }));
+
             return;
         }
 
@@ -233,6 +257,7 @@ export default function DynamicScoringBuilderEdit({
                 ...prev,
                 global: 'Nama kategori rubrik maksimal 255 karakter.',
             }));
+
             return;
         }
 
@@ -241,6 +266,7 @@ export default function DynamicScoringBuilderEdit({
                 ...prev,
                 global: 'Jumlah opsi minimal 1 dan harus berupa bilangan bulat.',
             }));
+
             return;
         }
 
@@ -271,7 +297,10 @@ export default function DynamicScoringBuilderEdit({
 
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }, 150);
     };
 
@@ -305,18 +334,22 @@ export default function DynamicScoringBuilderEdit({
             };
             const newArray = [...prev];
             newArray.splice(cIndex + 1, 0, newCrit);
+
             return newArray;
         });
 
         setTimeout(() => {
             const el = document.getElementById(`crit-row-${newCritId}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }, 150);
     };
 
     const addScore = (critId: string, rubricId: string) => {
-        setUiCriteria((prev) =>
-            prev.map((c) =>
+        setUiCriteria((prev: any) =>
+            prev.map((c: UICriteria) =>
                 c.id === critId
                     ? {
                           ...c,
@@ -357,7 +390,7 @@ export default function DynamicScoringBuilderEdit({
         critId: string,
         rubricId: string,
         scoreId: string,
-        value: string,
+        value: number,
     ) => {
         setUiCriteria((prev) =>
             prev.map((c) =>
@@ -381,6 +414,7 @@ export default function DynamicScoringBuilderEdit({
     const scrollToError = () => {
         setTimeout(() => {
             const firstError = document.querySelector('.is-error-msg');
+
             if (firstError) {
                 firstError.scrollIntoView({
                     behavior: 'smooth',
@@ -411,6 +445,7 @@ export default function DynamicScoringBuilderEdit({
                 newLocalErrors[`crit_${crit.id}`] =
                     'Kriteria utama wajib dipilih.';
                 hasError = true;
+
                 return;
             }
 
@@ -426,10 +461,7 @@ export default function DynamicScoringBuilderEdit({
                 }
 
                 const hasEmptyScore = scores.some(
-                    (s) =>
-                        s.value === '' ||
-                        s.value === null ||
-                        s.value === undefined,
+                    (s) => s.value === null || s.value === undefined,
                 );
 
                 if (hasEmptyScore) {
@@ -441,6 +473,7 @@ export default function DynamicScoringBuilderEdit({
 
                 const hasInvalidNumber = scores.some((s) => {
                     const num = Number(s.value);
+
                     return Number.isNaN(num) || num < 0;
                 });
 
@@ -456,6 +489,7 @@ export default function DynamicScoringBuilderEdit({
         if (hasError) {
             setLocalErrors(newLocalErrors);
             scrollToError();
+
             return;
         }
 
@@ -463,6 +497,7 @@ export default function DynamicScoringBuilderEdit({
             ...currentData,
             criteria: uiCriteria.map((crit, cIdx) => {
                 const isNewCrit = crit.id.startsWith('new_');
+
                 return {
                     ...(isNewCrit ? {} : { criteria_id: Number(crit.id) }),
                     master_criteria_id: Number(crit.name),
@@ -473,6 +508,7 @@ export default function DynamicScoringBuilderEdit({
                             : null;
                         const isNewRubric =
                             !dbRubricId || dbRubricId.startsWith('new_');
+
                         return {
                             ...(isNewRubric
                                 ? {}
@@ -482,6 +518,7 @@ export default function DynamicScoringBuilderEdit({
                             scores: (crit.rubricData[gr.id] || []).map(
                                 (s, sIdx) => {
                                     const isNewScore = s.id.startsWith('new_');
+
                                     return {
                                         ...(isNewScore
                                             ? {}

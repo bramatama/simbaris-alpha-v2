@@ -1,5 +1,9 @@
 import { useForm } from '@inertiajs/react';
+import { Save } from 'lucide-react';
 import { useEffect } from 'react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -7,12 +11,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -20,8 +20,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import InputError from '@/components/input-error';
-import { Save } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TrophyDialogProps {
     open: boolean;
@@ -76,6 +76,7 @@ export function TrophyDialog({
 
     const handleLevelToggle = (levelId: number) => {
         const current = data.event_level_ids;
+
         if (current.includes(levelId)) {
             setData(
                 'event_level_ids',
@@ -88,6 +89,7 @@ export function TrophyDialog({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (mode === 'create') {
             post(`/${userRole}/events/${eventPublicId}/champions/trophies`, {
                 preserveScroll: true,
@@ -115,7 +117,10 @@ export function TrophyDialog({
             open={open}
             onOpenChange={(isOpen) => {
                 onOpenChange(isOpen);
-                if (!isOpen) reset();
+
+                if (!isOpen) {
+reset();
+}
             }}
         >
             <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
@@ -192,6 +197,7 @@ export function TrophyDialog({
                             <Input
                                 id="rank_position"
                                 type="number"
+                                inputMode='numeric'
                                 onWheel={(e) => e.currentTarget.blur()}
                                 min="1"
                                 value={data.rank_position}
@@ -212,6 +218,7 @@ export function TrophyDialog({
                             <Input
                                 id="prize_money"
                                 type="number"
+                                inputMode='numeric'
                                 onWheel={(e) => e.currentTarget.blur()}
                                 min="0"
                                 value={data.prize_money}

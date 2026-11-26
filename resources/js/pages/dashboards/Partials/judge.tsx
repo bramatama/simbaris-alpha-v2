@@ -1,6 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Link } from '@inertiajs/react';
 import {
     Gavel,
@@ -10,6 +7,9 @@ import {
     Sparkles,
     CheckCircle2,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function JudgeDashboard({ stats }: { stats: any }) {
     const assignedEvents = stats.assigned_events || [];

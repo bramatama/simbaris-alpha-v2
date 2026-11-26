@@ -33,7 +33,7 @@ return new class extends Migration
             $table->dateTime('start_time');
             $table->dateTime('end_time');
 
-            $table->boolean('is_result_visible')->default(false);
+            $table->boolean('is_result_visible')->default(true);
             $table->boolean('is_recap_visible')->default(false);
             $table->boolean('is_leaderboard_visible')->default(false);
 

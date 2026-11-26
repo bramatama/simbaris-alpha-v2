@@ -1,6 +1,6 @@
 import { AppContent } from '@/components/app-content';
-import { EvaluationHeader } from '@/components/evaluation-header';
 import { AppShell } from '@/components/app-shell';
+import { EvaluationHeader } from '@/components/evaluation-header';
 import type { AppLayoutProps } from '@/types';
 
 export default function LandingPageLayout({ children }: AppLayoutProps) {
