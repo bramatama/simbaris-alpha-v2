@@ -16,7 +16,6 @@ export default function Alerts({
     className?: string;
     onClose?: () => void;
 }) {
-    const [visible, setVisible] = useState(true);
     const [closing, setClosing] = useState(false);
     const onCloseRef = useRef(onClose);
 
@@ -25,9 +24,6 @@ export default function Alerts({
     }, [onClose]);
 
     useEffect(() => {
-        setVisible(true);
-        setClosing(false);
-        // after 5 seconds, start animate-out
         const closeTimer = setTimeout(() => {
             setClosing(true);
         }, 5000);
@@ -40,17 +36,12 @@ export default function Alerts({
     useEffect(() => {
         if (closing) {
             const removeTimer = setTimeout(() => {
-                setVisible(false);
                 onCloseRef.current?.();
             }, 250);
 
             return () => clearTimeout(removeTimer);
         }
     }, [closing]);
-
-    if (!visible) {
-return null;
-}
 
     return (
         <Alert
@@ -74,7 +65,7 @@ return null;
             )}
             <button
                 onClick={() => setClosing(true)}
-                className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity cursor-pointer hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
+                className="absolute top-4 right-4 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
             >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>

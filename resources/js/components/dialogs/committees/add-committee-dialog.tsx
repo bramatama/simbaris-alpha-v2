@@ -1,24 +1,20 @@
+import type { PageProps } from '@inertiajs/core';
 import { useForm, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
-
+import { useState } from 'react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-
 import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-
 import { Label } from '@/components/ui/label';
-
-
 import {
     Select,
     SelectContent,
@@ -28,19 +24,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-
-
 import { Spinner } from '@/components/ui/spinner';
 
 import { ConfirmationDialog } from '../confirmation-dialog';
-
 
 interface AddCommitteeDialogProps {
     eventPublicId: string;
     existingCommittees: any[];
 }
-
-import type { PageProps } from '@inertiajs/core';
 
 export default function AddCommitteeDialog({
     eventPublicId,
@@ -49,7 +40,6 @@ export default function AddCommitteeDialog({
     const { auth } = usePage<PageProps>().props;
     const userRole = auth?.user?.role;
     const [isAddOpen, setIsAddOpen] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
 
     const {
         data,
@@ -67,11 +57,8 @@ export default function AddCommitteeDialog({
         position: '',
     });
 
-    useEffect(() => {
-        if (errors['confirmation' as keyof typeof errors]) {
-            setShowConfirm(true);
-        }
-    }, [errors['confirmation' as keyof typeof errors]]);
+    const confirmationError = errors['confirmation' as keyof typeof errors] as
+        string | undefined;
 
     const submitAdd = (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,7 +72,6 @@ export default function AddCommitteeDialog({
     };
 
     const confirmSubmit = () => {
-        setShowConfirm(false);
         clearErrors('confirmation' as keyof typeof errors);
 
         transform((currentData) => ({
@@ -200,7 +186,6 @@ export default function AddCommitteeDialog({
                                     onChange={(e) =>
                                         setData('email', e.target.value)
                                     }
-                                    
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -218,7 +203,6 @@ export default function AddCommitteeDialog({
                                     onChange={(e) =>
                                         setData('department', e.target.value)
                                     }
-                                    
                                 />
                                 <InputError message={errors.department} />
                             </div>
@@ -234,7 +218,6 @@ export default function AddCommitteeDialog({
                                     onValueChange={(value) =>
                                         setData('position', value)
                                     }
-                                    
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Pilih jabatan" />
@@ -274,18 +257,14 @@ export default function AddCommitteeDialog({
             </Dialog>
 
             <ConfirmationDialog
-                open={showConfirm}
+                open={Boolean(confirmationError)}
                 onOpenChange={(open) => {
-                    setShowConfirm(open);
-
                     if (!open) {
-clearErrors('confirmation' as keyof typeof errors);
-}
+                        clearErrors('confirmation' as keyof typeof errors);
+                    }
                 }}
                 title="Akun Panitia Ditemukan"
-                description={
-                    errors['confirmation' as keyof typeof errors] as string
-                }
+                description={confirmationError}
                 confirmText="Lanjutkan Penugasan"
                 onConfirm={confirmSubmit}
                 isProcessing={processing}
