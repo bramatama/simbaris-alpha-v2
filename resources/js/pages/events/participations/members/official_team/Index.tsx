@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { route } from 'ziggy-js';
-import InputError from '@/components/input-error';
 import { ParticipationLockState } from '@/components/states/participation-lock-state';
 import { Button } from '@/components/ui/button';
 import {

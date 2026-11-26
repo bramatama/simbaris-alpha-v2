@@ -252,7 +252,14 @@ class EventController extends Controller
                 'eventPenalties:event_penalty_id,event_id',
                 'eventChampionCategories.formulas:formula_id,event_champion_category_id'
             ])
-            ->withCount('participations', 'eventJudges', 'eventDocuments', 'eventPenalties', 'eventChampionCategories')
+            ->withCount([
+                'participations',
+                'eventJudges',
+                'eventDocuments',
+                'eventPenalties',
+                'eventChampionCategories',
+                'paymentMethods',
+            ])
             ->firstOrFail();    
 
         $event->eventJudges->transform(function ($eventJudge) {
@@ -283,8 +290,9 @@ class EventController extends Controller
         $eventLevels = $event->eventLevels;
 
         $readinessChecks = [
-            'has_documents' => ($event->event_documents_count ?? 0) > 0,
             'has_levels' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => $l->registration_fees !== null),
+            'has_payment_methods' => ($event->payment_methods_count ?? 0) > 0,
+            'has_documents' => ($event->event_documents_count ?? 0) > 0,
             'has_scoring_categories' => $eventLevels->isNotEmpty() && $eventLevels->every(fn($l) => ($l->scoring_categories_count ?? 0) > 0),
             'has_judges' => ($event->event_judges_count ?? 0) > 0,
             'has_champion_categories' => ($event->event_champion_categories_count ?? 0) > 0,

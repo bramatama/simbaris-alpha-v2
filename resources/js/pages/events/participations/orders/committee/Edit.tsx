@@ -1,12 +1,11 @@
-import type {
-    DragEndEvent} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
     DndContext,
     closestCenter,
     KeyboardSensor,
     PointerSensor,
     useSensor,
-    useSensors
+    useSensors,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -21,11 +20,10 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, Save, GripVertical, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { getEventInnerNav } from '@/config/inner_sidebar';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-
 
 /* =========================================================
    KOMPONEN SORTABLE ITEM
@@ -102,7 +100,7 @@ export default function ParticipationOrderEdit({
     // State lokal untuk mengatur urutan Drag & Drop
     const [items, setItems] = useState(participations);
 
-    const { data, put, processing, transform, errors } = useForm({
+    const { put, processing, transform, errors } = useForm({
         orders: [] as any[],
     });
 

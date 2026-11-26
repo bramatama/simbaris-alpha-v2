@@ -48,7 +48,6 @@ return '-';
             case 'registration_open':
                 return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
             case 'ongoing':
-            case 'ongoing':
                 return 'bg-blue-500/10 text-blue-600 border border-blue-500/20';
             case 'finished':
                 return 'bg-muted text-muted-foreground border border-border';

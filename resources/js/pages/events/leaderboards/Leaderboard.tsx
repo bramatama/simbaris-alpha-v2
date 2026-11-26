@@ -128,7 +128,6 @@ export default function Leaderboard({
     isVisible,
 }: LeaderboardProps) {
     const { auth } = usePage<PageProps>().props;
-    const userRole = auth?.user?.role;
     const committeePosition = auth.user.committee_position;
     const isChampion = filters.type === 'champion';
     const currentFilterValue = `${filters.type}-${filters.id}`;

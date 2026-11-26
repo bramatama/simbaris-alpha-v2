@@ -3,7 +3,6 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     Save,
-    FileText,
     CheckCircle2,
     ImagePlus,
     Trash2,
@@ -166,7 +165,7 @@ export default function OfficialTeamParticipationEdit({
                                     </li>
                                 )}
                                 {Object.entries(errors).map(
-                                    ([key, err], idx) => (
+                                    ([err], idx) => (
                                         <li
                                             key={idx}
                                             className="leading-relaxed"

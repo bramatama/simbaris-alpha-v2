@@ -105,6 +105,15 @@ export default function OfficialTeamParticipationCreate({
         temp_payment_proof_path: null as string | null,
     });
 
+    const scrollToError = () => {
+        setTimeout(() => {
+            formTopRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        }, 100);
+    };
+
     // ==========================================
     // LOGIKA SCROLL TO ERROR (Metode 3)
     // ==========================================
@@ -162,15 +171,6 @@ export default function OfficialTeamParticipationCreate({
 
     const formatCurrency = (value: number) => {
         return `Rp ${value.toLocaleString('id-ID')}`;
-    };
-
-    const scrollToError = () => {
-        setTimeout(() => {
-            formTopRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-            });
-        }, 100);
     };
 
     const handleCopyAccount = (accountNumber: string, index: number) => {
@@ -395,7 +395,7 @@ return;
                                     </li>
                                 )}
                                 {Object.entries(errors).map(
-                                    ([key, err], idx) => (
+                                    ([err], idx) => (
                                         <li
                                             key={idx}
                                             className="leading-relaxed"

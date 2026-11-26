@@ -4,14 +4,12 @@ import {
     Calendar,
     MapPin,
     ArrowLeft,
-    Edit3,
     Banknote,
     CheckCircle2,
     AlertTriangle,
     ChevronRight,
     Gavel,
     GraduationCap,
-    ImagePlus,
     FileText,
     Eye,
     Clock,
@@ -23,17 +21,23 @@ import {
     Info,
     Phone,
     ImageOff,
+    ListChecks,
 } from 'lucide-react';
 import { useState } from 'react';
 import { PdfViewerDialog } from '@/components/dialogs/pdf-viewer-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDate } from '@/config/date_datetime';
 import {
-    getEventInnerNav,
-    getMasterDataInnerNav,
-} from '@/config/inner_sidebar';
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetTrigger,
+} from '@/components/ui/sheet';
+import { formatDate } from '@/config/date_datetime';
+import { getEventInnerNav } from '@/config/inner_sidebar';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
 import AppLayout from '@/layouts/app-layout';
 import LandingPageLayout from '@/layouts/landing-page-layout';
@@ -64,6 +68,7 @@ export default function EventShow({
         );
 
     const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
+    const [isReadinessDrawerOpen, setIsReadinessDrawerOpen] = useState(false);
 
     const [viewDocument, setViewDocument] = useState<{
         name: string;
@@ -99,17 +104,11 @@ export default function EventShow({
         (el: any) => el.scoring_categories_count > 0,
     );
 
+    console.log(readinessChecks);
+
     const readinessChecklist = [
         {
-            label: '1. Dokumen Lomba',
-            isOk: !!readinessChecks.has_documents,
-            text: readinessChecks.has_documents
-                ? 'Dokumen juknis diunggah'
-                : 'Belum ada dokumen juknis',
-            link: `/${userRole}/events/${event.public_id}/documents`,
-        },
-        {
-            label: '2. Manajemen Jenjang',
+            label: '1. Manajemen Jenjang',
             isOk: !!readinessChecks.has_levels,
             text: readinessChecks.has_levels
                 ? 'Kuota & biaya jenjang telah diatur'
@@ -117,7 +116,23 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/levels`,
         },
         {
-            label: '3. Formulir Penilaian',
+            label: '2. Metode Pembayaran',
+            isOk: !!readinessChecks.has_payment_methods,
+            text: readinessChecks.has_payment_methods
+                ? 'Metode pembayaran telah dikonfigurasi'
+                : 'Belum mengatur metode pembayaran',
+            link: `/${userRole}/events/${event.public_id}/payment-methods`,
+        },
+        {
+            label: '3. Dokumen Lomba',
+            isOk: !!readinessChecks.has_documents,
+            text: readinessChecks.has_documents
+                ? 'Dokumen juknis diunggah'
+                : 'Belum ada dokumen juknis',
+            link: `/${userRole}/events/${event.public_id}/documents`,
+        },
+        {
+            label: '4. Formulir Penilaian',
             isOk: !!readinessChecks.has_scoring_categories,
             text: readinessChecks.has_scoring_categories
                 ? 'Rubrik & kriteria telah disusun'
@@ -125,7 +140,7 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/scoring-categories`,
         },
         {
-            label: '4. Dewan Juri',
+            label: '5. Dewan Juri',
             isOk: !!readinessChecks.has_judges,
             text: readinessChecks.has_judges
                 ? 'Dewan juri telah ditugaskan'
@@ -133,7 +148,7 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/judges`,
         },
         {
-            label: '5. Kategori Juara',
+            label: '6. Kategori Juara',
             isOk: !!readinessChecks.has_champion_categories,
             text: readinessChecks.has_champion_categories
                 ? 'Daftar juara & piala tersedia'
@@ -141,7 +156,7 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/champions`,
         },
         {
-            label: '6. Penetapan Penalti',
+            label: '7. Penetapan Penalti',
             isOk: !!readinessChecks.has_penalties,
             text: readinessChecks.has_penalties
                 ? 'Jenis & pengurangan penalti diatur'
@@ -149,7 +164,7 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/penalties`,
         },
         {
-            label: '7. Ketentuan Juara',
+            label: '8. Ketentuan Juara',
             isOk: !!readinessChecks.has_champion_formulas,
             text: readinessChecks.has_champion_formulas
                 ? 'Formula bobot juara dikonfigurasi'
@@ -157,7 +172,7 @@ export default function EventShow({
             link: `/${userRole}/events/${event.public_id}/formulas`,
         },
         {
-            label: '8. Urutan Tampil',
+            label: '9. Urutan Tampil',
             isOk: !!readinessChecks.has_appearance_orders,
             text: readinessChecks.has_appearance_orders
                 ? 'Nomor urut peserta disusun'
@@ -166,9 +181,11 @@ export default function EventShow({
         },
     ];
 
+    const totalChecklistCount = readinessChecklist.length;
     const completedCount = readinessChecklist.filter(
         (item) => item.isOk,
     ).length;
+    const pendingCount = totalChecklistCount - completedCount;
 
     const getStatusConfig = (status: string) => {
         switch (status) {
@@ -211,10 +228,55 @@ export default function EventShow({
         primaryContact?.name || event.created_by_user?.name || '-';
     const contactInfo = primaryContact?.contact_info || '-';
 
+    // Konten daftar readiness yang dipakai bersama oleh Card Desktop & Drawer Mobile
+    const renderReadinessItems = (closeDrawerOnClick = false) => (
+        <>
+            <div className="border-b border-border/50 bg-muted/20 p-3.5 text-xs text-muted-foreground">
+                {pendingCount === 0
+                    ? 'Seluruh persiapan event telah lengkap!'
+                    : `${pendingCount} item persiapan masih memerlukan tindakan Anda.`}
+            </div>
+
+            <div className="flex flex-col divide-y divide-border/40">
+                {readinessChecklist.map((item, idx) => (
+                    <Link
+                        key={idx}
+                        href={item.link}
+                        onClick={() => {
+                            if (closeDrawerOnClick) {
+                                setIsReadinessDrawerOpen(false);
+                            }
+                        }}
+                        className="group flex items-start gap-3 p-3.5 transition-colors hover:bg-muted/30"
+                    >
+                        {item.isOk ? (
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                        ) : (
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                        )}
+
+                        <div className="flex-1 space-y-0.5">
+                            <div className="text-xs font-semibold text-foreground group-hover:text-primary">
+                                {item.label}
+                            </div>
+
+                            <div className="text-[11px] leading-snug text-muted-foreground">
+                                {item.text}
+                            </div>
+                        </div>
+
+                        <ChevronRight className="mt-0.5 h-3.5 w-3.5 text-muted-foreground/50 transition-opacity group-hover:opacity-100 lg:opacity-0" />
+                    </Link>
+                ))}
+            </div>
+        </>
+    );
+
     const pageContent = (
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
             <div className="mb-2 flex flex-row items-center justify-between gap-4">
                 <Link
+                    href="#"
                     onClick={(e) => {
                         e.preventDefault();
                         window.history.back();
@@ -224,6 +286,65 @@ export default function EventShow({
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
                     Kembali
                 </Link>
+
+                {userRole === 'committee' && (
+                    <Sheet
+                        open={isReadinessDrawerOpen}
+                        onOpenChange={setIsReadinessDrawerOpen}
+                    >
+                        <SheetTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="relative gap-2 border-border/80 bg-card shadow-sm lg:hidden"
+                            >
+                                <ListChecks className="h-4 w-4 text-primary" />
+                                <span>Kesiapan Event</span>
+                                {pendingCount > 0 ? (
+                                    <Badge
+                                        variant="destructive"
+                                        className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold"
+                                    >
+                                        {pendingCount}
+                                    </Badge>
+                                ) : (
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-0.5 bg-emerald-500/15 px-1.5 text-[10px] font-semibold text-emerald-600"
+                                    >
+                                        Siap
+                                    </Badge>
+                                )}
+                            </Button>
+                        </SheetTrigger>
+
+                        <SheetContent
+                            side="right"
+                            className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+                        >
+                            <SheetHeader className="border-b border-border/50 px-5 py-4 text-left">
+                                <div className="flex items-center justify-between pr-6">
+                                    <SheetTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                                        Kesiapan Event
+                                    </SheetTitle>
+                                    <span className="text-xs font-bold text-primary">
+                                        {completedCount}/{totalChecklistCount}{' '}
+                                        Selesai
+                                    </span>
+                                </div>
+                                <SheetDescription className="text-xs">
+                                    Daftar kelengkapan konfigurasi sebelum event
+                                    dimulai.
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div className="flex-1 overflow-y-auto">
+                                {renderReadinessItems(true)}
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                )}
             </div>
 
             <div
@@ -369,8 +490,8 @@ export default function EventShow({
                                                         [];
 
                                                     if (levels.length === 0) {
-return 'Gratis';
-}
+                                                        return 'Gratis';
+                                                    }
 
                                                     const fees = levels.map(
                                                         (level: any) =>
@@ -387,12 +508,12 @@ return 'Gratis';
                                                     );
 
                                                     if (maxFee === 0) {
-return 'Gratis';
-}
+                                                        return 'Gratis';
+                                                    }
 
                                                     if (minFee === maxFee) {
-return `Rp ${minFee.toLocaleString('id-ID')}`;
-}
+                                                        return `Rp ${minFee.toLocaleString('id-ID')}`;
+                                                    }
 
                                                     return `${
                                                         minFee === 0
@@ -1038,9 +1159,9 @@ return `Rp ${minFee.toLocaleString('id-ID')}`;
                     )}
                 </div>
 
-                {/* SIDEBAR CHECKLIST KESIAPAN EVENT */}
+                {/* SIDEBAR CHECKLIST KESIAPAN EVENT (KHUSUS DESKTOP) */}
                 {userRole === 'committee' && (
-                    <div className="space-y-6 lg:col-span-4">
+                    <div className="hidden space-y-6 lg:col-span-4 lg:block">
                         <Card className="sticky top-6 border-border/50">
                             <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 px-5 py-4">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -1049,44 +1170,13 @@ return `Rp ${minFee.toLocaleString('id-ID')}`;
                                 </CardTitle>
 
                                 <span className="text-xs font-bold text-primary">
-                                    {completedCount}/8 Selesai
+                                    {completedCount}/{totalChecklistCount}{' '}
+                                    Selesai
                                 </span>
                             </CardHeader>
 
                             <CardContent className="p-0">
-                                <div className="border-b border-border/50 bg-muted/20 p-3.5 text-xs text-muted-foreground">
-                                    {completedCount === 8
-                                        ? 'Seluruh persiapan event telah lengkap!'
-                                        : `${8 - completedCount} item persiapan masih memerlukan tindakan Anda.`}
-                                </div>
-
-                                <div className="flex flex-col divide-y divide-border/40">
-                                    {readinessChecklist.map((item, idx) => (
-                                        <Link
-                                            key={idx}
-                                            href={item.link}
-                                            className="group flex items-start gap-3 p-3.5 transition-colors hover:bg-muted/30"
-                                        >
-                                            {item.isOk ? (
-                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                                            ) : (
-                                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                                            )}
-
-                                            <div className="flex-1 space-y-0.5">
-                                                <div className="text-xs font-semibold text-foreground group-hover:text-primary">
-                                                    {item.label}
-                                                </div>
-
-                                                <div className="text-[11px] leading-snug text-muted-foreground">
-                                                    {item.text}
-                                                </div>
-                                            </div>
-
-                                            <ChevronRight className="mt-0.5 h-3.5 w-3.5 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
-                                        </Link>
-                                    ))}
-                                </div>
+                                {renderReadinessItems(false)}
                             </CardContent>
                         </Card>
                     </div>

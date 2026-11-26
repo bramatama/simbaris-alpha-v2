@@ -18,7 +18,6 @@ import {
 import { useState, useEffect } from 'react';
 import { ConfirmationDialog } from '@/components/dialogs/confirmation-dialog';
 import { FormDialog } from '@/components/dialogs/form-dialog';
-import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,8 +47,8 @@ import InnerAppLayout from '@/layouts/app/inner-app-layout';
 
 const formatDateTime = (dateString: string | null) => {
     if (!dateString) {
-return '';
-}
+        return '';
+    }
 
     const date = new Date(dateString);
     const offset = date.getTimezoneOffset() * 60000;
@@ -126,21 +125,21 @@ export default function EventEdit({ event }: { event: any }) {
     };
 
     // Handler Hapus Event dengan Error Handling (Metode 2 & 3)
-   const submitDelete = (e: React.FormEvent) => {
-       e.preventDefault();
+    const submitDelete = (e: React.FormEvent) => {
+        e.preventDefault();
 
-       router.delete(`/${userRole}/events/${event.public_id}`, {
-           preserveScroll: true,
-           onSuccess: () => {
-               setIsDeleteOpen(false);
-           },
-       });
-   };
+        router.delete(`/${userRole}/events/${event.public_id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsDeleteOpen(false);
+            },
+        });
+    };
 
     const renderErrorBadge = (errorMsg?: string) => {
         if (!errorMsg) {
-return null;
-}
+            return null;
+        }
 
         return (
             <span
@@ -201,16 +200,11 @@ return null;
                                 Kesalahan:
                             </h4>
                             <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
-                                {Object.entries(errors).map(
-                                    ([key, err], idx) => (
-                                        <li
-                                            key={idx}
-                                            className="leading-relaxed"
-                                        >
-                                            {err as string}
-                                        </li>
-                                    ),
-                                )}
+                                {Object.entries(errors).map(([err], idx) => (
+                                    <li key={idx} className="leading-relaxed">
+                                        {err as string}
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     </div>

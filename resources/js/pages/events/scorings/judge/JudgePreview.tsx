@@ -1,5 +1,5 @@
 import type { PageProps } from '@inertiajs/core';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Calculator, CheckSquare, ListFilter } from 'lucide-react';
 import {
     Accordion,

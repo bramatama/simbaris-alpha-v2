@@ -185,8 +185,8 @@ export default function EventPenaltiesIndex({
 
     const executeDelete = () => {
         if (!itemToDelete) {
-return;
-}
+            return;
+        }
 
         router.delete(
             `/committee/events/${event.public_id}/penalties/${itemToDelete.event_penalty_id}`,
@@ -206,8 +206,8 @@ return;
 
     const renderErrorBadge = (errorMsg?: string) => {
         if (!errorMsg) {
-return null;
-}
+            return null;
+        }
 
         return (
             <span
@@ -278,16 +278,11 @@ return null;
                                         {pageErrors.error as string}
                                     </li>
                                 )}
-                                {Object.entries(errors).map(
-                                    ([key, err], idx) => (
-                                        <li
-                                            key={idx}
-                                            className="leading-relaxed"
-                                        >
-                                            {err as string}
-                                        </li>
-                                    ),
-                                )}
+                                {Object.entries(errors).map(([err], idx) => (
+                                    <li key={idx} className="leading-relaxed">
+                                        {err as string}
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     </div>

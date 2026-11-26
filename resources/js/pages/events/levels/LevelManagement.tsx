@@ -222,7 +222,7 @@ return null;
                             </h4>
                             <ul className="list-disc space-y-1 pl-4 text-xs text-destructive/90">
                                 {Object.entries(errors).map(
-                                    ([key, err], idx) => (
+                                    ([ err], idx) => (
                                         <li
                                             key={idx}
                                             className="leading-relaxed"

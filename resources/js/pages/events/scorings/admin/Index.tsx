@@ -25,7 +25,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getMasterDataInnerNav } from '@/config/inner_sidebar';
 import InnerAppLayout from '@/layouts/app/inner-app-layout';
-import AppLayout from '@/layouts/app-layout';
 
 export default function MasterScoringsIndex({ masterScoringCategories }: any) {
     const { errors: pageErrors } = usePage<PageProps>().props;

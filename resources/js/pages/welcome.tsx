@@ -4,7 +4,7 @@ import { ArrowRight, CalendarX, Trophy, ShieldCheck, Zap } from 'lucide-react';
 import type { EventData } from '@/components/event-card';
 import EventCard from '@/components/event-card';
 import LandingPageLayout from '@/layouts/landing-page-layout';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, register } from '@/routes';
 
 interface WelcomeProps {
     events?: EventData[];

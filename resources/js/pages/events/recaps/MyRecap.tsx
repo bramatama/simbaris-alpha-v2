@@ -51,8 +51,8 @@ export default function MyRecap({
 
     const parseSafeDate = (dateVal: string | number | null): Date | null => {
         if (!dateVal) {
-return null;
-}
+            return null;
+        }
 
         if (typeof dateVal === 'number') {
             const date = new Date(dateVal);
@@ -81,8 +81,8 @@ return null;
         const d = parseSafeDate(dateString);
 
         if (!d) {
-return '-';
-}
+            return '-';
+        }
 
         return new Intl.DateTimeFormat('id-ID', {
             hour: '2-digit',
@@ -95,21 +95,21 @@ return '-';
 
     const calculateDuration = () => {
         if (!session?.start_time || !session?.end_time) {
-return '-';
-}
+            return '-';
+        }
 
         const startDate = parseSafeDate(session.start_time);
         const endDate = parseSafeDate(session.end_time);
 
         if (!startDate || !endDate) {
-return '-';
-}
+            return '-';
+        }
 
         let diff = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
 
         if (diff < 0) {
-diff = 0;
-}
+            diff = 0;
+        }
 
         const hours = Math.floor(diff / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
@@ -274,9 +274,7 @@ diff = 0;
 
                                     return (
                                         <Card
-                                            key={
-                                                recap?.recap_id || Math.random()
-                                            }
+                                            key={recap?.recap_id}
                                             className="overflow-hidden border-border/70 shadow-sm"
                                         >
                                             {/* Header Kartu Kategori Juara */}

@@ -11,7 +11,6 @@ import {
     Trash2,
     CheckSquare,
     Plus,
-    AlertCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
